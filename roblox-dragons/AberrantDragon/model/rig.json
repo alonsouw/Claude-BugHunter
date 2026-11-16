@@ -1,0 +1,593 @@
+{
+ "name": "AberrantDragon",
+ "units": "studs",
+ "forward": "-Z",
+ "bounds": {
+  "min": [
+   -13.508049011230469,
+   -0.4145413041114807,
+   -8.387330055236816
+  ],
+  "max": [
+   5.615671634674072,
+   19.10991668701172,
+   15.555212020874023
+  ]
+ },
+ "parts": [
+  {
+   "name": "Neck3",
+   "parent": "Neck2",
+   "pivot": [
+    -0.5,
+    16.6,
+    -3.2
+   ],
+   "center": [
+    -0.6139,
+    17.2599,
+    -4.7409
+   ],
+   "tris": 2484,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Neck2",
+   "parent": "Neck1",
+   "pivot": [
+    0.3,
+    12.4,
+    -1.1
+   ],
+   "center": [
+    -0.0698,
+    14.5816,
+    -2.0992
+   ],
+   "tris": 2916,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Neck1",
+   "parent": "Chest",
+   "pivot": [
+    0,
+    9.6,
+    -0.2
+   ],
+   "center": [
+    0.0963,
+    10.8845,
+    -0.3708
+   ],
+   "tris": 4356,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Chest",
+   "parent": "Hips",
+   "pivot": [
+    -0.1,
+    7.7,
+    2.1
+   ],
+   "center": [
+    -0.1723,
+    8.262,
+    0.8857
+   ],
+   "tris": 8224,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Hips",
+   "parent": null,
+   "pivot": [
+    0.0129,
+    7.4078,
+    2.8245
+   ],
+   "center": [
+    -0.0528,
+    7.681,
+    2.9659
+   ],
+   "tris": 1796,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Tail1",
+   "parent": "Hips",
+   "pivot": [
+    0.2,
+    7.1,
+    3.6
+   ],
+   "center": [
+    0.509,
+    6.7678,
+    4.8391
+   ],
+   "tris": 1972,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Tail2",
+   "parent": "Tail1",
+   "pivot": [
+    1.2,
+    5.9,
+    6
+   ],
+   "center": [
+    1.4742,
+    5.3429,
+    7.1211
+   ],
+   "tris": 1972,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Tail3",
+   "parent": "Tail2",
+   "pivot": [
+    2.2,
+    4.4,
+    8.4
+   ],
+   "center": [
+    1.8503,
+    3.8795,
+    9.6616
+   ],
+   "tris": 2148,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "Tail4",
+   "parent": "Tail3",
+   "pivot": [
+    1.6,
+    3,
+    11
+   ],
+   "center": [
+    -0.0997,
+    2.783,
+    12.9355
+   ],
+   "tris": 2464,
+   "mats": [
+    "skin",
+    "bone",
+    "claw"
+   ]
+  },
+  {
+   "name": "Head",
+   "parent": "Neck3",
+   "pivot": [
+    -0.6,
+    17.4,
+    -6.8
+   ],
+   "center": [
+    -0.4746,
+    16.4891,
+    -7.1207
+   ],
+   "tris": 10296,
+   "mats": [
+    "skin",
+    "bone",
+    "gum",
+    "teeth"
+   ]
+  },
+  {
+   "name": "Eye1",
+   "parent": "Head",
+   "pivot": [
+    -1.039,
+    15.897,
+    -6.959
+   ],
+   "center": [
+    -1.0756,
+    15.8963,
+    -6.9672
+   ],
+   "tris": 352,
+   "mats": [
+    "eye"
+   ]
+  },
+  {
+   "name": "Eye2",
+   "parent": "Head",
+   "pivot": [
+    -0.0824,
+    16.0526,
+    -7.0165
+   ],
+   "center": [
+    -0.0587,
+    16.0531,
+    -7.0245
+   ],
+   "tris": 352,
+   "mats": [
+    "eye"
+   ]
+  },
+  {
+   "name": "Eye3",
+   "parent": "Head",
+   "pivot": [
+    -0.1569,
+    15.2676,
+    -6.8489
+   ],
+   "center": [
+    -0.1382,
+    15.2677,
+    -6.8497
+   ],
+   "tris": 352,
+   "mats": [
+    "eye"
+   ]
+  },
+  {
+   "name": "JawL",
+   "parent": "Head",
+   "pivot": [
+    -1.0867,
+    17.0948,
+    -6.2204
+   ],
+   "center": [
+    -1.2272,
+    15.4349,
+    -6.3071
+   ],
+   "tris": 2948,
+   "mats": [
+    "skin",
+    "teeth",
+    "gum"
+   ]
+  },
+  {
+   "name": "JawR",
+   "parent": "Head",
+   "pivot": [
+    -0.2527,
+    17.1099,
+    -6.1209
+   ],
+   "center": [
+    -0.1219,
+    15.452,
+    -6.1772
+   ],
+   "tris": 2948,
+   "mats": [
+    "skin",
+    "teeth",
+    "gum"
+   ]
+  },
+  {
+   "name": "Tongue",
+   "parent": "Head",
+   "pivot": [
+    -0.6606,
+    16.6485,
+    -6.1776
+   ],
+   "center": [
+    -0.6833,
+    15.2041,
+    -5.3794
+   ],
+   "tris": 740,
+   "mats": [
+    "gum"
+   ]
+  },
+  {
+   "name": "LegL_Thigh",
+   "parent": "Hips",
+   "pivot": [
+    -0.9,
+    7.2,
+    3.1
+   ],
+   "center": [
+    -1.6498,
+    6.5321,
+    1.6666
+   ],
+   "tris": 1404,
+   "mats": [
+    "skin"
+   ]
+  },
+  {
+   "name": "LegL_Shin",
+   "parent": "LegL_Thigh",
+   "pivot": [
+    -2.6,
+    5.6,
+    0.2
+   ],
+   "center": [
+    -2.6517,
+    4.6156,
+    2.3037
+   ],
+   "tris": 1772,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "LegL_Foot",
+   "parent": "LegL_Shin",
+   "pivot": [
+    -2.8,
+    3,
+    4.6
+   ],
+   "center": [
+    -3.2774,
+    1.5629,
+    3.6672
+   ],
+   "tris": 2668,
+   "mats": [
+    "skin",
+    "bone",
+    "claw"
+   ]
+  },
+  {
+   "name": "LegR_Thigh",
+   "parent": "Hips",
+   "pivot": [
+    0.9,
+    7.3,
+    3
+   ],
+   "center": [
+    1.4137,
+    6.3788,
+    1.2545
+   ],
+   "tris": 1404,
+   "mats": [
+    "skin"
+   ]
+  },
+  {
+   "name": "LegR_Shin",
+   "parent": "LegR_Thigh",
+   "pivot": [
+    2.2,
+    5.2,
+    -0.5
+   ],
+   "center": [
+    2.2495,
+    4.1986,
+    1.3757
+   ],
+   "tris": 1772,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "LegR_Foot",
+   "parent": "LegR_Shin",
+   "pivot": [
+    2.4,
+    2.6,
+    3.5
+   ],
+   "center": [
+    2.7572,
+    1.3432,
+    2.4594
+   ],
+   "tris": 2668,
+   "mats": [
+    "skin",
+    "bone",
+    "claw"
+   ]
+  },
+  {
+   "name": "ArmR_Upper",
+   "parent": "Chest",
+   "pivot": [
+    1.1,
+    9.6,
+    -0.6
+   ],
+   "center": [
+    1.8988,
+    8.3026,
+    -1.8054
+   ],
+   "tris": 1404,
+   "mats": [
+    "skin"
+   ]
+  },
+  {
+   "name": "ArmR_Fore",
+   "parent": "ArmR_Upper",
+   "pivot": [
+    2.8,
+    7,
+    -3
+   ],
+   "center": [
+    2.7232,
+    5.4809,
+    -3.6939
+   ],
+   "tris": 1772,
+   "mats": [
+    "skin",
+    "bone"
+   ]
+  },
+  {
+   "name": "ArmR_Hand",
+   "parent": "ArmR_Fore",
+   "pivot": [
+    2.5,
+    3.5,
+    -4.5
+   ],
+   "center": [
+    2.652,
+    1.7986,
+    -5.6692
+   ],
+   "tris": 2076,
+   "mats": [
+    "skin",
+    "bone",
+    "claw"
+   ]
+  },
+  {
+   "name": "ArmL_Upper",
+   "parent": "Chest",
+   "pivot": [
+    -1,
+    9.2,
+    -0.8
+   ],
+   "center": [
+    -1.2629,
+    8.6243,
+    -1.4735
+   ],
+   "tris": 1404,
+   "mats": [
+    "skin"
+   ]
+  },
+  {
+   "name": "ArmL_Fore",
+   "parent": "ArmL_Upper",
+   "pivot": [
+    -1.6,
+    8,
+    -2.2
+   ],
+   "center": [
+    -1.2913,
+    7.8009,
+    -2.69
+   ],
+   "tris": 2492,
+   "mats": [
+    "skin",
+    "bone",
+    "claw"
+   ]
+  },
+  {
+   "name": "WingL_Arm",
+   "parent": "Chest",
+   "pivot": [
+    -0.6,
+    10,
+    0.3
+   ],
+   "center": [
+    -4.2208,
+    9.233,
+    4.8897
+   ],
+   "tris": 1690,
+   "mats": [
+    "skin",
+    "mem"
+   ]
+  },
+  {
+   "name": "WingL_Hand",
+   "parent": "WingL_Arm",
+   "pivot": [
+    -8,
+    13,
+    3.5
+   ],
+   "center": [
+    -10.4916,
+    8.9332,
+    6.3129
+   ],
+   "tris": 3308,
+   "mats": [
+    "skin",
+    "claw",
+    "mem"
+   ]
+  },
+  {
+   "name": "WingR",
+   "parent": "Chest",
+   "pivot": [
+    0.6,
+    10,
+    0.3
+   ],
+   "center": [
+    3.0166,
+    10.1227,
+    1.8544
+   ],
+   "tris": 3658,
+   "mats": [
+    "skin",
+    "claw",
+    "mem",
+    "bone"
+   ]
+  }
+ ]
+}
