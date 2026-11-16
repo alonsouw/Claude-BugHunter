@@ -33,6 +33,8 @@ fs.writeFileSync(path.join(ROOT, 'roblox/AberrantAnimations.lua'), animsLua);
 
 const rigLua = '{\n' + rig.parts.map(p => `\t{ name = ${JSON.stringify(p.name)}, parent = ${p.parent ? JSON.stringify(p.parent) : 'nil'}, pivot = ${lua(p.pivot)}, center = ${lua(p.center)} },`).join('\n') + '\n}';
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+// el animador es común a todas las especies: se copia desde shared/
+fs.copyFileSync(path.join(ROOT, '..', 'shared', 'DragonAnimator.lua'), path.join(ROOT, 'roblox', 'DragonAnimator.lua'));
 const sources = { __ANIMATOR__: read('roblox/DragonAnimator.lua'), __ANIMS__: animsLua, __SHOWCASE__: read('roblox/DragonShowcase.client.lua') };
 for (const [k, s] of Object.entries(sources)) if (s.includes(']=======]')) throw new Error('el código de ' + k + ' contiene el cierre de cadena larga');
 let out = read('tools/InstallAberrant.template.lua')

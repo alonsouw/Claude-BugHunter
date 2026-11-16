@@ -8,6 +8,7 @@
 		local animator = DragonAnimator.new(model, require(animsModule))
 		animator:Play("Idle")
 		animator.Finished.Event:Connect(function(name) ... end)
+		animator:SetLookTarget(player.Character.Head)   -- opcional: la cabeza sigue al objetivo
 		animator:Destroy()
 
 	Formato de cada articulación (nombre = Part1 del Motor6D):
@@ -157,6 +158,68 @@ function DragonAnimator:Step(dt: number)
 		motor.Transform = CFrame.new(v[4] * s, v[5] * s, v[6] * s)
 			* CFrame.Angles(math.rad(v[1]), math.rad(v[2]), math.rad(v[3]))
 	end
+	self:_applyLook(dt)
+end
+
+local function resolveTarget(target): Vector3?
+	if typeof(target) == "Vector3" then
+		return target
+	elseif typeof(target) == "Instance" then
+		if target:IsA("BasePart") then
+			return target.Position
+		elseif target:IsA("Model") then
+			return target:GetPivot().Position
+		end
+	elseif type(target) == "function" then
+		return target()
+	end
+	return nil
+end
+
+--[[
+	Seguimiento de mirada: la cabeza (y una parte del cuello) gira hacia el objetivo,
+	sumado encima de la animación. target: BasePart, Model, Vector3, función que devuelve
+	Vector3, o nil para soltarlo.
+	options: Head ("Head"), Neck ("Neck2"), NeckShare (0.35), MaxYaw (75), MaxPitch (35),
+	         RestPitch (grados que apunta el hocico en reposo; negativo = hacia abajo), Speed (5)
+]]
+function DragonAnimator:SetLookTarget(target, options)
+	self.LookTarget = target
+	if options then
+		self.LookOptions = options
+	end
+	self.LookOptions = self.LookOptions or {}
+	self.LookYaw = self.LookYaw or 0
+	self.LookPitch = self.LookPitch or 0
+end
+
+function DragonAnimator:_applyLook(dt: number)
+	if self.LookYaw == nil then
+		return
+	end
+	local o = self.LookOptions or {}
+	local head = self.Joints[o.Head or "Head"]
+	local neck = self.Joints[o.Neck or "Neck2"]
+	if not head or not neck or not neck.Part0 then
+		return
+	end
+	local goalYaw, goalPitch = 0, 0
+	local pos = resolveTarget(self.LookTarget)
+	if pos then
+		-- marco del cuello sin la mirada aplicada, con origen en el pivote de la cabeza
+		local base = neck.Part0.CFrame * neck.C0
+		local headPivot = (head.Part0.CFrame * head.C0).Position
+		local p = base:VectorToObjectSpace(pos - headPivot)
+		local maxYaw, maxPitch = math.rad(o.MaxYaw or 75), math.rad(o.MaxPitch or 35)
+		goalYaw = math.clamp(math.atan2(-p.X, -p.Z), -maxYaw, maxYaw)
+		goalPitch = math.clamp(math.atan2(p.Y, math.sqrt(p.X * p.X + p.Z * p.Z)) - math.rad(o.RestPitch or 0), -maxPitch, maxPitch)
+	end
+	local k = math.min(1, dt * (o.Speed or 5))
+	self.LookYaw += (goalYaw - self.LookYaw) * k
+	self.LookPitch += (goalPitch - self.LookPitch) * k
+	local share = o.NeckShare or 0.35
+	neck.Transform = CFrame.Angles(0, self.LookYaw * share, 0) * CFrame.Angles(self.LookPitch * share, 0, 0) * neck.Transform
+	head.Transform = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * head.Transform
 end
 
 function DragonAnimator:Destroy()
