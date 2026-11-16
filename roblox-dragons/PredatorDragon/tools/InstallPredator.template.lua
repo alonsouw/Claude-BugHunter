@@ -1,30 +1,33 @@
 --[[
-	INSTALADOR DEL DRAGÓN DEPREDADOR · Roblox Studio
+	INSTALADOR DEL DRAGÓN DEPREDADOR (rig de huesos) · Roblox Studio
 	Archivo generado por tools/build_roblox.js: no lo edites a mano, edita la plantilla.
 
 	Pasos:
-	  1. Studio > pestaña Avatar (o Home) > Import 3D > PredatorDragon.fbx (o .glb).
-	     En el importador: deja "Rig General > Rig Type" en "No Rig" y NO combines mallas.
-	     Pulsa Import. Aparece el modelo en Workspace.
+	  1. Studio > pestaña Avatar (o Home) > Import 3D > PredatorDragon.fbx.
+	     En el importador: Rig General > Rig Type = "Custom" (malla con huesos). No combines las mallas.
+	     Pulsa Import. Aparece el modelo en Workspace con las mallas Body, WingL y WingR y sus Bones.
 	  2. Selecciona ese modelo en el Explorer.
 	  3. View > Command Bar. Pega TODO este archivo y pulsa Enter.
 
 	Resultado:
-	  ReplicatedStorage.Dragons.PredatorDragon          (rig con Motor6D, Settings, Animations)
-	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación por datos)
-	  ServerStorage.DragonAssets.PredatorDragon_Rig     (copia de seguridad del rig)
-	  Workspace.DragonShowcase                          (escenario + estatua de vista previa)
+	  ReplicatedStorage.Dragons.PredatorDragon          (modelo con huesos, Settings, Animations)
+	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación por datos, Motor6D o Bones)
+	  ServerStorage.DragonAssets.PredatorDragon_Rig     (copia de seguridad)
+	  Workspace.DragonShowcase.Stage_Predator           (escenario + estatua de vista previa)
 	  StarterPlayer.StarterPlayerScripts.PredatorShowcase (vitrina nocturna, botones 1-9)
-	Pulsa Play para ver al dragón y probar sus animaciones.
 ]]
 
--- Opcional: escala final en studs por unidad del modelo (1 = 40 studs de largo).
+-- Opcional: escala final en studs por unidad del modelo (1 = unos 46 studs de largo).
 local DESIRED_SCALE = 1
--- Opcional: tras subir los PNG del atlas (Asset Manager), pega aquí sus ids "rbxassetid://..."
--- para crear SurfaceAppearance PBR en cada pieza.
-local MAPS = { ColorMap = "", NormalMap = "", RoughnessMap = "" }
+-- Opcional: tras subir los PNG (Asset Manager), pega aquí sus ids para crear SurfaceAppearance PBR.
+local MAPS = {
+	Body = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WingL = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WingR = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+}
 
 local RIG = __RIG__
+local EYES = __EYES__
 local GROUND_Y = __GROUND_Y__
 local SOURCES = {
 	DragonAnimator = [=======[__ANIMATOR__]=======],
@@ -42,53 +45,62 @@ local function v3(t)
 	return Vector3.new(t[1], t[2], t[3])
 end
 local byName = {}
-for _, e in ipairs(RIG) do
-	byName[e.name] = e
+for _, b in ipairs(RIG) do
+	byName[b.name] = b
 end
 
 -- 1. Localizar el modelo importado
-local function findParts(container)
-	local found, missing = {}, {}
-	for _, e in ipairs(RIG) do
-		local p = container.Name == e.name and container:IsA("BasePart") and container or container:FindFirstChild(e.name, true)
-		if p and p:IsA("BasePart") then
-			found[e.name] = p
-		else
-			table.insert(missing, e.name)
-		end
-	end
-	return found, missing
+local function looksLikeDragon(inst)
+	return inst:FindFirstChild("Body", true) and inst:FindFirstChild("Neck3", true)
 end
-
 local source
 for _, s in ipairs(Selection:Get()) do
 	local cand = s:IsA("BasePart") and s.Parent or s
-	if cand:FindFirstChild("WingL_Hand", true) then
+	if looksLikeDragon(cand) then
 		source = cand
 		break
 	end
 end
 if not source then
 	for _, d in ipairs(workspace:GetDescendants()) do
-		if d:IsA("Model") and d:FindFirstChild("WingL_Hand", true) and d:FindFirstChild("Hips", true) and not d:FindFirstChildWhichIsA("Motor6D", true) then
+		if d:IsA("Model") and looksLikeDragon(d) and not d:GetAttribute("RigScale") then
 			source = d
 			break
 		end
 	end
 end
-assert(source, "[Predator] No encontré el modelo importado. Impórtalo con Import 3D y selecciónalo antes de ejecutar.")
-local parts, missing = findParts(source)
-assert(#missing == 0, "[Predator] Faltan piezas en el modelo importado: " .. table.concat(missing, ", ") .. ". ¿Se combinaron las mallas al importar?")
+assert(source, "[Predator] No encontré el modelo importado. Impórtalo con Import 3D (Rig Type: Custom) y selecciónalo.")
+
+local bones, meshes, missing = {}, {}, {}
+for _, d in ipairs(source:GetDescendants()) do
+	if d:IsA("Bone") and not bones[d.Name] then
+		bones[d.Name] = d
+	end
+end
+for _, b in ipairs(RIG) do
+	if not bones[b.name] then
+		table.insert(missing, b.name)
+	end
+end
+for _, name in ipairs({ "Body", "WingL", "WingR" }) do
+	local m = source:FindFirstChild(name, true)
+	if m and m:IsA("MeshPart") then
+		meshes[name] = m
+	else
+		table.insert(missing, name)
+	end
+end
+assert(#missing == 0, "[Predator] Faltan piezas o huesos: " .. table.concat(missing, ", ") .. ". ¿Rig Type estaba en Custom?")
 
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Antes de instalar Dragón Depredador")
 end)
 
--- 2. Calibración: escala y orientación con que el importador dejó el modelo
+-- 2. Calibración: escala y orientación con que el importador dejó el esqueleto
 local function ratio(a, b)
-	return (parts[a].Position - parts[b].Position).Magnitude / (v3(byName[a].center) - v3(byName[b].center)).Magnitude
+	return (bones[a].WorldPosition - bones[b].WorldPosition).Magnitude / (v3(byName[a].head) - v3(byName[b].head)).Magnitude
 end
-local scale = (ratio("Head", "Tail6") + ratio("LegFL_Foot", "WingR_Hand") + ratio("LegBR_Foot", "WingL_Hand")) / 3
+local scale = (ratio("Hips", "Head") + ratio("Hips", "Tail7") + ratio("WingL_Hand", "WingR_Hand")) / 3
 local ROTATIONS = {
 	CFrame.identity,
 	CFrame.Angles(0, math.pi, 0),
@@ -99,86 +111,83 @@ local ROTATIONS = {
 }
 local R, origin, bestErr
 for _, rot in ipairs(ROTATIONS) do
-	local o = parts.Hips.Position - rot:VectorToWorldSpace(v3(byName.Hips.center) * scale)
+	local o = bones.Hips.WorldPosition - rot:VectorToWorldSpace(v3(byName.Hips.head) * scale)
 	local err = 0
-	for _, e in ipairs(RIG) do
-		err = math.max(err, (o + rot:VectorToWorldSpace(v3(e.center) * scale) - parts[e.name].Position).Magnitude)
+	for _, b in ipairs(RIG) do
+		err = math.max(err, (o + rot:VectorToWorldSpace(v3(b.head) * scale) - bones[b.name].WorldPosition).Magnitude)
 	end
 	if not bestErr or err < bestErr then
 		R, origin, bestErr = rot, o, err
 	end
 end
-print(("[Predator] escala del import: %.4f · error máximo de posición: %.3f studs"):format(scale, bestErr))
+print(("[Predator] escala del import: %.4f · error máximo de huesos: %.3f studs"):format(scale, bestErr))
 if bestErr > 0.6 * scale then
-	warn("[Predator] Las piezas no coinciden con el rig esperado. ¿Se movió o se rotó alguna pieza después de importar? Continúo igualmente.")
+	warn("[Predator] Los huesos no coinciden con el rig esperado. Revisa la importación. Continúo igualmente.")
 end
 local function W(t)
 	return origin + R:VectorToWorldSpace(v3(t) * scale)
 end
 
--- 3. Construir el rig: Root anclado + Motor6D en cada articulación
+-- 3. Modelo: una sola asamblea (Body anclado, alas soldadas) para que los huesos deformen todas las mallas
 local model = Instance.new("Model")
 model.Name = "PredatorDragon"
-local hips = byName.Hips
-local root = Instance.new("Part")
-root.Name = "Root"
-root.Size = Vector3.new(2, 1, 2) * scale
-root.Transparency = 1
-root.Anchored = true
-root.CanCollide = false
-root.CanQuery = false
-root.CanTouch = false
-root.CFrame = CFrame.new(W({ hips.pivot[1], GROUND_Y, hips.pivot[3] })) * R
-root.Parent = model
-model.PrimaryPart = root
-
-for _, e in ipairs(RIG) do
-	local p = parts[e.name]
-	p.Parent = model
+for _, child in ipairs(source:GetChildren()) do
+	child.Parent = model
 end
-for _, e in ipairs(RIG) do
-	local p = parts[e.name]
-	p.Anchored = false
-	p.CanCollide = false
-	p.CanTouch = false
-	p.Massless = true
-	p.CastShadow = true
-	local p0 = e.parent and parts[e.parent] or root
-	local pivot = CFrame.new(W(e.pivot)) * R
-	local m = Instance.new("Motor6D")
-	m.Name = e.name
-	m.Part0 = p0
-	m.Part1 = p
-	m.C0 = p0.CFrame:ToObjectSpace(pivot)
-	m.C1 = p.CFrame:ToObjectSpace(pivot)
-	m.Parent = p
-	if string.sub(e.name, 1, 3) == "Eye" then
-		p.Material = Enum.Material.Neon
-		p.Color = Color3.fromRGB(245, 248, 255)
-		pcall(function()
-			p.TextureID = ""
-		end)
-		p.CastShadow = false
-	elseif MAPS.ColorMap ~= "" then
-		local sa = p:FindFirstChildOfClass("SurfaceAppearance") or Instance.new("SurfaceAppearance")
-		sa.ColorMap = MAPS.ColorMap
-		sa.NormalMap = MAPS.NormalMap
-		sa.RoughnessMap = MAPS.RoughnessMap
-		sa.Parent = p
+for name, m in pairs(meshes) do
+	m.Parent = model
+	m.CanCollide = false
+	m.CanTouch = false
+	m.CastShadow = true
+	m.Anchored = name == "Body"
+	m.Massless = name ~= "Body"
+	if name ~= "Body" then
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = meshes.Body
+		weld.Part1 = m
+		weld.Parent = m
+	end
+	local maps = MAPS[name]
+	if maps and maps.ColorMap ~= "" then
+		local sa = m:FindFirstChildOfClass("SurfaceAppearance") or Instance.new("SurfaceAppearance")
+		sa.ColorMap = maps.ColorMap
+		sa.NormalMap = maps.NormalMap
+		sa.RoughnessMap = maps.RoughnessMap
+		sa.Parent = m
 	end
 end
-for _, eyeName in ipairs({ "EyeL", "EyeR" }) do
-	local glow = Instance.new("PointLight")
-	glow.Color = Color3.fromRGB(235, 240, 255)
-	glow.Range = 3 * scale
-	glow.Brightness = 0.8
-	glow.Shadows = false
-	glow.Parent = parts[eyeName]
+model.WorldPivot = CFrame.new(W({ byName.Hips.head[1], GROUND_Y, byName.Hips.head[3] })) * R
+
+-- Ojos: NO son globos oculares. Dos puntos diminutos de Neon que la vitrina mueve con el hueso Head;
+-- de día son casi invisibles y de noche son lo único que se ve.
+local head = bones[EYES.bone]
+for _, name in ipairs({ "EyeL", "EyeR" }) do
+	local dot = Instance.new("Part")
+	dot.Name = name .. "Point"
+	dot.Shape = Enum.PartType.Ball
+	dot.Size = Vector3.one * 0.07 * scale
+	dot.Material = Enum.Material.Neon
+	dot.Color = Color3.fromRGB(255, 255, 255)
+	dot.Transparency = 0.93
+	dot.Anchored = true
+	dot.CanCollide = false
+	dot.CanQuery = false
+	dot.CanTouch = false
+	dot.CastShadow = false
+	dot.CFrame = CFrame.new(W(EYES[name]))
+	dot:SetAttribute("Bone", EYES.bone)
+	dot:SetAttribute("Offset", head.WorldCFrame:ToObjectSpace(dot.CFrame))
+	dot.Parent = model
 end
 
--- Escala final deseada (Model:ScaleTo también escala los Motor6D)
 if math.abs(DESIRED_SCALE / scale - 1) > 1e-3 then
 	model:ScaleTo(DESIRED_SCALE / scale)
+	for _, p in ipairs(model:GetChildren()) do
+		if p:GetAttribute("Offset") then
+			local off = p:GetAttribute("Offset")
+			p:SetAttribute("Offset", off.Rotation + off.Position * (DESIRED_SCALE / scale))
+		end
+	end
 end
 model:SetAttribute("RigScale", DESIRED_SCALE)
 model:SetAttribute("Species", "Karnathys sanguifauces")
@@ -206,7 +215,7 @@ local function putScript(parent, name, class, src)
 end
 
 local dragons = ensure(ReplicatedStorage, "Dragons")
-for _, n in ipairs({ "AbyssalDragon", "PredatorDragon", "PredatorDragon", "AerialDragon", "AncientDragon", "ShadowDragon" }) do
+for _, n in ipairs({ "AbyssalDragon", "PredatorDragon", "AberrantDragon", "AerialDragon", "AncientDragon", "ShadowDragon" }) do
 	ensure(dragons, n)
 end
 local folder = dragons.PredatorDragon
@@ -215,16 +224,14 @@ if prev then
 	prev:Destroy()
 end
 model.Parent = folder
-
 local settings = ensure(folder, "Settings", "Configuration")
 for k, v in pairs({
 	DisplayName = "Dragón Depredador", Species = "Karnathys sanguifauces", Epithet = "Fauce Roja",
 	WalkSpeed = 12, RunSpeed = 30, FlySpeed = 40, FlyHeight = 7, MaxHealth = 2600, AttackDamage = 60,
-	AttackRange = 12, EyeColor = Color3.fromRGB(245, 248, 255),
+	AttackRange = 12, EyePointColor = Color3.fromRGB(255, 255, 255),
 }) do
 	settings:SetAttribute(k, v)
 end
-
 putScript(dragons, "DragonAnimator", "ModuleScript", SOURCES.DragonAnimator)
 putScript(folder, "Animations", "ModuleScript", SOURCES.Animations)
 putScript(ensure(StarterPlayer, "StarterPlayerScripts", "StarterPlayerScripts"), "PredatorShowcase", "LocalScript", SOURCES.Showcase)
@@ -244,7 +251,7 @@ if not stage then
 	stage = Instance.new("Part")
 	stage.Name = "Stage_Predator"
 	stage.Anchored = true
-	stage.Size = Vector3.new(90, 1, 90)
+	stage.Size = Vector3.new(100, 1, 100)
 	stage.CFrame = CFrame.new(0, 0.5, -150)
 	stage.Material = Enum.Material.Slate
 	stage.Color = Color3.fromRGB(28, 26, 30)
@@ -259,11 +266,11 @@ statue.Name = "PredatorDragon_Preview"
 statue:PivotTo(stage.CFrame * CFrame.new(0, stage.Size.Y / 2, 0) * CFrame.Angles(0, math.rad(180), 0))
 statue.Parent = showcase
 
-if source.Parent and #source:GetDescendants() == 0 then
+if source.Parent and #source:GetChildren() == 0 then
 	source:Destroy()
 end
 Selection:Set({ statue })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Dragón Depredador instalado")
 end)
-print("[Predator] Listo: rig con " .. #RIG .. " Motor6D en ReplicatedStorage.Dragons.PredatorDragon. Pulsa Play: noche cerrada, te mira fijamente; botones 1-9 y L para la luz.")
+print("[Predator] Listo: " .. #RIG .. " huesos, 3 mallas. Pulsa Play: noche cerrada, solo dos puntos blancos te observan. Botones 1-9 y L para la luz.")

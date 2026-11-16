@@ -4,9 +4,10 @@
  * Ejes en espacio Roblox, pose de reposo: +rx adelanta lo que cuelga (patas) y levanta lo que mira al frente;
  * la mandíbula se abre con -rx. Ala izquierda: +rz baja la punta, +ry la pliega atrás; ala derecha, al revés.
  * La cabeza además sigue al jugador en tiempo real (LookAt de DragonAnimator), sumado encima de esto.
+ * Rig de Bones: Hips, Chest, Neck1-3, Head, Jaw, Tongue, Tail1-7, Leg{F,B}{L,R}_{Upper,Lower,Foot}, Wing{L,R}_{Arm,Fore,Hand}.
  */
 (function (root) {
-const tail = (axis, amp, cyc, ph0) => { const o = {}; for (let i = 1; i <= 6; i++) o['Tail' + i] = { o: [[axis, amp * (0.3 + 0.14 * i), cyc, ph0 + 0.07 * i]] }; return o; };
+const tail = (axis, amp, cyc, ph0) => { const o = {}; for (let i = 1; i <= 7; i++) o['Tail' + i] = { o: [[axis, amp * (0.25 + 0.11 * i), cyc, ph0 + 0.06 * i]] }; return o; };
 const merge = (...objs) => { const out = {}; for (const o of objs) for (const k in o) { out[k] = out[k] || {}; for (const c in o[k]) out[k][c] = (out[k][c] || []).concat(o[k][c]); } return out; };
 const legs = (ampU, ampL, ampF, ph) => ({
   LegFL_Upper: { o: [['x', ampU, 1, ph.FL]] }, LegFL_Lower: { o: [['x', ampL, 1, ph.FL + 0.2]] }, LegFL_Foot: { o: [['x', ampF, 1, ph.FL + 0.35]] },
@@ -48,7 +49,8 @@ const ANIMS = {
     Neck1: { k: [[0, -10, 0, 0]] }, Neck2: { k: [[0, -6, 0, 0]] }, Head: { k: [[0, 10, 0, 0]] }, Jaw: { k: [[0, -6, 0, 0]] },
     Tongue: { k: [[0, -20, 0, 0]], o: [['x', 10, 2, 0]] },
     WingL_Arm: { k: [[0, 0, 0, -5]], o: [['z', 45, 1, 0]] }, WingR_Arm: { k: [[0, 0, 0, 5]], o: [['z', -45, 1, 0]] },
-    WingL_Hand: { o: [['z', 28, 1, 0.12], ['y', 10, 1, 0.3]] }, WingR_Hand: { o: [['z', -28, 1, 0.12], ['y', -10, 1, 0.3]] }
+    WingL_Hand: { o: [['z', 28, 1, 0.12], ['y', 10, 1, 0.3]] }, WingR_Hand: { o: [['z', -28, 1, 0.12], ['y', -10, 1, 0.3]] },
+    WingL_Fore: { o: [['z', 16, 1, 0.06]] }, WingR_Fore: { o: [['z', -16, 1, 0.06]] }
   }) },
 
   TakeOff: { dur: 1.8, loop: false, next: 'Fly', joints: merge({

@@ -31,7 +31,8 @@ return ${lua(ANIMS)}
 `;
 fs.writeFileSync(path.join(ROOT, 'roblox/PredatorAnimations.lua'), animsLua);
 
-const rigLua = '{\n' + rig.parts.map(p => `\t{ name = ${JSON.stringify(p.name)}, parent = ${p.parent ? JSON.stringify(p.parent) : 'nil'}, pivot = ${lua(p.pivot)}, center = ${lua(p.center)} },`).join('\n') + '\n}';
+const rigLua = '{\n' + rig.bones.map(b => `\t{ name = ${JSON.stringify(b.name)}, parent = ${b.parent ? JSON.stringify(b.parent) : 'nil'}, head = ${lua(b.head)} },`).join('\n') + '\n}';
+const eyesLua = `{ EyeL = ${lua(rig.eyes.EyeL)}, EyeR = ${lua(rig.eyes.EyeR)}, bone = ${JSON.stringify(rig.eyes.bone)} }`;
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 // el animador es común a todas las especies: se copia desde shared/
 fs.copyFileSync(path.join(ROOT, '..', 'shared', 'DragonAnimator.lua'), path.join(ROOT, 'roblox', 'DragonAnimator.lua'));
@@ -39,6 +40,7 @@ const sources = { __ANIMATOR__: read('roblox/DragonAnimator.lua'), __ANIMS__: an
 for (const [k, s] of Object.entries(sources)) if (s.includes(']=======]')) throw new Error('el código de ' + k + ' contiene el cierre de cadena larga');
 let out = read('tools/InstallPredator.template.lua')
   .replace('__RIG__', () => rigLua)
+  .replace('__EYES__', () => eyesLua)
   .replace('__GROUND_Y__', () => num(rig.bounds.min[1]));
 for (const [k, s] of Object.entries(sources)) out = out.replace(k, () => '\n' + s);
 fs.writeFileSync(path.join(ROOT, 'roblox/InstallPredator.lua'), out);

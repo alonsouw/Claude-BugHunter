@@ -2,618 +2,526 @@
  "name": "PredatorDragon",
  "units": "studs",
  "forward": "-Z",
- "bounds": {
-  "min": [
-   -17.509044647216797,
-   -0.3463445007801056,
-   -14.813183784484863
-  ],
-  "max": [
-   17.509044647216797,
-   13.343690872192383,
-   24.811155319213867
-  ]
+ "meshes": {
+  "Body": 18929,
+  "WingL": 9347,
+  "WingR": 9372
  },
- "parts": [
+ "bones": [
   {
-   "name": "Neck2",
-   "parent": "Neck1",
-   "pivot": [
-    0,
-    6.403,
-    -7.4107
+   "name": "Root",
+   "parent": null,
+   "head": [
+    0.0,
+    0.0,
+    -2.4
    ],
-   "center": [
-    0.0321,
-    7.0427,
-    -8.1573
-   ],
-   "tris": 4756,
-   "mats": [
-    "skin",
-    "bone",
-    "flesh"
+   "tail": [
+    0.0,
+    1.5,
+    -2.4
    ]
   },
   {
-   "name": "Neck1",
-   "parent": "Chest",
-   "pivot": [
-    0,
-    5.9995,
-    -4.2234
+   "name": "Hips",
+   "parent": "Root",
+   "head": [
+    0.0,
+    6.6,
+    -2.4
    ],
-   "center": [
-    0,
-    6.5758,
-    -5.5955
-   ],
-   "tris": 3512,
-   "mats": [
-    "skin",
-    "bone"
+   "tail": [
+    0.0,
+    6.7,
+    -5.6
    ]
   },
   {
    "name": "Chest",
    "parent": "Hips",
-   "pivot": [
-    0,
-    5.8065,
-    0.7513
+   "head": [
+    0.0,
+    6.7,
+    -5.6
    ],
-   "center": [
-    -0.0079,
-    6.5252,
-    -1.5736
-   ],
-   "tris": 8704,
-   "mats": [
-    "skin",
-    "bone",
-    "flesh",
-    "teeth"
+   "tail": [
+    0.0,
+    7.4,
+    -10.4
    ]
   },
   {
-   "name": "Hips",
-   "parent": null,
-   "pivot": [
-    0.0144,
-    5.659,
-    1.7965
+   "name": "Neck1",
+   "parent": "Chest",
+   "head": [
+    0.0,
+    7.4,
+    -10.4
    ],
-   "center": [
-    0,
-    6.1231,
-    1.84
-   ],
-   "tris": 4252,
-   "mats": [
-    "skin",
-    "bone",
-    "flesh"
+   "tail": [
+    0.0,
+    8.2,
+    -12.2
    ]
   },
   {
-   "name": "Tail1",
-   "parent": "Hips",
-   "pivot": [
-    -0.0028,
-    5.4915,
-    2.8516
+   "name": "Neck2",
+   "parent": "Neck1",
+   "head": [
+    0.0,
+    8.2,
+    -12.2
    ],
-   "center": [
-    -0.0347,
-    5.6035,
-    4.3773
-   ],
-   "tris": 2592,
-   "mats": [
-    "skin",
-    "bone"
+   "tail": [
+    0.0,
+    9.2,
+    -14.5
    ]
   },
   {
-   "name": "Tail2",
-   "parent": "Tail1",
-   "pivot": [
-    -0.3068,
-    4.9907,
-    5.6493
+   "name": "Neck3",
+   "parent": "Neck2",
+   "head": [
+    0.0,
+    9.2,
+    -14.5
    ],
-   "center": [
-    -0.4513,
-    4.9621,
-    7.1465
-   ],
-   "tris": 4212,
-   "mats": [
-    "skin",
-    "bone",
-    "flesh"
-   ]
-  },
-  {
-   "name": "Tail3",
-   "parent": "Tail2",
-   "pivot": [
-    -0.8041,
-    4.3919,
-    8.6418
-   ],
-   "center": [
-    -0.8587,
-    4.3464,
-    10.2126
-   ],
-   "tris": 2592,
-   "mats": [
-    "skin",
-    "bone"
-   ]
-  },
-  {
-   "name": "Tail4",
-   "parent": "Tail3",
-   "pivot": [
-    -0.898,
-    3.795,
-    11.832
-   ],
-   "center": [
-    -0.726,
-    3.8895,
-    13.4341
-   ],
-   "tris": 3120,
-   "mats": [
-    "skin",
-    "bone"
-   ]
-  },
-  {
-   "name": "Tail5",
-   "parent": "Tail4",
-   "pivot": [
-    -0.3956,
-    3.398,
-    15.0214
-   ],
-   "center": [
-    -0.1077,
-    3.5036,
-    16.5834
-   ],
-   "tris": 2592,
-   "mats": [
-    "skin",
-    "bone"
-   ]
-  },
-  {
-   "name": "Tail6",
-   "parent": "Tail5",
-   "pivot": [
-    0.402,
-    3.1998,
-    18.2106
-   ],
-   "center": [
-    0.8996,
-    3.3136,
-    21.1256
-   ],
-   "tris": 2496,
-   "mats": [
-    "skin",
-    "bone",
-    "mem"
+   "tail": [
+    0.0,
+    9.05,
+    -18.4
    ]
   },
   {
    "name": "Head",
-   "parent": "Neck2",
-   "pivot": [
-    0,
-    6.6,
-    -10.4
+   "parent": "Neck3",
+   "head": [
+    0.0,
+    9.05,
+    -18.4
    ],
-   "center": [
-    0,
-    6.6551,
-    -11.4439
-   ],
-   "tris": 16312,
-   "mats": [
-    "skin",
-    "bone",
-    "claw",
-    "gum",
-    "teeth",
-    "flesh"
-   ]
-  },
-  {
-   "name": "EyeL",
-   "parent": "Head",
-   "pivot": [
-    -0.82,
-    6.7518,
-    -12.2759
-   ],
-   "center": [
-    -0.82,
-    6.7518,
-    -12.2759
-   ],
-   "tris": 216,
-   "mats": [
-    "eye"
-   ]
-  },
-  {
-   "name": "EyeR",
-   "parent": "Head",
-   "pivot": [
-    0.82,
-    6.7518,
-    -12.2759
-   ],
-   "center": [
-    0.82,
-    6.7518,
-    -12.2759
-   ],
-   "tris": 216,
-   "mats": [
-    "eye"
+   "tail": [
+    0.0,
+    7.3087,
+    -24.2246
    ]
   },
   {
    "name": "Jaw",
    "parent": "Head",
-   "pivot": [
-    0,
-    5.9857,
-    -10.1844
+   "head": [
+    0.0,
+    8.6493,
+    -18.4457
    ],
-   "center": [
-    0,
-    4.1114,
-    -11.5196
-   ],
-   "tris": 7448,
-   "mats": [
-    "skin",
-    "flesh",
-    "teeth",
-    "bone"
+   "tail": [
+    0.0,
+    5.0291,
+    -22.1756
    ]
   },
   {
    "name": "Tongue",
    "parent": "Jaw",
-   "pivot": [
-    0,
-    5.2066,
-    -10.4775
+   "head": [
+    0.0,
+    7.6881,
+    -19.1514
    ],
-   "center": [
-    0,
-    3.2353,
-    -11.3079
+   "tail": [
+    0.0,
+    5.2516,
+    -22.044
+   ]
+  },
+  {
+   "name": "Tail1",
+   "parent": "Hips",
+   "head": [
+    0.0,
+    6.6,
+    -2.4
    ],
-   "tris": 1080,
-   "mats": [
-    "gum"
+   "tail": [
+    0.0,
+    6.3,
+    0.6
+   ]
+  },
+  {
+   "name": "Tail2",
+   "parent": "Tail1",
+   "head": [
+    0.0,
+    6.3,
+    0.6
+   ],
+   "tail": [
+    0.1,
+    5.9,
+    4.0
+   ]
+  },
+  {
+   "name": "Tail3",
+   "parent": "Tail2",
+   "head": [
+    0.1,
+    5.9,
+    4.0
+   ],
+   "tail": [
+    0.25,
+    5.4,
+    7.6
+   ]
+  },
+  {
+   "name": "Tail4",
+   "parent": "Tail3",
+   "head": [
+    0.25,
+    5.4,
+    7.6
+   ],
+   "tail": [
+    0.35,
+    4.95,
+    11.2
+   ]
+  },
+  {
+   "name": "Tail5",
+   "parent": "Tail4",
+   "head": [
+    0.35,
+    4.95,
+    11.2
+   ],
+   "tail": [
+    0.2,
+    4.65,
+    14.6
+   ]
+  },
+  {
+   "name": "Tail6",
+   "parent": "Tail5",
+   "head": [
+    0.2,
+    4.65,
+    14.6
+   ],
+   "tail": [
+    -0.15,
+    4.5,
+    17.8
+   ]
+  },
+  {
+   "name": "Tail7",
+   "parent": "Tail6",
+   "head": [
+    -0.15,
+    4.5,
+    17.8
+   ],
+   "tail": [
+    -0.3,
+    4.45,
+    20.6
+   ]
+  },
+  {
+   "name": "Tail8",
+   "parent": "Tail7",
+   "head": [
+    -0.3,
+    4.45,
+    20.6
+   ],
+   "tail": [
+    -0.4605,
+    4.3965,
+    23.5952
    ]
   },
   {
    "name": "LegFL_Upper",
    "parent": "Chest",
-   "pivot": [
-    -1.4,
-    5.7,
-    -3.4
+   "head": [
+    -2.0,
+    6.5,
+    -9.6
    ],
-   "center": [
-    -1.7786,
-    4.822,
-    -3.795
-   ],
-   "tris": 1360,
-   "mats": [
-    "skin"
+   "tail": [
+    -2.75,
+    3.7,
+    -7.6
    ]
   },
   {
    "name": "LegFL_Lower",
    "parent": "LegFL_Upper",
-   "pivot": [
-    -2.3,
+   "head": [
+    -2.75,
     3.7,
-    -4.3
+    -7.6
    ],
-   "center": [
-    -2.3208,
-    2.7811,
-    -4.1319
-   ],
-   "tris": 1764,
-   "mats": [
-    "skin",
-    "bone"
+   "tail": [
+    -2.55,
+    1.3,
+    -9.2
    ]
   },
   {
    "name": "LegFL_Foot",
    "parent": "LegFL_Lower",
-   "pivot": [
-    -2.2,
-    1.4,
-    -3.8
+   "head": [
+    -2.55,
+    1.3,
+    -9.2
    ],
-   "center": [
-    -2.4825,
-    0.7881,
-    -4.61
-   ],
-   "tris": 2816,
-   "mats": [
-    "skin",
-    "claw"
-   ]
-  },
-  {
-   "name": "LegFR_Upper",
-   "parent": "Chest",
-   "pivot": [
-    1.4,
-    5.7,
-    -3.4
-   ],
-   "center": [
-    1.7786,
-    4.822,
-    -3.795
-   ],
-   "tris": 1360,
-   "mats": [
-    "skin"
-   ]
-  },
-  {
-   "name": "LegFR_Lower",
-   "parent": "LegFR_Upper",
-   "pivot": [
-    2.3,
-    3.7,
-    -4.3
-   ],
-   "center": [
-    2.3208,
-    2.7809,
-    -4.1319
-   ],
-   "tris": 1764,
-   "mats": [
-    "skin",
-    "bone"
-   ]
-  },
-  {
-   "name": "LegFR_Foot",
-   "parent": "LegFR_Lower",
-   "pivot": [
-    2.2,
-    1.4,
-    -3.8
-   ],
-   "center": [
-    2.4825,
-    0.7904,
-    -4.61
-   ],
-   "tris": 2816,
-   "mats": [
-    "skin",
-    "claw"
+   "tail": [
+    -2.65,
+    0.45,
+    -11.3
    ]
   },
   {
    "name": "LegBL_Upper",
    "parent": "Hips",
-   "pivot": [
-    -1.45,
-    5.4,
-    1.5
+   "head": [
+    -1.9,
+    6.3,
+    -2.0
    ],
-   "center": [
-    -1.8633,
-    4.7158,
-    0.5351
-   ],
-   "tris": 1360,
-   "mats": [
-    "skin"
+   "tail": [
+    -2.7,
+    3.7,
+    -4.0
    ]
   },
   {
    "name": "LegBL_Lower",
    "parent": "LegBL_Upper",
-   "pivot": [
-    -2.5,
+   "head": [
+    -2.7,
     3.7,
-    -0.4
+    -4.0
    ],
-   "center": [
-    -2.5384,
-    3.0636,
-    0.5374
-   ],
-   "tris": 1764,
-   "mats": [
-    "skin",
-    "bone"
+   "tail": [
+    -2.7,
+    2.0,
+    -0.8
    ]
   },
   {
    "name": "LegBL_Foot",
    "parent": "LegBL_Lower",
-   "pivot": [
-    -2.6,
-    1.8,
-    1.8
+   "head": [
+    -2.7,
+    2.0,
+    -0.8
    ],
-   "center": [
-    -2.8325,
-    0.9803,
-    0.9745
+   "tail": [
+    -2.8,
+    0.45,
+    -2.9
+   ]
+  },
+  {
+   "name": "LegFR_Upper",
+   "parent": "Chest",
+   "head": [
+    2.0,
+    6.5,
+    -9.6
    ],
-   "tris": 2816,
-   "mats": [
-    "skin",
-    "claw"
+   "tail": [
+    2.75,
+    3.7,
+    -7.6
+   ]
+  },
+  {
+   "name": "LegFR_Lower",
+   "parent": "LegFR_Upper",
+   "head": [
+    2.75,
+    3.7,
+    -7.6
+   ],
+   "tail": [
+    2.55,
+    1.3,
+    -9.2
+   ]
+  },
+  {
+   "name": "LegFR_Foot",
+   "parent": "LegFR_Lower",
+   "head": [
+    2.55,
+    1.3,
+    -9.2
+   ],
+   "tail": [
+    2.65,
+    0.45,
+    -11.3
    ]
   },
   {
    "name": "LegBR_Upper",
    "parent": "Hips",
-   "pivot": [
-    1.45,
-    5.4,
-    1.5
+   "head": [
+    1.9,
+    6.3,
+    -2.0
    ],
-   "center": [
-    1.8633,
-    4.7158,
-    0.5351
-   ],
-   "tris": 1360,
-   "mats": [
-    "skin"
+   "tail": [
+    2.7,
+    3.7,
+    -4.0
    ]
   },
   {
    "name": "LegBR_Lower",
    "parent": "LegBR_Upper",
-   "pivot": [
-    2.5,
+   "head": [
+    2.7,
     3.7,
-    -0.4
+    -4.0
    ],
-   "center": [
-    2.5384,
-    3.0636,
-    0.5374
-   ],
-   "tris": 1764,
-   "mats": [
-    "skin",
-    "bone"
+   "tail": [
+    2.7,
+    2.0,
+    -0.8
    ]
   },
   {
    "name": "LegBR_Foot",
    "parent": "LegBR_Lower",
-   "pivot": [
-    2.6,
-    1.8,
-    1.8
+   "head": [
+    2.7,
+    2.0,
+    -0.8
    ],
-   "center": [
-    2.8325,
-    0.9803,
-    0.9745
-   ],
-   "tris": 2816,
-   "mats": [
-    "skin",
-    "claw"
+   "tail": [
+    2.8,
+    0.45,
+    -2.9
    ]
   },
   {
    "name": "WingL_Arm",
    "parent": "Chest",
-   "pivot": [
-    -1.1,
-    7.1,
-    -2.8
+   "head": [
+    -1.7,
+    8.6,
+    -8.6
    ],
-   "center": [
-    -5.2242,
-    9.046,
-    3.6482
+   "tail": [
+    -5.6,
+    12.6,
+    -7.6
+   ]
+  },
+  {
+   "name": "WingL_Fore",
+   "parent": "WingL_Arm",
+   "head": [
+    -5.6,
+    12.6,
+    -7.6
    ],
-   "tris": 1924,
-   "mats": [
-    "skin",
-    "mem",
-    "bone"
+   "tail": [
+    -11.2,
+    15.0,
+    -9.4
    ]
   },
   {
    "name": "WingL_Hand",
-   "parent": "WingL_Arm",
-   "pivot": [
-    -9.6,
-    12.4,
-    1.8
+   "parent": "WingL_Fore",
+   "head": [
+    -11.2,
+    15.0,
+    -9.4
    ],
-   "center": [
-    -11.743,
-    9.162,
-    6.5906
-   ],
-   "tris": 4340,
-   "mats": [
-    "skin",
-    "claw",
-    "mem",
-    "bone"
+   "tail": [
+    -20.2,
+    10.8,
+    2.6
    ]
   },
   {
    "name": "WingR_Arm",
    "parent": "Chest",
-   "pivot": [
-    1.1,
-    7.1,
-    -2.8
+   "head": [
+    1.7,
+    8.6,
+    -8.6
    ],
-   "center": [
-    5.2242,
-    9.046,
-    3.6482
+   "tail": [
+    5.6,
+    12.6,
+    -7.6
+   ]
+  },
+  {
+   "name": "WingR_Fore",
+   "parent": "WingR_Arm",
+   "head": [
+    5.6,
+    12.6,
+    -7.6
    ],
-   "tris": 1920,
-   "mats": [
-    "skin",
-    "mem",
-    "bone"
+   "tail": [
+    11.2,
+    15.0,
+    -9.4
    ]
   },
   {
    "name": "WingR_Hand",
-   "parent": "WingR_Arm",
-   "pivot": [
-    9.6,
-    12.4,
-    1.8
+   "parent": "WingR_Fore",
+   "head": [
+    11.2,
+    15.0,
+    -9.4
    ],
-   "center": [
-    11.743,
-    9.162,
-    6.5906
-   ],
-   "tris": 4364,
-   "mats": [
-    "skin",
-    "claw",
-    "mem",
-    "bone"
+   "tail": [
+    20.2,
+    10.8,
+    2.6
    ]
   }
- ]
+ ],
+ "eyes": {
+  "EyeL": [
+   1.22,
+   9.196651269614948,
+   -20.7221043990937
+  ],
+  "EyeR": [
+   -1.22,
+   9.196651269614948,
+   -20.7221043990937
+  ],
+  "bone": "Head"
+ },
+ "bounds": {
+  "min": [
+   -21.536,
+   -0.081,
+   -24.368
+  ],
+  "max": [
+   21.5,
+   16.129,
+   22.602
+  ]
+ }
 }

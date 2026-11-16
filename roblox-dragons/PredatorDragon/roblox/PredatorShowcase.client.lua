@@ -2,7 +2,8 @@
 	PredatorShowcase (LocalScript) · StarterPlayer.StarterPlayerScripts.PredatorShowcase
 
 	Vitrina local del Dragón Depredador:
-	  · noche cerrada con bloom: en la oscuridad solo se ven sus dos ojos blancos (tecla L alterna día/noche)
+	  · noche cerrada con bloom: en la oscuridad solo se ven dos puntos blancos diminutos donde
+	    estarían los ojos (no tiene ojos); de día son casi imperceptibles (tecla L alterna día/noche)
 	  · la cabeza sigue tu cámara: te mira fijamente esté donde esté
 	  · botones o teclas 1-9 para las nueve animaciones
 	Todo ocurre en este cliente: el clon y la iluminación solo existen para quien juega.
@@ -13,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
 local Dragons = ReplicatedStorage:WaitForChild("Dragons")
 local DragonAnimator = require(Dragons:WaitForChild("DragonAnimator"))
@@ -31,7 +33,8 @@ local LABELS = {
 	Idle = "Acechar", Walk = "Caminar", Run = "Correr", Fly = "Volar", TakeOff = "Despegar",
 	Landing = "Aterrizar", Attack = "Atacar", Roar = "Rugir", Death = "Morir",
 }
-local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.35, MaxYaw = 80, MaxPitch = 35, RestPitch = -18, Speed = 4 }
+local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.4, MaxYaw = 80, MaxPitch = 35, RestPitch = -22, Speed = 4 }
+local DOT_DAY, DOT_NIGHT = 0.93, 0
 
 -- Noche: guarda la iluminación original para poder volver al día
 local saved = {
@@ -42,12 +45,27 @@ local saved = {
 }
 local bloom = Instance.new("BloomEffect")
 bloom.Name = "PredatorGazeBloom"
-bloom.Intensity = 1.2
-bloom.Size = 28
-bloom.Threshold = 0.85
+bloom.Intensity = 0.9
+bloom.Size = 12
+bloom.Threshold = 0.95
 local night = false
+local dragon: Model? = nil
+local function eyeParts(model)
+	local list = {}
+	if model then
+		for _, p in ipairs(model:GetChildren()) do
+			if p:IsA("BasePart") and p:GetAttribute("Offset") then
+				table.insert(list, p)
+			end
+		end
+	end
+	return list
+end
 local function setNight(on: boolean)
 	night = on
+	for _, dot in ipairs(eyeParts(dragon)) do
+		dot.Transparency = on and DOT_NIGHT or DOT_DAY
+	end
 	if on then
 		Lighting.ClockTime = 0
 		Lighting.Brightness = 0
@@ -67,18 +85,28 @@ local function setNight(on: boolean)
 	end
 end
 
-local dragon: Model? = nil
 local animator = nil
 local busy = false
+local dotConn = nil
 
-local function eyeParts(model)
-	local list = {}
-	for _, p in ipairs(model:GetDescendants()) do
-		if p:IsA("BasePart") and string.sub(p.Name, 1, 3) == "Eye" then
-			table.insert(list, p)
-		end
+-- los puntos de los ojos siguen al hueso de la cabeza (no son geometría del modelo)
+local function followEyes(model)
+	if dotConn then
+		dotConn:Disconnect()
 	end
-	return list
+	local pairsList = {}
+	for _, dot in ipairs(eyeParts(model)) do
+		local bone = model:FindFirstChild(dot:GetAttribute("Bone"), true)
+		if bone then
+			table.insert(pairsList, { dot, bone, dot:GetAttribute("Offset") })
+		end
+		dot.Transparency = night and DOT_NIGHT or DOT_DAY
+	end
+	dotConn = RunService.RenderStepped:Connect(function()
+		for _, e in ipairs(pairsList) do
+			e[1].CFrame = e[2].TransformedWorldCFrame * e[3]
+		end
+	end)
 end
 
 local function spawnDragon()
@@ -93,6 +121,7 @@ local function spawnDragon()
 	dragon.Parent = showcase
 	animator = DragonAnimator.new(dragon, animations)
 	animator:Play("Idle", 0)
+	followEyes(dragon)
 	animator:SetLookTarget(function()
 		return workspace.CurrentCamera.CFrame.Position
 	end, LOOK)
@@ -112,10 +141,6 @@ local function spawnDragon()
 		task.delay(1.9, function()
 			for _, e in ipairs(eyes) do
 				TweenService:Create(e, TweenInfo.new(0.9), { Transparency = 1 }):Play()
-				local light = e:FindFirstChildOfClass("PointLight")
-				if light then
-					TweenService:Create(light, TweenInfo.new(0.9), { Brightness = 0 }):Play()
-				end
 			end
 		end)
 		task.delay(3.4, function()

@@ -1,70 +1,78 @@
 --[[
-	INSTALADOR DEL DRAGÓN DEPREDADOR · Roblox Studio
+	INSTALADOR DEL DRAGÓN DEPREDADOR (rig de huesos) · Roblox Studio
 	Archivo generado por tools/build_roblox.js: no lo edites a mano, edita la plantilla.
 
 	Pasos:
-	  1. Studio > pestaña Avatar (o Home) > Import 3D > PredatorDragon.fbx (o .glb).
-	     En el importador: deja "Rig General > Rig Type" en "No Rig" y NO combines mallas.
-	     Pulsa Import. Aparece el modelo en Workspace.
+	  1. Studio > pestaña Avatar (o Home) > Import 3D > PredatorDragon.fbx.
+	     En el importador: Rig General > Rig Type = "Custom" (malla con huesos). No combines las mallas.
+	     Pulsa Import. Aparece el modelo en Workspace con las mallas Body, WingL y WingR y sus Bones.
 	  2. Selecciona ese modelo en el Explorer.
 	  3. View > Command Bar. Pega TODO este archivo y pulsa Enter.
 
 	Resultado:
-	  ReplicatedStorage.Dragons.PredatorDragon          (rig con Motor6D, Settings, Animations)
-	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación por datos)
-	  ServerStorage.DragonAssets.PredatorDragon_Rig     (copia de seguridad del rig)
-	  Workspace.DragonShowcase                          (escenario + estatua de vista previa)
+	  ReplicatedStorage.Dragons.PredatorDragon          (modelo con huesos, Settings, Animations)
+	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación por datos, Motor6D o Bones)
+	  ServerStorage.DragonAssets.PredatorDragon_Rig     (copia de seguridad)
+	  Workspace.DragonShowcase.Stage_Predator           (escenario + estatua de vista previa)
 	  StarterPlayer.StarterPlayerScripts.PredatorShowcase (vitrina nocturna, botones 1-9)
-	Pulsa Play para ver al dragón y probar sus animaciones.
 ]]
 
--- Opcional: escala final en studs por unidad del modelo (1 = 40 studs de largo).
+-- Opcional: escala final en studs por unidad del modelo (1 = unos 46 studs de largo).
 local DESIRED_SCALE = 1
--- Opcional: tras subir los PNG del atlas (Asset Manager), pega aquí sus ids "rbxassetid://..."
--- para crear SurfaceAppearance PBR en cada pieza.
-local MAPS = { ColorMap = "", NormalMap = "", RoughnessMap = "" }
+-- Opcional: tras subir los PNG (Asset Manager), pega aquí sus ids para crear SurfaceAppearance PBR.
+local MAPS = {
+	Body = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WingL = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WingR = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+}
 
 local RIG = {
-	{ name = "Neck2", parent = "Neck1", pivot = { 0, 6.403, -7.4107 }, center = { 0.0321, 7.0427, -8.1573 } },
-	{ name = "Neck1", parent = "Chest", pivot = { 0, 5.9995, -4.2234 }, center = { 0, 6.5758, -5.5955 } },
-	{ name = "Chest", parent = "Hips", pivot = { 0, 5.8065, 0.7513 }, center = { -0.0079, 6.5252, -1.5736 } },
-	{ name = "Hips", parent = nil, pivot = { 0.0144, 5.659, 1.7965 }, center = { 0, 6.1231, 1.84 } },
-	{ name = "Tail1", parent = "Hips", pivot = { -0.0028, 5.4915, 2.8516 }, center = { -0.0347, 5.6035, 4.3773 } },
-	{ name = "Tail2", parent = "Tail1", pivot = { -0.3068, 4.9907, 5.6493 }, center = { -0.4513, 4.9621, 7.1465 } },
-	{ name = "Tail3", parent = "Tail2", pivot = { -0.8041, 4.3919, 8.6418 }, center = { -0.8587, 4.3464, 10.2126 } },
-	{ name = "Tail4", parent = "Tail3", pivot = { -0.898, 3.795, 11.832 }, center = { -0.726, 3.8895, 13.4341 } },
-	{ name = "Tail5", parent = "Tail4", pivot = { -0.3956, 3.398, 15.0214 }, center = { -0.1077, 3.5036, 16.5834 } },
-	{ name = "Tail6", parent = "Tail5", pivot = { 0.402, 3.1998, 18.2106 }, center = { 0.8996, 3.3136, 21.1256 } },
-	{ name = "Head", parent = "Neck2", pivot = { 0, 6.6, -10.4 }, center = { 0, 6.6551, -11.4439 } },
-	{ name = "EyeL", parent = "Head", pivot = { -0.82, 6.7518, -12.2759 }, center = { -0.82, 6.7518, -12.2759 } },
-	{ name = "EyeR", parent = "Head", pivot = { 0.82, 6.7518, -12.2759 }, center = { 0.82, 6.7518, -12.2759 } },
-	{ name = "Jaw", parent = "Head", pivot = { 0, 5.9857, -10.1844 }, center = { 0, 4.1114, -11.5196 } },
-	{ name = "Tongue", parent = "Jaw", pivot = { 0, 5.2066, -10.4775 }, center = { 0, 3.2353, -11.3079 } },
-	{ name = "LegFL_Upper", parent = "Chest", pivot = { -1.4, 5.7, -3.4 }, center = { -1.7786, 4.822, -3.795 } },
-	{ name = "LegFL_Lower", parent = "LegFL_Upper", pivot = { -2.3, 3.7, -4.3 }, center = { -2.3208, 2.7811, -4.1319 } },
-	{ name = "LegFL_Foot", parent = "LegFL_Lower", pivot = { -2.2, 1.4, -3.8 }, center = { -2.4825, 0.7881, -4.61 } },
-	{ name = "LegFR_Upper", parent = "Chest", pivot = { 1.4, 5.7, -3.4 }, center = { 1.7786, 4.822, -3.795 } },
-	{ name = "LegFR_Lower", parent = "LegFR_Upper", pivot = { 2.3, 3.7, -4.3 }, center = { 2.3208, 2.7809, -4.1319 } },
-	{ name = "LegFR_Foot", parent = "LegFR_Lower", pivot = { 2.2, 1.4, -3.8 }, center = { 2.4825, 0.7904, -4.61 } },
-	{ name = "LegBL_Upper", parent = "Hips", pivot = { -1.45, 5.4, 1.5 }, center = { -1.8633, 4.7158, 0.5351 } },
-	{ name = "LegBL_Lower", parent = "LegBL_Upper", pivot = { -2.5, 3.7, -0.4 }, center = { -2.5384, 3.0636, 0.5374 } },
-	{ name = "LegBL_Foot", parent = "LegBL_Lower", pivot = { -2.6, 1.8, 1.8 }, center = { -2.8325, 0.9803, 0.9745 } },
-	{ name = "LegBR_Upper", parent = "Hips", pivot = { 1.45, 5.4, 1.5 }, center = { 1.8633, 4.7158, 0.5351 } },
-	{ name = "LegBR_Lower", parent = "LegBR_Upper", pivot = { 2.5, 3.7, -0.4 }, center = { 2.5384, 3.0636, 0.5374 } },
-	{ name = "LegBR_Foot", parent = "LegBR_Lower", pivot = { 2.6, 1.8, 1.8 }, center = { 2.8325, 0.9803, 0.9745 } },
-	{ name = "WingL_Arm", parent = "Chest", pivot = { -1.1, 7.1, -2.8 }, center = { -5.2242, 9.046, 3.6482 } },
-	{ name = "WingL_Hand", parent = "WingL_Arm", pivot = { -9.6, 12.4, 1.8 }, center = { -11.743, 9.162, 6.5906 } },
-	{ name = "WingR_Arm", parent = "Chest", pivot = { 1.1, 7.1, -2.8 }, center = { 5.2242, 9.046, 3.6482 } },
-	{ name = "WingR_Hand", parent = "WingR_Arm", pivot = { 9.6, 12.4, 1.8 }, center = { 11.743, 9.162, 6.5906 } },
+	{ name = "Root", parent = nil, head = { 0, 0, -2.4 } },
+	{ name = "Hips", parent = "Root", head = { 0, 6.6, -2.4 } },
+	{ name = "Chest", parent = "Hips", head = { 0, 6.7, -5.6 } },
+	{ name = "Neck1", parent = "Chest", head = { 0, 7.4, -10.4 } },
+	{ name = "Neck2", parent = "Neck1", head = { 0, 8.2, -12.2 } },
+	{ name = "Neck3", parent = "Neck2", head = { 0, 9.2, -14.5 } },
+	{ name = "Head", parent = "Neck3", head = { 0, 9.05, -18.4 } },
+	{ name = "Jaw", parent = "Head", head = { 0, 8.6493, -18.4457 } },
+	{ name = "Tongue", parent = "Jaw", head = { 0, 7.6881, -19.1514 } },
+	{ name = "Tail1", parent = "Hips", head = { 0, 6.6, -2.4 } },
+	{ name = "Tail2", parent = "Tail1", head = { 0, 6.3, 0.6 } },
+	{ name = "Tail3", parent = "Tail2", head = { 0.1, 5.9, 4 } },
+	{ name = "Tail4", parent = "Tail3", head = { 0.25, 5.4, 7.6 } },
+	{ name = "Tail5", parent = "Tail4", head = { 0.35, 4.95, 11.2 } },
+	{ name = "Tail6", parent = "Tail5", head = { 0.2, 4.65, 14.6 } },
+	{ name = "Tail7", parent = "Tail6", head = { -0.15, 4.5, 17.8 } },
+	{ name = "Tail8", parent = "Tail7", head = { -0.3, 4.45, 20.6 } },
+	{ name = "LegFL_Upper", parent = "Chest", head = { -2, 6.5, -9.6 } },
+	{ name = "LegFL_Lower", parent = "LegFL_Upper", head = { -2.75, 3.7, -7.6 } },
+	{ name = "LegFL_Foot", parent = "LegFL_Lower", head = { -2.55, 1.3, -9.2 } },
+	{ name = "LegBL_Upper", parent = "Hips", head = { -1.9, 6.3, -2 } },
+	{ name = "LegBL_Lower", parent = "LegBL_Upper", head = { -2.7, 3.7, -4 } },
+	{ name = "LegBL_Foot", parent = "LegBL_Lower", head = { -2.7, 2, -0.8 } },
+	{ name = "LegFR_Upper", parent = "Chest", head = { 2, 6.5, -9.6 } },
+	{ name = "LegFR_Lower", parent = "LegFR_Upper", head = { 2.75, 3.7, -7.6 } },
+	{ name = "LegFR_Foot", parent = "LegFR_Lower", head = { 2.55, 1.3, -9.2 } },
+	{ name = "LegBR_Upper", parent = "Hips", head = { 1.9, 6.3, -2 } },
+	{ name = "LegBR_Lower", parent = "LegBR_Upper", head = { 2.7, 3.7, -4 } },
+	{ name = "LegBR_Foot", parent = "LegBR_Lower", head = { 2.7, 2, -0.8 } },
+	{ name = "WingL_Arm", parent = "Chest", head = { -1.7, 8.6, -8.6 } },
+	{ name = "WingL_Fore", parent = "WingL_Arm", head = { -5.6, 12.6, -7.6 } },
+	{ name = "WingL_Hand", parent = "WingL_Fore", head = { -11.2, 15, -9.4 } },
+	{ name = "WingR_Arm", parent = "Chest", head = { 1.7, 8.6, -8.6 } },
+	{ name = "WingR_Fore", parent = "WingR_Arm", head = { 5.6, 12.6, -7.6 } },
+	{ name = "WingR_Hand", parent = "WingR_Fore", head = { 11.2, 15, -9.4 } },
 }
-local GROUND_Y = -0.3463
+local EYES = { EyeL = { 1.22, 9.1967, -20.7221 }, EyeR = { -1.22, 9.1967, -20.7221 }, bone = "Head" }
+local GROUND_Y = -0.081
 local SOURCES = {
 	DragonAnimator = [=======[
 --[[
 	DragonAnimator (ModuleScript) · ReplicatedStorage.Dragons.DragonAnimator
 
-	Reproduce animaciones definidas como datos (ver AberrantAnimations) sobre un rig
-	de Motor6D. No necesita subir assets de animación: escribe Motor6D.Transform cada frame.
+	Reproduce animaciones definidas como datos sobre un rig de Motor6D (piezas rígidas)
+	o de Bones (malla con skinning). No necesita subir assets de animación: escribe
+	Motor6D.Transform o Bone.Transform cada frame.
 
 	Uso:
 		local animator = DragonAnimator.new(model, require(animsModule))
@@ -73,10 +81,12 @@ local SOURCES = {
 		animator:SetLookTarget(player.Character.Head)   -- opcional: la cabeza sigue al objetivo
 		animator:Destroy()
 
-	Formato de cada articulación (nombre = Part1 del Motor6D):
+	Formato de cada articulación (nombre = Part1 del Motor6D o nombre del Bone):
 		k = { {t, rx, ry, rz}, ... }   claves de rotación en grados
 		p = { {t, x, y, z}, ... }      claves de traslación en studs del modelo original (se multiplican por RigScale)
 		o = { {"eje", amplitud, ciclos, fase}, ... }   ejes "x","y","z" (grados) o "px","py","pz" (studs)
+	Los ángulos se expresan en los ejes del modelo (Y arriba, el dragón mira a -Z). Para los Bones,
+	el animador los convierte al marco local de cada hueso con su orientación de reposo.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -143,9 +153,21 @@ function DragonAnimator.new(model: Model, animations)
 	self.Animations = animations
 	self.Scale = model:GetAttribute("RigScale") or 1
 	self.Joints = {}
+	local pivot = model:GetPivot()
 	for _, d in ipairs(model:GetDescendants()) do
 		if d:IsA("Motor6D") and d.Part1 then
-			self.Joints[d.Part1.Name] = d
+			self.Joints[d.Part1.Name] = { inst = d, kind = "motor" }
+		elseif d:IsA("Bone") then
+			d.Transform = CFrame.identity
+			-- orientación de reposo del hueso en los ejes del modelo
+			local rest = (pivot:Inverse() * d.WorldCFrame).Rotation
+			local entry = { inst = d, rest = rest, restInv = rest:Inverse() }
+			local j = self.Joints[d.Name]
+			if j and j.kind == "bone" then
+				table.insert(j.copies, entry) -- el importador puede duplicar el esqueleto por malla
+			else
+				self.Joints[d.Name] = { inst = d, kind = "bone", rest = rest, restInv = entry.restInv, copies = { entry } }
+			end
 		end
 	end
 	self.Values = {} -- último valor aplicado por articulación: {rx, ry, rz, px, py, pz}
@@ -160,6 +182,17 @@ function DragonAnimator.new(model: Model, animations)
 		self:Step(dt)
 	end)
 	return self
+end
+
+-- Escribe en la articulación una transformación expresada en los ejes del modelo.
+local function setJoint(j, m: CFrame)
+	if j.kind == "bone" then
+		for _, c in ipairs(j.copies) do
+			c.inst.Transform = c.restInv * m * c.rest
+		end
+	else
+		j.inst.Transform = m
+	end
 end
 
 function DragonAnimator:Play(name: string, fadeTime: number?)
@@ -201,7 +234,8 @@ function DragonAnimator:Step(dt: number)
 	local t = anim.loop and (self.Time % anim.dur) or self.Time
 	local w = self.FadeTime > 0 and smooth(math.clamp(self.FadeElapsed / self.FadeTime, 0, 1)) or 1
 	local s = self.Scale
-	for jointName, motor in pairs(self.Joints) do
+	local frames = {}
+	for jointName in pairs(self.Joints) do
 		local j = anim.joints[jointName]
 		local v
 		if j then
@@ -217,10 +251,13 @@ function DragonAnimator:Step(dt: number)
 			end
 		end
 		self.Values[jointName] = v
-		motor.Transform = CFrame.new(v[4] * s, v[5] * s, v[6] * s)
+		frames[jointName] = CFrame.new(v[4] * s, v[5] * s, v[6] * s)
 			* CFrame.Angles(math.rad(v[1]), math.rad(v[2]), math.rad(v[3]))
 	end
-	self:_applyLook(dt)
+	self:_applyLook(dt, frames)
+	for jointName, m in pairs(frames) do
+		setJoint(self.Joints[jointName], m)
+	end
 end
 
 local function resolveTarget(target): Vector3?
@@ -255,22 +292,47 @@ function DragonAnimator:SetLookTarget(target, options)
 	self.LookPitch = self.LookPitch or 0
 end
 
-function DragonAnimator:_applyLook(dt: number)
+-- Marco (en ejes del modelo) del pivote de una articulación, sin su propia transformación.
+local function baseFrame(j): CFrame?
+	if j.kind == "bone" then
+		local b = j.inst
+		local parent = b.Parent
+		local pcf = parent:IsA("Bone") and parent.TransformedWorldCFrame or (parent:IsA("BasePart") and parent.CFrame)
+		if not pcf then
+			return nil
+		end
+		return pcf * b.CFrame * j.restInv
+	end
+	local m = j.inst
+	if not m.Part0 then
+		return nil
+	end
+	return m.Part0.CFrame * m.C0
+end
+
+local function pivotPosition(j): Vector3?
+	if j.kind == "bone" then
+		return j.inst.TransformedWorldCFrame.Position
+	end
+	local m = j.inst
+	return m.Part0 and (m.Part0.CFrame * m.C0).Position or nil
+end
+
+function DragonAnimator:_applyLook(dt: number, frames)
 	if self.LookYaw == nil then
 		return
 	end
 	local o = self.LookOptions or {}
-	local head = self.Joints[o.Head or "Head"]
-	local neck = self.Joints[o.Neck or "Neck2"]
-	if not head or not neck or not neck.Part0 then
+	local headName, neckName = o.Head or "Head", o.Neck or "Neck2"
+	local head, neck = self.Joints[headName], self.Joints[neckName]
+	if not head or not neck then
 		return
 	end
 	local goalYaw, goalPitch = 0, 0
 	local pos = resolveTarget(self.LookTarget)
-	if pos then
-		-- marco del cuello sin la mirada aplicada, con origen en el pivote de la cabeza
-		local base = neck.Part0.CFrame * neck.C0
-		local headPivot = (head.Part0.CFrame * head.C0).Position
+	local base = baseFrame(neck)
+	local headPivot = pivotPosition(head)
+	if pos and base and headPivot then
 		local p = base:VectorToObjectSpace(pos - headPivot)
 		local maxYaw, maxPitch = math.rad(o.MaxYaw or 75), math.rad(o.MaxPitch or 35)
 		goalYaw = math.clamp(math.atan2(-p.X, -p.Z), -maxYaw, maxYaw)
@@ -280,8 +342,8 @@ function DragonAnimator:_applyLook(dt: number)
 	self.LookYaw += (goalYaw - self.LookYaw) * k
 	self.LookPitch += (goalPitch - self.LookPitch) * k
 	local share = o.NeckShare or 0.35
-	neck.Transform = CFrame.Angles(0, self.LookYaw * share, 0) * CFrame.Angles(self.LookPitch * share, 0, 0) * neck.Transform
-	head.Transform = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * head.Transform
+	frames[neckName] = CFrame.Angles(0, self.LookYaw * share, 0) * CFrame.Angles(self.LookPitch * share, 0, 0) * (frames[neckName] or CFrame.identity)
+	frames[headName] = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * (frames[headName] or CFrame.identity)
 end
 
 function DragonAnimator:Destroy()
@@ -289,8 +351,10 @@ function DragonAnimator:Destroy()
 		self._conn:Disconnect()
 		self._conn = nil
 	end
-	for _, motor in pairs(self.Joints) do
-		motor.Transform = CFrame.identity
+	for _, j in pairs(self.Joints) do
+		for _, c in ipairs(j.copies or { j }) do
+			c.inst.Transform = CFrame.identity
+		end
 	end
 	self.Finished:Destroy()
 end
@@ -310,32 +374,37 @@ return {
 		joints = {
 			Tail1 = {
 				o = {
-					{ "y", 2.2, 1, 0.07 },
+					{ "y", 1.8, 1, 0.06 },
 				},
 			},
 			Tail2 = {
 				o = {
-					{ "y", 2.9, 1, 0.14 },
+					{ "y", 2.35, 1, 0.12 },
 				},
 			},
 			Tail3 = {
 				o = {
-					{ "y", 3.6, 1, 0.21 },
+					{ "y", 2.9, 1, 0.18 },
 				},
 			},
 			Tail4 = {
 				o = {
-					{ "y", 4.3, 1, 0.28 },
+					{ "y", 3.45, 1, 0.24 },
 				},
 			},
 			Tail5 = {
 				o = {
-					{ "y", 5, 1, 0.35 },
+					{ "y", 4, 1, 0.3 },
 				},
 			},
 			Tail6 = {
 				o = {
-					{ "y", 5.7, 1, 0.42 },
+					{ "y", 4.55, 1, 0.36 },
+				},
+			},
+			Tail7 = {
+				o = {
+					{ "y", 5.1, 1, 0.42 },
 				},
 			},
 			Hips = {
@@ -408,32 +477,37 @@ return {
 		joints = {
 			Tail1 = {
 				o = {
-					{ "y", 3.96, 1, 0.17 },
+					{ "y", 3.24, 1, 0.16 },
 				},
 			},
 			Tail2 = {
 				o = {
-					{ "y", 5.22, 1, 0.24 },
+					{ "y", 4.23, 1, 0.22 },
 				},
 			},
 			Tail3 = {
 				o = {
-					{ "y", 6.48, 1, 0.31 },
+					{ "y", 5.22, 1, 0.28 },
 				},
 			},
 			Tail4 = {
 				o = {
-					{ "y", 7.74, 1, 0.38 },
+					{ "y", 6.21, 1, 0.34 },
 				},
 			},
 			Tail5 = {
 				o = {
-					{ "y", 9, 1, 0.45 },
+					{ "y", 7.2, 1, 0.4 },
 				},
 			},
 			Tail6 = {
 				o = {
-					{ "y", 10.26, 1, 0.52 },
+					{ "y", 8.19, 1, 0.46 },
+				},
+			},
+			Tail7 = {
+				o = {
+					{ "y", 9.18, 1, 0.52 },
 				},
 			},
 			LegFL_Upper = {
@@ -551,38 +625,44 @@ return {
 		joints = {
 			Tail1 = {
 				o = {
-					{ "y", 5.28, 1, 0.17 },
-					{ "x", 2.64, 2, 0.07 },
+					{ "y", 4.32, 1, 0.16 },
+					{ "x", 2.16, 2, 0.06 },
 				},
 			},
 			Tail2 = {
 				o = {
-					{ "y", 6.96, 1, 0.24 },
-					{ "x", 3.48, 2, 0.14 },
+					{ "y", 5.64, 1, 0.22 },
+					{ "x", 2.82, 2, 0.12 },
 				},
 			},
 			Tail3 = {
 				o = {
-					{ "y", 8.64, 1, 0.31 },
-					{ "x", 4.32, 2, 0.21 },
+					{ "y", 6.96, 1, 0.28 },
+					{ "x", 3.48, 2, 0.18 },
 				},
 			},
 			Tail4 = {
 				o = {
-					{ "y", 10.32, 1, 0.38 },
-					{ "x", 5.16, 2, 0.28 },
+					{ "y", 8.28, 1, 0.34 },
+					{ "x", 4.14, 2, 0.24 },
 				},
 			},
 			Tail5 = {
 				o = {
-					{ "y", 12, 1, 0.45 },
-					{ "x", 6, 2, 0.35 },
+					{ "y", 9.6, 1, 0.4 },
+					{ "x", 4.8, 2, 0.3 },
 				},
 			},
 			Tail6 = {
 				o = {
-					{ "y", 13.68, 1, 0.52 },
-					{ "x", 6.84, 2, 0.42 },
+					{ "y", 10.92, 1, 0.46 },
+					{ "x", 5.46, 2, 0.36 },
+				},
+			},
+			Tail7 = {
+				o = {
+					{ "y", 12.24, 1, 0.52 },
+					{ "x", 6.12, 2, 0.42 },
 				},
 			},
 			LegFL_Upper = {
@@ -713,38 +793,44 @@ return {
 		joints = {
 			Tail1 = {
 				o = {
-					{ "x", 2.64, 1, 0.37 },
-					{ "y", 2.64, 1, 0.07 },
+					{ "x", 2.16, 1, 0.36 },
+					{ "y", 2.16, 1, 0.06 },
 				},
 			},
 			Tail2 = {
 				o = {
-					{ "x", 3.48, 1, 0.44 },
-					{ "y", 3.48, 1, 0.14 },
+					{ "x", 2.82, 1, 0.42 },
+					{ "y", 2.82, 1, 0.12 },
 				},
 			},
 			Tail3 = {
 				o = {
-					{ "x", 4.32, 1, 0.51 },
-					{ "y", 4.32, 1, 0.21 },
+					{ "x", 3.48, 1, 0.48 },
+					{ "y", 3.48, 1, 0.18 },
 				},
 			},
 			Tail4 = {
 				o = {
-					{ "x", 5.16, 1, 0.58 },
-					{ "y", 5.16, 1, 0.28 },
+					{ "x", 4.14, 1, 0.54 },
+					{ "y", 4.14, 1, 0.24 },
 				},
 			},
 			Tail5 = {
 				o = {
-					{ "x", 6, 1, 0.65 },
-					{ "y", 6, 1, 0.35 },
+					{ "x", 4.8, 1, 0.6 },
+					{ "y", 4.8, 1, 0.3 },
 				},
 			},
 			Tail6 = {
 				o = {
-					{ "x", 6.84, 1, 0.72 },
-					{ "y", 6.84, 1, 0.42 },
+					{ "x", 5.46, 1, 0.66 },
+					{ "y", 5.46, 1, 0.36 },
+				},
+			},
+			Tail7 = {
+				o = {
+					{ "x", 6.12, 1, 0.72 },
+					{ "y", 6.12, 1, 0.42 },
 				},
 			},
 			Hips = {
@@ -872,6 +958,16 @@ return {
 				o = {
 					{ "z", -28, 1, 0.12 },
 					{ "y", -10, 1, 0.3 },
+				},
+			},
+			WingL_Fore = {
+				o = {
+					{ "z", 16, 1, 0.06 },
+				},
+			},
+			WingR_Fore = {
+				o = {
+					{ "z", -16, 1, 0.06 },
 				},
 			},
 		},
@@ -1638,7 +1734,8 @@ return {
 	PredatorShowcase (LocalScript) · StarterPlayer.StarterPlayerScripts.PredatorShowcase
 
 	Vitrina local del Dragón Depredador:
-	  · noche cerrada con bloom: en la oscuridad solo se ven sus dos ojos blancos (tecla L alterna día/noche)
+	  · noche cerrada con bloom: en la oscuridad solo se ven dos puntos blancos diminutos donde
+	    estarían los ojos (no tiene ojos); de día son casi imperceptibles (tecla L alterna día/noche)
 	  · la cabeza sigue tu cámara: te mira fijamente esté donde esté
 	  · botones o teclas 1-9 para las nueve animaciones
 	Todo ocurre en este cliente: el clon y la iluminación solo existen para quien juega.
@@ -1649,6 +1746,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
 local Dragons = ReplicatedStorage:WaitForChild("Dragons")
 local DragonAnimator = require(Dragons:WaitForChild("DragonAnimator"))
@@ -1667,7 +1765,8 @@ local LABELS = {
 	Idle = "Acechar", Walk = "Caminar", Run = "Correr", Fly = "Volar", TakeOff = "Despegar",
 	Landing = "Aterrizar", Attack = "Atacar", Roar = "Rugir", Death = "Morir",
 }
-local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.35, MaxYaw = 80, MaxPitch = 35, RestPitch = -18, Speed = 4 }
+local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.4, MaxYaw = 80, MaxPitch = 35, RestPitch = -22, Speed = 4 }
+local DOT_DAY, DOT_NIGHT = 0.93, 0
 
 -- Noche: guarda la iluminación original para poder volver al día
 local saved = {
@@ -1678,12 +1777,27 @@ local saved = {
 }
 local bloom = Instance.new("BloomEffect")
 bloom.Name = "PredatorGazeBloom"
-bloom.Intensity = 1.2
-bloom.Size = 28
-bloom.Threshold = 0.85
+bloom.Intensity = 0.9
+bloom.Size = 12
+bloom.Threshold = 0.95
 local night = false
+local dragon: Model? = nil
+local function eyeParts(model)
+	local list = {}
+	if model then
+		for _, p in ipairs(model:GetChildren()) do
+			if p:IsA("BasePart") and p:GetAttribute("Offset") then
+				table.insert(list, p)
+			end
+		end
+	end
+	return list
+end
 local function setNight(on: boolean)
 	night = on
+	for _, dot in ipairs(eyeParts(dragon)) do
+		dot.Transparency = on and DOT_NIGHT or DOT_DAY
+	end
 	if on then
 		Lighting.ClockTime = 0
 		Lighting.Brightness = 0
@@ -1703,18 +1817,28 @@ local function setNight(on: boolean)
 	end
 end
 
-local dragon: Model? = nil
 local animator = nil
 local busy = false
+local dotConn = nil
 
-local function eyeParts(model)
-	local list = {}
-	for _, p in ipairs(model:GetDescendants()) do
-		if p:IsA("BasePart") and string.sub(p.Name, 1, 3) == "Eye" then
-			table.insert(list, p)
-		end
+-- los puntos de los ojos siguen al hueso de la cabeza (no son geometría del modelo)
+local function followEyes(model)
+	if dotConn then
+		dotConn:Disconnect()
 	end
-	return list
+	local pairsList = {}
+	for _, dot in ipairs(eyeParts(model)) do
+		local bone = model:FindFirstChild(dot:GetAttribute("Bone"), true)
+		if bone then
+			table.insert(pairsList, { dot, bone, dot:GetAttribute("Offset") })
+		end
+		dot.Transparency = night and DOT_NIGHT or DOT_DAY
+	end
+	dotConn = RunService.RenderStepped:Connect(function()
+		for _, e in ipairs(pairsList) do
+			e[1].CFrame = e[2].TransformedWorldCFrame * e[3]
+		end
+	end)
 end
 
 local function spawnDragon()
@@ -1729,6 +1853,7 @@ local function spawnDragon()
 	dragon.Parent = showcase
 	animator = DragonAnimator.new(dragon, animations)
 	animator:Play("Idle", 0)
+	followEyes(dragon)
 	animator:SetLookTarget(function()
 		return workspace.CurrentCamera.CFrame.Position
 	end, LOOK)
@@ -1748,10 +1873,6 @@ local function spawnDragon()
 		task.delay(1.9, function()
 			for _, e in ipairs(eyes) do
 				TweenService:Create(e, TweenInfo.new(0.9), { Transparency = 1 }):Play()
-				local light = e:FindFirstChildOfClass("PointLight")
-				if light then
-					TweenService:Create(light, TweenInfo.new(0.9), { Brightness = 0 }):Play()
-				end
 			end
 		end)
 		task.delay(3.4, function()
@@ -1858,53 +1979,62 @@ local function v3(t)
 	return Vector3.new(t[1], t[2], t[3])
 end
 local byName = {}
-for _, e in ipairs(RIG) do
-	byName[e.name] = e
+for _, b in ipairs(RIG) do
+	byName[b.name] = b
 end
 
 -- 1. Localizar el modelo importado
-local function findParts(container)
-	local found, missing = {}, {}
-	for _, e in ipairs(RIG) do
-		local p = container.Name == e.name and container:IsA("BasePart") and container or container:FindFirstChild(e.name, true)
-		if p and p:IsA("BasePart") then
-			found[e.name] = p
-		else
-			table.insert(missing, e.name)
-		end
-	end
-	return found, missing
+local function looksLikeDragon(inst)
+	return inst:FindFirstChild("Body", true) and inst:FindFirstChild("Neck3", true)
 end
-
 local source
 for _, s in ipairs(Selection:Get()) do
 	local cand = s:IsA("BasePart") and s.Parent or s
-	if cand:FindFirstChild("WingL_Hand", true) then
+	if looksLikeDragon(cand) then
 		source = cand
 		break
 	end
 end
 if not source then
 	for _, d in ipairs(workspace:GetDescendants()) do
-		if d:IsA("Model") and d:FindFirstChild("WingL_Hand", true) and d:FindFirstChild("Hips", true) and not d:FindFirstChildWhichIsA("Motor6D", true) then
+		if d:IsA("Model") and looksLikeDragon(d) and not d:GetAttribute("RigScale") then
 			source = d
 			break
 		end
 	end
 end
-assert(source, "[Predator] No encontré el modelo importado. Impórtalo con Import 3D y selecciónalo antes de ejecutar.")
-local parts, missing = findParts(source)
-assert(#missing == 0, "[Predator] Faltan piezas en el modelo importado: " .. table.concat(missing, ", ") .. ". ¿Se combinaron las mallas al importar?")
+assert(source, "[Predator] No encontré el modelo importado. Impórtalo con Import 3D (Rig Type: Custom) y selecciónalo.")
+
+local bones, meshes, missing = {}, {}, {}
+for _, d in ipairs(source:GetDescendants()) do
+	if d:IsA("Bone") and not bones[d.Name] then
+		bones[d.Name] = d
+	end
+end
+for _, b in ipairs(RIG) do
+	if not bones[b.name] then
+		table.insert(missing, b.name)
+	end
+end
+for _, name in ipairs({ "Body", "WingL", "WingR" }) do
+	local m = source:FindFirstChild(name, true)
+	if m and m:IsA("MeshPart") then
+		meshes[name] = m
+	else
+		table.insert(missing, name)
+	end
+end
+assert(#missing == 0, "[Predator] Faltan piezas o huesos: " .. table.concat(missing, ", ") .. ". ¿Rig Type estaba en Custom?")
 
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Antes de instalar Dragón Depredador")
 end)
 
--- 2. Calibración: escala y orientación con que el importador dejó el modelo
+-- 2. Calibración: escala y orientación con que el importador dejó el esqueleto
 local function ratio(a, b)
-	return (parts[a].Position - parts[b].Position).Magnitude / (v3(byName[a].center) - v3(byName[b].center)).Magnitude
+	return (bones[a].WorldPosition - bones[b].WorldPosition).Magnitude / (v3(byName[a].head) - v3(byName[b].head)).Magnitude
 end
-local scale = (ratio("Head", "Tail6") + ratio("LegFL_Foot", "WingR_Hand") + ratio("LegBR_Foot", "WingL_Hand")) / 3
+local scale = (ratio("Hips", "Head") + ratio("Hips", "Tail7") + ratio("WingL_Hand", "WingR_Hand")) / 3
 local ROTATIONS = {
 	CFrame.identity,
 	CFrame.Angles(0, math.pi, 0),
@@ -1915,86 +2045,83 @@ local ROTATIONS = {
 }
 local R, origin, bestErr
 for _, rot in ipairs(ROTATIONS) do
-	local o = parts.Hips.Position - rot:VectorToWorldSpace(v3(byName.Hips.center) * scale)
+	local o = bones.Hips.WorldPosition - rot:VectorToWorldSpace(v3(byName.Hips.head) * scale)
 	local err = 0
-	for _, e in ipairs(RIG) do
-		err = math.max(err, (o + rot:VectorToWorldSpace(v3(e.center) * scale) - parts[e.name].Position).Magnitude)
+	for _, b in ipairs(RIG) do
+		err = math.max(err, (o + rot:VectorToWorldSpace(v3(b.head) * scale) - bones[b.name].WorldPosition).Magnitude)
 	end
 	if not bestErr or err < bestErr then
 		R, origin, bestErr = rot, o, err
 	end
 end
-print(("[Predator] escala del import: %.4f · error máximo de posición: %.3f studs"):format(scale, bestErr))
+print(("[Predator] escala del import: %.4f · error máximo de huesos: %.3f studs"):format(scale, bestErr))
 if bestErr > 0.6 * scale then
-	warn("[Predator] Las piezas no coinciden con el rig esperado. ¿Se movió o se rotó alguna pieza después de importar? Continúo igualmente.")
+	warn("[Predator] Los huesos no coinciden con el rig esperado. Revisa la importación. Continúo igualmente.")
 end
 local function W(t)
 	return origin + R:VectorToWorldSpace(v3(t) * scale)
 end
 
--- 3. Construir el rig: Root anclado + Motor6D en cada articulación
+-- 3. Modelo: una sola asamblea (Body anclado, alas soldadas) para que los huesos deformen todas las mallas
 local model = Instance.new("Model")
 model.Name = "PredatorDragon"
-local hips = byName.Hips
-local root = Instance.new("Part")
-root.Name = "Root"
-root.Size = Vector3.new(2, 1, 2) * scale
-root.Transparency = 1
-root.Anchored = true
-root.CanCollide = false
-root.CanQuery = false
-root.CanTouch = false
-root.CFrame = CFrame.new(W({ hips.pivot[1], GROUND_Y, hips.pivot[3] })) * R
-root.Parent = model
-model.PrimaryPart = root
-
-for _, e in ipairs(RIG) do
-	local p = parts[e.name]
-	p.Parent = model
+for _, child in ipairs(source:GetChildren()) do
+	child.Parent = model
 end
-for _, e in ipairs(RIG) do
-	local p = parts[e.name]
-	p.Anchored = false
-	p.CanCollide = false
-	p.CanTouch = false
-	p.Massless = true
-	p.CastShadow = true
-	local p0 = e.parent and parts[e.parent] or root
-	local pivot = CFrame.new(W(e.pivot)) * R
-	local m = Instance.new("Motor6D")
-	m.Name = e.name
-	m.Part0 = p0
-	m.Part1 = p
-	m.C0 = p0.CFrame:ToObjectSpace(pivot)
-	m.C1 = p.CFrame:ToObjectSpace(pivot)
-	m.Parent = p
-	if string.sub(e.name, 1, 3) == "Eye" then
-		p.Material = Enum.Material.Neon
-		p.Color = Color3.fromRGB(245, 248, 255)
-		pcall(function()
-			p.TextureID = ""
-		end)
-		p.CastShadow = false
-	elseif MAPS.ColorMap ~= "" then
-		local sa = p:FindFirstChildOfClass("SurfaceAppearance") or Instance.new("SurfaceAppearance")
-		sa.ColorMap = MAPS.ColorMap
-		sa.NormalMap = MAPS.NormalMap
-		sa.RoughnessMap = MAPS.RoughnessMap
-		sa.Parent = p
+for name, m in pairs(meshes) do
+	m.Parent = model
+	m.CanCollide = false
+	m.CanTouch = false
+	m.CastShadow = true
+	m.Anchored = name == "Body"
+	m.Massless = name ~= "Body"
+	if name ~= "Body" then
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = meshes.Body
+		weld.Part1 = m
+		weld.Parent = m
+	end
+	local maps = MAPS[name]
+	if maps and maps.ColorMap ~= "" then
+		local sa = m:FindFirstChildOfClass("SurfaceAppearance") or Instance.new("SurfaceAppearance")
+		sa.ColorMap = maps.ColorMap
+		sa.NormalMap = maps.NormalMap
+		sa.RoughnessMap = maps.RoughnessMap
+		sa.Parent = m
 	end
 end
-for _, eyeName in ipairs({ "EyeL", "EyeR" }) do
-	local glow = Instance.new("PointLight")
-	glow.Color = Color3.fromRGB(235, 240, 255)
-	glow.Range = 3 * scale
-	glow.Brightness = 0.8
-	glow.Shadows = false
-	glow.Parent = parts[eyeName]
+model.WorldPivot = CFrame.new(W({ byName.Hips.head[1], GROUND_Y, byName.Hips.head[3] })) * R
+
+-- Ojos: NO son globos oculares. Dos puntos diminutos de Neon que la vitrina mueve con el hueso Head;
+-- de día son casi invisibles y de noche son lo único que se ve.
+local head = bones[EYES.bone]
+for _, name in ipairs({ "EyeL", "EyeR" }) do
+	local dot = Instance.new("Part")
+	dot.Name = name .. "Point"
+	dot.Shape = Enum.PartType.Ball
+	dot.Size = Vector3.one * 0.07 * scale
+	dot.Material = Enum.Material.Neon
+	dot.Color = Color3.fromRGB(255, 255, 255)
+	dot.Transparency = 0.93
+	dot.Anchored = true
+	dot.CanCollide = false
+	dot.CanQuery = false
+	dot.CanTouch = false
+	dot.CastShadow = false
+	dot.CFrame = CFrame.new(W(EYES[name]))
+	dot:SetAttribute("Bone", EYES.bone)
+	dot:SetAttribute("Offset", head.WorldCFrame:ToObjectSpace(dot.CFrame))
+	dot.Parent = model
 end
 
--- Escala final deseada (Model:ScaleTo también escala los Motor6D)
 if math.abs(DESIRED_SCALE / scale - 1) > 1e-3 then
 	model:ScaleTo(DESIRED_SCALE / scale)
+	for _, p in ipairs(model:GetChildren()) do
+		if p:GetAttribute("Offset") then
+			local off = p:GetAttribute("Offset")
+			p:SetAttribute("Offset", off.Rotation + off.Position * (DESIRED_SCALE / scale))
+		end
+	end
 end
 model:SetAttribute("RigScale", DESIRED_SCALE)
 model:SetAttribute("Species", "Karnathys sanguifauces")
@@ -2022,7 +2149,7 @@ local function putScript(parent, name, class, src)
 end
 
 local dragons = ensure(ReplicatedStorage, "Dragons")
-for _, n in ipairs({ "AbyssalDragon", "PredatorDragon", "PredatorDragon", "AerialDragon", "AncientDragon", "ShadowDragon" }) do
+for _, n in ipairs({ "AbyssalDragon", "PredatorDragon", "AberrantDragon", "AerialDragon", "AncientDragon", "ShadowDragon" }) do
 	ensure(dragons, n)
 end
 local folder = dragons.PredatorDragon
@@ -2031,16 +2158,14 @@ if prev then
 	prev:Destroy()
 end
 model.Parent = folder
-
 local settings = ensure(folder, "Settings", "Configuration")
 for k, v in pairs({
 	DisplayName = "Dragón Depredador", Species = "Karnathys sanguifauces", Epithet = "Fauce Roja",
 	WalkSpeed = 12, RunSpeed = 30, FlySpeed = 40, FlyHeight = 7, MaxHealth = 2600, AttackDamage = 60,
-	AttackRange = 12, EyeColor = Color3.fromRGB(245, 248, 255),
+	AttackRange = 12, EyePointColor = Color3.fromRGB(255, 255, 255),
 }) do
 	settings:SetAttribute(k, v)
 end
-
 putScript(dragons, "DragonAnimator", "ModuleScript", SOURCES.DragonAnimator)
 putScript(folder, "Animations", "ModuleScript", SOURCES.Animations)
 putScript(ensure(StarterPlayer, "StarterPlayerScripts", "StarterPlayerScripts"), "PredatorShowcase", "LocalScript", SOURCES.Showcase)
@@ -2060,7 +2185,7 @@ if not stage then
 	stage = Instance.new("Part")
 	stage.Name = "Stage_Predator"
 	stage.Anchored = true
-	stage.Size = Vector3.new(90, 1, 90)
+	stage.Size = Vector3.new(100, 1, 100)
 	stage.CFrame = CFrame.new(0, 0.5, -150)
 	stage.Material = Enum.Material.Slate
 	stage.Color = Color3.fromRGB(28, 26, 30)
@@ -2075,11 +2200,11 @@ statue.Name = "PredatorDragon_Preview"
 statue:PivotTo(stage.CFrame * CFrame.new(0, stage.Size.Y / 2, 0) * CFrame.Angles(0, math.rad(180), 0))
 statue.Parent = showcase
 
-if source.Parent and #source:GetDescendants() == 0 then
+if source.Parent and #source:GetChildren() == 0 then
 	source:Destroy()
 end
 Selection:Set({ statue })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Dragón Depredador instalado")
 end)
-print("[Predator] Listo: rig con " .. #RIG .. " Motor6D en ReplicatedStorage.Dragons.PredatorDragon. Pulsa Play: noche cerrada, te mira fijamente; botones 1-9 y L para la luz.")
+print("[Predator] Listo: " .. #RIG .. " huesos, 3 mallas. Pulsa Play: noche cerrada, solo dos puntos blancos te observan. Botones 1-9 y L para la luz.")

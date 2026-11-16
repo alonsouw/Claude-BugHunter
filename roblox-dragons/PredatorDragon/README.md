@@ -1,55 +1,52 @@
-# Dragón Depredador (*Karnathys sanguifauces*): paquete para Roblox Studio
+# Dragón Depredador (*Karnathys sanguifauces*), versión 2: paquete para Roblox Studio
 
-Construido a partir de la hoja de diseño del usuario (`design/reference.jpg`). Es un cuadrúpedo negro con heridas abiertas, fauces babeantes y alas rasgadas. En la oscuridad solo se le ven **dos puntos blancos que miran fijamente al jugador**.
+Rehecho desde cero a partir de las referencias del usuario (`design/reference_render.jpg` y `design/reference_sheet.jpg`).
+Es un cuadrúpedo negro carbón con heridas y costillas al aire, fauces babeantes con la lengua colgando, corona de cuchillas óseas, alas enormes con membrana granate rasgada y una cola larga con púas y aleta de lóbulos.
+
+**No tiene ojos.** En cada cuenca hay un punto de luz blanca diminuto: de día casi no se ve y en la oscuridad es lo único visible.
+
+## Cómo se construyó
+1. **Escultura** (`sculpt/sdf.py`, `head.py`, `body.py`, `membrane.py`): campos de distancia con uniones suaves. Cada músculo, hueso, cuerno y diente es una forma que se funde con las demás, y el resultado es una piel continua de alta resolución (vóxel de 0,05 studs). Primero se esculpió la cabeza, comparándola con la hoja de referencia, y después el cuerpo, la cola y las alas.
+2. **Retopología** (`sculpt/produce.py`): decimado en dos pasos para que la cabeza conserve los dientes. Resultado: Body unos 19k triángulos y WingL/WingR unos 9k cada una, bajo el límite de 20k por MeshPart.
+3. **Horneado**: color, normal y rugosidad de 1024 px por malla, sacados de la escultura (escamas, relieve y brillo).
+4. **Huesos**: 35 Bones con pesos calculados por zona anatómica. La mandíbula y la lengua van aparte, las babas se reparten entre las dos mandíbulas y la membrana sigue a los huesos del ala.
 
 ## Contenido
 | Archivo | Para qué sirve |
 |---|---|
-| `model/PredatorDragon.fbx` | **Modelo recomendado.** 31 MeshParts con nombre y la textura incrustada |
-| `model/PredatorDragon.glb` · `.obj` + `.mtl` | Alternativas en glTF (con PBR) y OBJ |
-| `model/PredatorDragon_color.png`, `_normal.png`, `_roughness.png` | Atlas de 1024 px para SurfaceAppearance |
-| `model/rig.json` | Pivotes y jerarquía del rig (Y arriba, mira hacia −Z, en studs) |
-| `roblox/InstallPredator.lua` | **Instalador para la Command Bar.** Contiene todo lo demás |
-| `roblox/DragonAnimator.lua` | ModuleScript compartido: animaciones por datos y seguimiento de mirada (`SetLookTarget`) |
+| `model/PredatorDragon.fbx` | **Para Roblox.** Armature + mallas Body, WingL y WingR con skinning y texturas |
+| `model/PredatorDragon.glb` | La misma malla con huesos, para el visor web |
+| `model/{Body,WingL,WingR}_{color,normal,roughness}.png` | Texturas para SurfaceAppearance |
+| `model/rig.json` | Huesos (posición de reposo en studs, Y arriba, mirando a −Z), puntos de los ojos y medidas |
+| `roblox/InstallPredator.lua` | **Instalador para la Command Bar** |
+| `roblox/DragonAnimator.lua` | Animaciones por datos para Motor6D **y Bones**, más `SetLookTarget` para la mirada |
 | `roblox/PredatorAnimations.lua` | Idle (acechar), Walk, Run, Fly, TakeOff, Landing, Attack, Roar y Death |
-| `roblox/PredatorShowcase.client.lua` | Vitrina nocturna: bloom, mirada al jugador, botones 1 a 9 y L para día o noche |
+| `roblox/PredatorShowcase.client.lua` | Vitrina nocturna: puntos de los ojos, mirada al jugador, botones 1 a 9 y L para día o noche |
 
 ## Instalación
-1. **Avatar › Import 3D** (o **Home › Import 3D**) y elige `model/PredatorDragon.fbx`.
-   Deja **Rig Type** en **No Rig** y **no** combines las mallas: deben quedar 31 piezas con nombre. Pulsa Import.
+1. **Avatar › Import 3D** → `model/PredatorDragon.fbx`.
+   En el importador pon **Rig General › Rig Type = Custom** y **no** combines las mallas. Pulsa Import.
 2. Selecciona el modelo importado en el Explorer.
-3. Abre **View › Command Bar**, pega el contenido completo de `roblox/InstallPredator.lua` y pulsa Enter.
-   La salida mostrará la escala detectada, el error de posición y la línea «Listo».
-4. Pulsa **Play**: se hace de noche, el dragón aparece en `Workspace.DragonShowcase.Stage_Predator` y su cabeza sigue tu cámara.
+3. **View › Command Bar**: pega todo `roblox/InstallPredator.lua` y pulsa Enter. La salida muestra la escala detectada y el error de los huesos.
+4. **Play**: se hace de noche y en `Workspace.DragonShowcase.Stage_Predator` solo se ven dos puntos blancos que te siguen. L enciende la luz y 1 a 9 lanzan las animaciones.
 
-Opcional:
-- Para relieve PBR, sube los tres PNG, pega sus `rbxassetid://` en `MAPS` y vuelve a ejecutar el instalador.
-- `DESIRED_SCALE` cambia el tamaño. Con 1, mide 40 studs de largo.
-
-## La mirada
-- Los ojos son las piezas `EyeL` y `EyeR`: de material Neon blanco, con una `PointLight` tenue y hundidas bajo una ceja pesada. De día casi no se ven; de noche, con bloom, son lo único visible.
-- `DragonAnimator:SetLookTarget(target, options)` gira el cuello (35 %) y la cabeza (65 %) hacia el objetivo, suavizado y con límites (80° a los lados, 35° arriba y abajo). Se suma encima de cualquier animación. La vitrina usa la posición de la cámara, así que te mira estés donde estés.
-- Al morir, el cuerpo se disuelve primero y los dos puntos tardan casi dos segundos más en apagarse.
-
-```lua
-local animator = DragonAnimator.new(dragon, require(Dragons.PredatorDragon.Animations))
-animator:Play("Idle")
-animator:SetLookTarget(player.Character.Head, { Head = "Head", Neck = "Neck2", RestPitch = -18 })
-```
+Detalles técnicos:
+- El instalador ancla `Body` y suelda las alas a ella, para que las tres mallas formen una sola asamblea y los huesos las deformen juntas.
+- Si el importador duplica el esqueleto por malla, `DragonAnimator` mueve todas las copias.
+- Las animaciones se escriben en `Bone.Transform`, convertidas desde los ejes del modelo con la orientación de reposo de cada hueso.
+- Los ojos (`EyeLPoint` y `EyeRPoint`) son esferas Neon de 0,07 studs que la vitrina coloca cada frame sobre el hueso `Head`. De día tienen transparencia 0,93 y de noche 0. No llevan luz, así que no iluminan la cara.
 
 ## Qué está verificado y qué no
-- ✅ Los archivos Luau compilan con `luau-compile`.
-- ✅ La prueba de paridad Luau ↔ JS de las animaciones coincide en 1.134 muestras (diferencia máxima de 5·10⁻¹⁰).
-- ✅ Con un ray casting en Blender se comprobó que los dos ojos se ven desde cinco cámaras frontales. Antes de este ajuste, la ceja y la cuenca los tapaban.
-- ✅ El FBX, el GLB y el OBJ se generaron con Blender 5.3, que también hizo los renders.
-- ⚠️ **No se ha probado dentro de Roblox Studio.** El seguimiento de mirada en Luau sigue la misma fórmula que el visor web, pero no tiene prueba automática.
-- Límites: uniones rígidas, 100.400 triángulos (un modelo de jefe), Walk y Run en el sitio, sin IA ni sonido.
+- ✅ La malla, los huesos, los pesos y las texturas se generan y exportan en Blender 5.3. El FBX contiene la armature y las tres mallas.
+- ✅ El visor de la ficha carga el mismo GLB con huesos y lo anima con la misma conversión de ejes que `DragonAnimator.lua`.
+- ✅ El código Luau compila, y la prueba de paridad Luau ↔ JS de las animaciones pasa.
+- ⚠️ **No se ha ejecutado dentro de Roblox Studio.** Hay que confirmar la importación del skinning con varias mallas y el instalador.
+- Límites: texturas de 1024 px (máximo de Roblox), Walk y Run en el sitio, sin IA ni sonido.
 
 ## Regenerar
 ```
-node tools/export_model.js three.min.js GLTFExporter.js model
-python tools/blender_pipeline.py model/PredatorDragon.glb model/rig.json model design/renders 64
-node tools/build_roblox.js
-node tools/test_anim_parity.js /ruta/a/luau
+cd sculpt
+python stage_body.py <salida>/sculpt 0.05 32            # escultura de alta + renders de comparación (bpy 5.x + scikit-image)
+python produce.py <salida>/sculpt/sculpt_high.blend ../model ../design/renders 1024 64
+cd .. && node tools/build_roblox.js && node tools/test_anim_parity.js /ruta/a/luau
 ```
-La geometría está en `src/predator_model.js`, que usa el núcleo común `src/dragon_core.js`. Las animaciones están en `src/predator_anims.js` y el animador compartido en `../shared/DragonAnimator.lua`.

@@ -62,8 +62,9 @@ local SOURCES = {
 --[[
 	DragonAnimator (ModuleScript) · ReplicatedStorage.Dragons.DragonAnimator
 
-	Reproduce animaciones definidas como datos (ver AberrantAnimations) sobre un rig
-	de Motor6D. No necesita subir assets de animación: escribe Motor6D.Transform cada frame.
+	Reproduce animaciones definidas como datos sobre un rig de Motor6D (piezas rígidas)
+	o de Bones (malla con skinning). No necesita subir assets de animación: escribe
+	Motor6D.Transform o Bone.Transform cada frame.
 
 	Uso:
 		local animator = DragonAnimator.new(model, require(animsModule))
@@ -72,10 +73,12 @@ local SOURCES = {
 		animator:SetLookTarget(player.Character.Head)   -- opcional: la cabeza sigue al objetivo
 		animator:Destroy()
 
-	Formato de cada articulación (nombre = Part1 del Motor6D):
+	Formato de cada articulación (nombre = Part1 del Motor6D o nombre del Bone):
 		k = { {t, rx, ry, rz}, ... }   claves de rotación en grados
 		p = { {t, x, y, z}, ... }      claves de traslación en studs del modelo original (se multiplican por RigScale)
 		o = { {"eje", amplitud, ciclos, fase}, ... }   ejes "x","y","z" (grados) o "px","py","pz" (studs)
+	Los ángulos se expresan en los ejes del modelo (Y arriba, el dragón mira a -Z). Para los Bones,
+	el animador los convierte al marco local de cada hueso con su orientación de reposo.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -142,9 +145,21 @@ function DragonAnimator.new(model: Model, animations)
 	self.Animations = animations
 	self.Scale = model:GetAttribute("RigScale") or 1
 	self.Joints = {}
+	local pivot = model:GetPivot()
 	for _, d in ipairs(model:GetDescendants()) do
 		if d:IsA("Motor6D") and d.Part1 then
-			self.Joints[d.Part1.Name] = d
+			self.Joints[d.Part1.Name] = { inst = d, kind = "motor" }
+		elseif d:IsA("Bone") then
+			d.Transform = CFrame.identity
+			-- orientación de reposo del hueso en los ejes del modelo
+			local rest = (pivot:Inverse() * d.WorldCFrame).Rotation
+			local entry = { inst = d, rest = rest, restInv = rest:Inverse() }
+			local j = self.Joints[d.Name]
+			if j and j.kind == "bone" then
+				table.insert(j.copies, entry) -- el importador puede duplicar el esqueleto por malla
+			else
+				self.Joints[d.Name] = { inst = d, kind = "bone", rest = rest, restInv = entry.restInv, copies = { entry } }
+			end
 		end
 	end
 	self.Values = {} -- último valor aplicado por articulación: {rx, ry, rz, px, py, pz}
@@ -159,6 +174,17 @@ function DragonAnimator.new(model: Model, animations)
 		self:Step(dt)
 	end)
 	return self
+end
+
+-- Escribe en la articulación una transformación expresada en los ejes del modelo.
+local function setJoint(j, m: CFrame)
+	if j.kind == "bone" then
+		for _, c in ipairs(j.copies) do
+			c.inst.Transform = c.restInv * m * c.rest
+		end
+	else
+		j.inst.Transform = m
+	end
 end
 
 function DragonAnimator:Play(name: string, fadeTime: number?)
@@ -200,7 +226,8 @@ function DragonAnimator:Step(dt: number)
 	local t = anim.loop and (self.Time % anim.dur) or self.Time
 	local w = self.FadeTime > 0 and smooth(math.clamp(self.FadeElapsed / self.FadeTime, 0, 1)) or 1
 	local s = self.Scale
-	for jointName, motor in pairs(self.Joints) do
+	local frames = {}
+	for jointName in pairs(self.Joints) do
 		local j = anim.joints[jointName]
 		local v
 		if j then
@@ -216,10 +243,13 @@ function DragonAnimator:Step(dt: number)
 			end
 		end
 		self.Values[jointName] = v
-		motor.Transform = CFrame.new(v[4] * s, v[5] * s, v[6] * s)
+		frames[jointName] = CFrame.new(v[4] * s, v[5] * s, v[6] * s)
 			* CFrame.Angles(math.rad(v[1]), math.rad(v[2]), math.rad(v[3]))
 	end
-	self:_applyLook(dt)
+	self:_applyLook(dt, frames)
+	for jointName, m in pairs(frames) do
+		setJoint(self.Joints[jointName], m)
+	end
 end
 
 local function resolveTarget(target): Vector3?
@@ -254,22 +284,47 @@ function DragonAnimator:SetLookTarget(target, options)
 	self.LookPitch = self.LookPitch or 0
 end
 
-function DragonAnimator:_applyLook(dt: number)
+-- Marco (en ejes del modelo) del pivote de una articulación, sin su propia transformación.
+local function baseFrame(j): CFrame?
+	if j.kind == "bone" then
+		local b = j.inst
+		local parent = b.Parent
+		local pcf = parent:IsA("Bone") and parent.TransformedWorldCFrame or (parent:IsA("BasePart") and parent.CFrame)
+		if not pcf then
+			return nil
+		end
+		return pcf * b.CFrame * j.restInv
+	end
+	local m = j.inst
+	if not m.Part0 then
+		return nil
+	end
+	return m.Part0.CFrame * m.C0
+end
+
+local function pivotPosition(j): Vector3?
+	if j.kind == "bone" then
+		return j.inst.TransformedWorldCFrame.Position
+	end
+	local m = j.inst
+	return m.Part0 and (m.Part0.CFrame * m.C0).Position or nil
+end
+
+function DragonAnimator:_applyLook(dt: number, frames)
 	if self.LookYaw == nil then
 		return
 	end
 	local o = self.LookOptions or {}
-	local head = self.Joints[o.Head or "Head"]
-	local neck = self.Joints[o.Neck or "Neck2"]
-	if not head or not neck or not neck.Part0 then
+	local headName, neckName = o.Head or "Head", o.Neck or "Neck2"
+	local head, neck = self.Joints[headName], self.Joints[neckName]
+	if not head or not neck then
 		return
 	end
 	local goalYaw, goalPitch = 0, 0
 	local pos = resolveTarget(self.LookTarget)
-	if pos then
-		-- marco del cuello sin la mirada aplicada, con origen en el pivote de la cabeza
-		local base = neck.Part0.CFrame * neck.C0
-		local headPivot = (head.Part0.CFrame * head.C0).Position
+	local base = baseFrame(neck)
+	local headPivot = pivotPosition(head)
+	if pos and base and headPivot then
 		local p = base:VectorToObjectSpace(pos - headPivot)
 		local maxYaw, maxPitch = math.rad(o.MaxYaw or 75), math.rad(o.MaxPitch or 35)
 		goalYaw = math.clamp(math.atan2(-p.X, -p.Z), -maxYaw, maxYaw)
@@ -279,8 +334,8 @@ function DragonAnimator:_applyLook(dt: number)
 	self.LookYaw += (goalYaw - self.LookYaw) * k
 	self.LookPitch += (goalPitch - self.LookPitch) * k
 	local share = o.NeckShare or 0.35
-	neck.Transform = CFrame.Angles(0, self.LookYaw * share, 0) * CFrame.Angles(self.LookPitch * share, 0, 0) * neck.Transform
-	head.Transform = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * head.Transform
+	frames[neckName] = CFrame.Angles(0, self.LookYaw * share, 0) * CFrame.Angles(self.LookPitch * share, 0, 0) * (frames[neckName] or CFrame.identity)
+	frames[headName] = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * (frames[headName] or CFrame.identity)
 end
 
 function DragonAnimator:Destroy()
@@ -288,8 +343,10 @@ function DragonAnimator:Destroy()
 		self._conn:Disconnect()
 		self._conn = nil
 	end
-	for _, motor in pairs(self.Joints) do
-		motor.Transform = CFrame.identity
+	for _, j in pairs(self.Joints) do
+		for _, c in ipairs(j.copies or { j }) do
+			c.inst.Transform = CFrame.identity
+		end
 	end
 	self.Finished:Destroy()
 end
