@@ -100,7 +100,11 @@ def bake_maps(low, highs, prefix, extrusion=0.08, ray=0.3):
             px = np.array(imgs['color'].pixels[:], np.float32).reshape(-1, 4); a_ = np.array(ao.pixels[:], np.float32).reshape(-1, 4)[:, :1]
             ref = np.percentile(a_[a_ > 0.02], 85) if np.any(a_ > 0.02) else 1.0
             a_ = np.clip(a_ / max(ref, 1e-3), 0, 1)          # normalizado: la piel abierta queda a 1, solo las cavidades oscurecen
-            px[:, :3] *= 0.4 + 0.6 * a_; imgs['color'].pixels.foreach_set(px.ravel()); imgs['color'].update()
+            px[:, :3] *= 0.4 + 0.6 * a_
+            # v2: la piel oscura sube ~1,9x para que la visión nocturna saque relieve; labios, encías y hueso no cambian
+            lum = px[:, :3].mean(1, keepdims=True); k = np.clip((lum - 0.03) / 0.12, 0, 1); k = k * k * (3 - 2 * k)
+            px[:, :3] *= 1.0 + 0.9 * (1 - k)
+            imgs['color'].pixels.foreach_set(px.ravel()); imgs['color'].update()
             log('oclusión', prefix, 'referencia', round(float(ref), 3))
             N.remove(aon); nodes['color'].select = True; N.active = nodes['color']
         imgs[kind].filepath_raw = os.path.join(OUT, f'{prefix}_{kind}.png'); imgs[kind].file_format = 'PNG'; imgs[kind].save()
