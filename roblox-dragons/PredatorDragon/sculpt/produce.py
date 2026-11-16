@@ -287,7 +287,7 @@ fill = PV.light('Fill', c + Vector((-10, 30, 2)), 1500, (1, 0.9, 0.9), 14, c)
 top = PV.light('Top', c + Vector((0, 0, 30)), 6000, (1, 1, 1), 30, c)
 cam = PV.camera()
 headc = B(hp((0, 0.2, -2.0)))
-shots = [('hero', c + Vector((-40, 40, 6)), c + Vector((0, 3, 0.5)), (1600, 1000), 42), ('side', c + Vector((-75, 1.5, 2.0)), c + Vector((0, 1.5, 0.3)), (1600, 900), 42),
+shots = [('hero', c + Vector((-40, 40, 6)), c + Vector((0, 3, 0.5)), (1600, 1000), 42), ('side', c + Vector((-75, 1.5, 2.0)), c + Vector((0, 1.5, 0.3)), (1600, 900), 42), ('right', c + Vector((40, 30, 8)), c + Vector((0, 2.5, 0.0)), (1600, 1000), 45),
          ('front', c + Vector((0, 70, 0.5)), c + Vector((0, 0, 1.0)), (1100, 900), 50), ('top', c + Vector((0, 0.01, 80)), c, (1600, 900), 42),
          ('head', headc + Vector((-7, 9, 1.5)), headc + Vector((0, 0.5, -1.0)), (1000, 1000), 45), ('headfront', headc + Vector((0, 13, 0.5)), headc + Vector((0, 0, -1.0)), (1000, 1000), 50),
          ('wing', c + Vector((-28, -16, 26)), B(np.array(BODY.WING['wrist'])) + Vector((0, -6, -3)), (1000, 1000), 35), ('tail', B(tail_pts[-2]) + Vector((-9, 5, 4)), B(tail_pts[-2]) + Vector((0, -1, 0)), (1000, 1000), 40)]

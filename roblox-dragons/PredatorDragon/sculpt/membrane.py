@@ -36,11 +36,11 @@ def patch(apex, A, B, rows, cols, scallop, billow, tatter, rng, u0, u1):
 def rr_hole(r, c, rows, cols, tatter, rng):
     # desgarros: agujeros alargados cerca del borde y alguno suelto en el interior
     if r >= rows - 1 and rng.random() < tatter * 0.05: return True
-    if 0.55 < r / rows < 0.9 and rng.random() < tatter * 0.025: return True
+    if 0.3 < r / rows < 0.95 and rng.random() < tatter * 0.06: return True
     return False
 
 
-def wing_membrane(w, rng, rows=14, cols=22, tatter=0.45):
+def wing_membrane(w, rng, rows=14, cols=22, tatter=0.85):
     W = np.array(w['wrist']); chain = [np.array(t) for t in w['tips']] + [np.array(w['rear'])]
     Vs, Fs, UVs, off = [], [], [], 0
     n = len(chain)

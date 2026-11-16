@@ -5,6 +5,10 @@ Es un cuadrúpedo negro carbón con heridas y costillas al aire, fauces babeante
 
 **No tiene ojos.** En cada cuenca hay un punto de luz blanca diminuto: de día casi no se ve y en la oscuridad es lo único visible.
 
+## Deformidad (sculpt/deform.py)
+- Segunda boca dentada en el flanco derecho, más de 30 tajos abiertos repartidos por todo el cuerpo (colocados con rayos contra la piel real), joroba de vértebras que rompen la piel y costillas astilladas.
+- Mandíbula derecha hinchada de tumores, cuerno torcido en la mejilla, cráneo pelado, placas de podredumbre con pústulas, cola descarnada hasta las vértebras y antebrazo izquierdo con el hueso al aire. Alas hechas jirones.
+
 ## Heridas de batalla (gore)
 - Mejilla izquierda arrancada con el maxilar, las raíces de los dientes y tiras de músculo al aire. Babas con sangre, y sangre en labios, colmillos y mentón.
 - Lomo abierto con las vértebras expuestas, costillar desgarrado con jirones de carne y regueros de sangre.

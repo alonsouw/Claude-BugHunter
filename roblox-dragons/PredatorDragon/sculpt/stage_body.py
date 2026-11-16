@@ -26,8 +26,10 @@ gh = None
 HEAD.build(g, BODY.HEAD_XF, np.random.default_rng(7))
 import gore as GORE
 GORE.apply(g, np.random.default_rng(13))
+import deform as DEFORM
+DEFORM.apply(g, np.random.default_rng(29))
 print('gore aplicado', round(time.time() - t0, 1), 's')
-g.noise(0.03, 1.6, mask_mats=('teeth', 'horn', 'drool', 'tongue', 'claw', 'bone', 'membrane', 'blood', 'wood'))
+g.noise(0.03, 1.6, mask_mats=('teeth', 'horn', 'drool', 'tongue', 'claw', 'bone', 'membrane', 'blood', 'wood', 'pus'))
 bv, bf, bmat, bpart = g.mesh()
 print('cuerpo', len(bf), 'triángulos', round(time.time() - t0, 1), 's'); del g
 from sdf import open_edges
@@ -85,6 +87,7 @@ PV.light('Top', c + Vector((0, 0, 30)), 6000, (1, 1, 1), 30, c)
 cam = PV.camera()
 shots = {
     'side': (c + Vector((-75, 1.5, 2.0)), c + Vector((0, 1.5, 0.3)), (1600, 900), 42),
+    'right': (c + Vector((40, 30, 8)), c + Vector((0, 2.5, 0.0)), (1600, 1000), 45),
     'front': (c + Vector((0, 70, 0.5)), c + Vector((0, 0, 1.0)), (1100, 900), 50),
     'top': (c + Vector((0, 0.01, 80)), c + Vector((0, 0, 0)), (1600, 900), 42),
     '34': (c + Vector((-45, 42, 12)), c + Vector((0, 2, 0)), (1600, 1000), 45),
