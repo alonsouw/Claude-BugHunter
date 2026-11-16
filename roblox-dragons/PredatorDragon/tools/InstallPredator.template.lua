@@ -176,9 +176,46 @@ for _, name in ipairs({ "EyeL", "EyeR" }) do
 	dot.CastShadow = false
 	dot.CFrame = CFrame.new(W(EYES[name]))
 	dot:SetAttribute("Bone", EYES.bone)
+	dot:SetAttribute("Kind", "eye")
 	dot:SetAttribute("Offset", head.WorldCFrame:ToObjectSpace(dot.CFrame))
 	dot.Parent = model
 end
+
+-- Gore: goteo de sangre desde la punta de la mandíbula (sigue al hueso Jaw igual que los ojos)
+local jaw = bones.Jaw
+local drip = Instance.new("Part")
+drip.Name = "BloodDripPoint"
+drip.Size = Vector3.one * 0.05 * scale
+drip.Transparency = 1
+drip.Anchored = true
+drip.CanCollide = false
+drip.CanQuery = false
+drip.CanTouch = false
+drip.CastShadow = false
+drip.CFrame = CFrame.new(W(byName.Jaw.tail) + Vector3.new(0, -0.15 * scale, 0))
+drip:SetAttribute("Bone", "Jaw")
+drip:SetAttribute("Kind", "drip")
+drip:SetAttribute("Offset", jaw.WorldCFrame:ToObjectSpace(drip.CFrame))
+local att = Instance.new("Attachment")
+att.Parent = drip
+local pe = Instance.new("ParticleEmitter")
+pe.Name = "Blood"
+pe.Texture = "rbxasset://textures/particles/smoke_main.dds"
+pe.Color = ColorSequence.new(Color3.fromRGB(120, 6, 10), Color3.fromRGB(60, 2, 5))
+pe.LightEmission = 0
+pe.LightInfluence = 1
+pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.07 * scale), NumberSequenceKeypoint.new(1, 0.12 * scale) })
+pe.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.8, 0.1), NumberSequenceKeypoint.new(1, 1) })
+pe.Squash = NumberSequence.new(-0.8)
+pe.Orientation = Enum.ParticleOrientation.VelocityParallel
+pe.Lifetime = NumberRange.new(0.9, 1.4)
+pe.Rate = 6
+pe.Speed = NumberRange.new(0.2, 0.8)
+pe.SpreadAngle = Vector2.new(10, 10)
+pe.EmissionDirection = Enum.NormalId.Bottom
+pe.Acceleration = Vector3.new(0, -35 * scale, 0)
+pe.Parent = att
+drip.Parent = model
 
 if math.abs(DESIRED_SCALE / scale - 1) > 1e-3 then
 	model:ScaleTo(DESIRED_SCALE / scale)
@@ -273,4 +310,4 @@ Selection:Set({ statue })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Dragón Depredador instalado")
 end)
-print("[Predator] Listo: " .. #RIG .. " huesos, 3 mallas. Pulsa Play: noche cerrada, solo dos puntos blancos te observan. Botones 1-9 y L para la luz.")
+print("[Predator] Listo: " .. #RIG .. " huesos, 3 mallas, goteo de sangre en la mandíbula. Pulsa Play: noche cerrada, solo dos puntos blancos te observan. Botones 1-9 y L para la luz.")

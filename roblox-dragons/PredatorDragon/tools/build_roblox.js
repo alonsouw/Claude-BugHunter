@@ -31,7 +31,7 @@ return ${lua(ANIMS)}
 `;
 fs.writeFileSync(path.join(ROOT, 'roblox/PredatorAnimations.lua'), animsLua);
 
-const rigLua = '{\n' + rig.bones.map(b => `\t{ name = ${JSON.stringify(b.name)}, parent = ${b.parent ? JSON.stringify(b.parent) : 'nil'}, head = ${lua(b.head)} },`).join('\n') + '\n}';
+const rigLua = '{\n' + rig.bones.map(b => `\t{ name = ${JSON.stringify(b.name)}, parent = ${b.parent ? JSON.stringify(b.parent) : 'nil'}, head = ${lua(b.head)}, tail = ${lua(b.tail)} },`).join('\n') + '\n}';
 const eyesLua = `{ EyeL = ${lua(rig.eyes.EyeL)}, EyeR = ${lua(rig.eyes.EyeR)}, bone = ${JSON.stringify(rig.eyes.bone)} }`;
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 // el animador es común a todas las especies: se copia desde shared/

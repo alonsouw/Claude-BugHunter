@@ -54,7 +54,7 @@ local function eyeParts(model)
 	local list = {}
 	if model then
 		for _, p in ipairs(model:GetChildren()) do
-			if p:IsA("BasePart") and p:GetAttribute("Offset") then
+			if p:IsA("BasePart") and p:GetAttribute("Kind") == "eye" then
 				table.insert(list, p)
 			end
 		end
@@ -95,11 +95,15 @@ local function followEyes(model)
 		dotConn:Disconnect()
 	end
 	local pairsList = {}
-	for _, dot in ipairs(eyeParts(model)) do
-		local bone = model:FindFirstChild(dot:GetAttribute("Bone"), true)
-		if bone then
-			table.insert(pairsList, { dot, bone, dot:GetAttribute("Offset") })
+	for _, p in ipairs(model:GetChildren()) do   -- ojos y punto de goteo siguen a su hueso
+		if p:IsA("BasePart") and p:GetAttribute("Offset") then
+			local bone = model:FindFirstChild(p:GetAttribute("Bone"), true)
+			if bone then
+				table.insert(pairsList, { p, bone, p:GetAttribute("Offset") })
+			end
 		end
+	end
+	for _, dot in ipairs(eyeParts(model)) do
 		dot.Transparency = night and DOT_NIGHT or DOT_DAY
 	end
 	dotConn = RunService.RenderStepped:Connect(function()
@@ -131,6 +135,33 @@ local function spawnDragon()
 		end
 		busy = true
 		animator:SetLookTarget(nil)
+		-- gore: charco de sangre que se extiende bajo el cuerpo
+		local scale = dragon:GetAttribute("RigScale") or 1
+		local pool = Instance.new("Part")
+		pool.Name = "BloodPool"
+		pool.Shape = Enum.PartType.Cylinder
+		pool.Anchored = true
+		pool.CanCollide = false
+		pool.CanQuery = false
+		pool.Material = Enum.Material.SmoothPlastic
+		pool.Reflectance = 0.18
+		pool.Color = Color3.fromRGB(62, 3, 7)
+		pool.Size = Vector3.new(0.06, 0.5, 0.5)
+		local ground = stage.CFrame * CFrame.new(0, stage.Size.Y / 2 + 0.03, 0)
+		pool.CFrame = CFrame.new(dragon:GetPivot().Position.X, ground.Y, dragon:GetPivot().Position.Z) * CFrame.Angles(0, 0, math.rad(90))
+		pool.Parent = showcase
+		TweenService:Create(pool, TweenInfo.new(2.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.06, 14 * scale, 11 * scale) }):Play()
+		task.delay(3.4, function()
+			TweenService:Create(pool, TweenInfo.new(0.8), { Transparency = 1 }):Play()
+			task.delay(0.9, function()
+				pool:Destroy()
+			end)
+		end)
+		for _, d in ipairs(dragon:GetDescendants()) do
+			if d:IsA("ParticleEmitter") then
+				d.Rate = 18 -- la sangre sigue cayendo mientras muere
+			end
+		end
 		-- el cuerpo se disuelve en la oscuridad; los ojos aguantan un momento más
 		local eyes = eyeParts(dragon)
 		for _, p in ipairs(dragon:GetDescendants()) do

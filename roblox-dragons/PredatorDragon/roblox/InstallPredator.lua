@@ -27,44 +27,44 @@ local MAPS = {
 }
 
 local RIG = {
-	{ name = "Root", parent = nil, head = { 0, 0, -2.4 } },
-	{ name = "Hips", parent = "Root", head = { 0, 6.6, -2.4 } },
-	{ name = "Chest", parent = "Hips", head = { 0, 6.7, -5.6 } },
-	{ name = "Neck1", parent = "Chest", head = { 0, 7.4, -10.4 } },
-	{ name = "Neck2", parent = "Neck1", head = { 0, 8.2, -12.2 } },
-	{ name = "Neck3", parent = "Neck2", head = { 0, 9.2, -14.5 } },
-	{ name = "Head", parent = "Neck3", head = { 0, 9.05, -18.4 } },
-	{ name = "Jaw", parent = "Head", head = { 0, 8.6493, -18.4457 } },
-	{ name = "Tongue", parent = "Jaw", head = { 0, 7.6881, -19.1514 } },
-	{ name = "Tail1", parent = "Hips", head = { 0, 6.6, -2.4 } },
-	{ name = "Tail2", parent = "Tail1", head = { 0, 6.3, 0.6 } },
-	{ name = "Tail3", parent = "Tail2", head = { 0.1, 5.9, 4 } },
-	{ name = "Tail4", parent = "Tail3", head = { 0.25, 5.4, 7.6 } },
-	{ name = "Tail5", parent = "Tail4", head = { 0.35, 4.95, 11.2 } },
-	{ name = "Tail6", parent = "Tail5", head = { 0.2, 4.65, 14.6 } },
-	{ name = "Tail7", parent = "Tail6", head = { -0.15, 4.5, 17.8 } },
-	{ name = "Tail8", parent = "Tail7", head = { -0.3, 4.45, 20.6 } },
-	{ name = "LegFL_Upper", parent = "Chest", head = { -2, 6.5, -9.6 } },
-	{ name = "LegFL_Lower", parent = "LegFL_Upper", head = { -2.75, 3.7, -7.6 } },
-	{ name = "LegFL_Foot", parent = "LegFL_Lower", head = { -2.55, 1.3, -9.2 } },
-	{ name = "LegBL_Upper", parent = "Hips", head = { -1.9, 6.3, -2 } },
-	{ name = "LegBL_Lower", parent = "LegBL_Upper", head = { -2.7, 3.7, -4 } },
-	{ name = "LegBL_Foot", parent = "LegBL_Lower", head = { -2.7, 2, -0.8 } },
-	{ name = "LegFR_Upper", parent = "Chest", head = { 2, 6.5, -9.6 } },
-	{ name = "LegFR_Lower", parent = "LegFR_Upper", head = { 2.75, 3.7, -7.6 } },
-	{ name = "LegFR_Foot", parent = "LegFR_Lower", head = { 2.55, 1.3, -9.2 } },
-	{ name = "LegBR_Upper", parent = "Hips", head = { 1.9, 6.3, -2 } },
-	{ name = "LegBR_Lower", parent = "LegBR_Upper", head = { 2.7, 3.7, -4 } },
-	{ name = "LegBR_Foot", parent = "LegBR_Lower", head = { 2.7, 2, -0.8 } },
-	{ name = "WingL_Arm", parent = "Chest", head = { -1.7, 8.6, -8.6 } },
-	{ name = "WingL_Fore", parent = "WingL_Arm", head = { -5.6, 12.6, -7.6 } },
-	{ name = "WingL_Hand", parent = "WingL_Fore", head = { -11.2, 15, -9.4 } },
-	{ name = "WingR_Arm", parent = "Chest", head = { 1.7, 8.6, -8.6 } },
-	{ name = "WingR_Fore", parent = "WingR_Arm", head = { 5.6, 12.6, -7.6 } },
-	{ name = "WingR_Hand", parent = "WingR_Fore", head = { 11.2, 15, -9.4 } },
+	{ name = "Root", parent = nil, head = { 0, 0, -2.4 }, tail = { 0, 1.5, -2.4 } },
+	{ name = "Hips", parent = "Root", head = { 0, 6.6, -2.4 }, tail = { 0, 6.7, -5.6 } },
+	{ name = "Chest", parent = "Hips", head = { 0, 6.7, -5.6 }, tail = { 0, 7.4, -10.4 } },
+	{ name = "Neck1", parent = "Chest", head = { 0, 7.4, -10.4 }, tail = { 0, 8.2, -12.2 } },
+	{ name = "Neck2", parent = "Neck1", head = { 0, 8.2, -12.2 }, tail = { 0, 9.2, -14.5 } },
+	{ name = "Neck3", parent = "Neck2", head = { 0, 9.2, -14.5 }, tail = { 0, 9.05, -18.4 } },
+	{ name = "Head", parent = "Neck3", head = { 0, 9.05, -18.4 }, tail = { 0, 7.3087, -24.2246 } },
+	{ name = "Jaw", parent = "Head", head = { 0, 8.6493, -18.4457 }, tail = { 0, 5.0291, -22.1756 } },
+	{ name = "Tongue", parent = "Jaw", head = { 0, 7.6881, -19.1514 }, tail = { 0, 5.2516, -22.044 } },
+	{ name = "Tail1", parent = "Hips", head = { 0, 6.6, -2.4 }, tail = { 0, 6.3, 0.6 } },
+	{ name = "Tail2", parent = "Tail1", head = { 0, 6.3, 0.6 }, tail = { 0.1, 5.9, 4 } },
+	{ name = "Tail3", parent = "Tail2", head = { 0.1, 5.9, 4 }, tail = { 0.25, 5.4, 7.6 } },
+	{ name = "Tail4", parent = "Tail3", head = { 0.25, 5.4, 7.6 }, tail = { 0.35, 4.95, 11.2 } },
+	{ name = "Tail5", parent = "Tail4", head = { 0.35, 4.95, 11.2 }, tail = { 0.2, 4.65, 14.6 } },
+	{ name = "Tail6", parent = "Tail5", head = { 0.2, 4.65, 14.6 }, tail = { -0.15, 4.5, 17.8 } },
+	{ name = "Tail7", parent = "Tail6", head = { -0.15, 4.5, 17.8 }, tail = { -0.3, 4.45, 20.6 } },
+	{ name = "Tail8", parent = "Tail7", head = { -0.3, 4.45, 20.6 }, tail = { -0.4605, 4.3965, 23.5952 } },
+	{ name = "LegFL_Upper", parent = "Chest", head = { -2, 6.5, -9.6 }, tail = { -2.75, 3.7, -7.6 } },
+	{ name = "LegFL_Lower", parent = "LegFL_Upper", head = { -2.75, 3.7, -7.6 }, tail = { -2.55, 1.3, -9.2 } },
+	{ name = "LegFL_Foot", parent = "LegFL_Lower", head = { -2.55, 1.3, -9.2 }, tail = { -2.65, 0.45, -11.3 } },
+	{ name = "LegBL_Upper", parent = "Hips", head = { -1.9, 6.3, -2 }, tail = { -2.7, 3.7, -4 } },
+	{ name = "LegBL_Lower", parent = "LegBL_Upper", head = { -2.7, 3.7, -4 }, tail = { -2.7, 2, -0.8 } },
+	{ name = "LegBL_Foot", parent = "LegBL_Lower", head = { -2.7, 2, -0.8 }, tail = { -2.8, 0.45, -2.9 } },
+	{ name = "LegFR_Upper", parent = "Chest", head = { 2, 6.5, -9.6 }, tail = { 2.75, 3.7, -7.6 } },
+	{ name = "LegFR_Lower", parent = "LegFR_Upper", head = { 2.75, 3.7, -7.6 }, tail = { 2.55, 1.3, -9.2 } },
+	{ name = "LegFR_Foot", parent = "LegFR_Lower", head = { 2.55, 1.3, -9.2 }, tail = { 2.65, 0.45, -11.3 } },
+	{ name = "LegBR_Upper", parent = "Hips", head = { 1.9, 6.3, -2 }, tail = { 2.7, 3.7, -4 } },
+	{ name = "LegBR_Lower", parent = "LegBR_Upper", head = { 2.7, 3.7, -4 }, tail = { 2.7, 2, -0.8 } },
+	{ name = "LegBR_Foot", parent = "LegBR_Lower", head = { 2.7, 2, -0.8 }, tail = { 2.8, 0.45, -2.9 } },
+	{ name = "WingL_Arm", parent = "Chest", head = { -1.7, 8.6, -8.6 }, tail = { -5.6, 12.6, -7.6 } },
+	{ name = "WingL_Fore", parent = "WingL_Arm", head = { -5.6, 12.6, -7.6 }, tail = { -11.2, 15, -9.4 } },
+	{ name = "WingL_Hand", parent = "WingL_Fore", head = { -11.2, 15, -9.4 }, tail = { -20.2, 10.8, 2.6 } },
+	{ name = "WingR_Arm", parent = "Chest", head = { 1.7, 8.6, -8.6 }, tail = { 5.6, 12.6, -7.6 } },
+	{ name = "WingR_Fore", parent = "WingR_Arm", head = { 5.6, 12.6, -7.6 }, tail = { 11.2, 15, -9.4 } },
+	{ name = "WingR_Hand", parent = "WingR_Fore", head = { 11.2, 15, -9.4 }, tail = { 20.2, 10.8, 2.6 } },
 }
 local EYES = { EyeL = { 1.22, 9.1967, -20.7221 }, EyeR = { -1.22, 9.1967, -20.7221 }, bone = "Head" }
-local GROUND_Y = -0.081
+local GROUND_Y = -0.088
 local SOURCES = {
 	DragonAnimator = [=======[
 --[[
@@ -1786,7 +1786,7 @@ local function eyeParts(model)
 	local list = {}
 	if model then
 		for _, p in ipairs(model:GetChildren()) do
-			if p:IsA("BasePart") and p:GetAttribute("Offset") then
+			if p:IsA("BasePart") and p:GetAttribute("Kind") == "eye" then
 				table.insert(list, p)
 			end
 		end
@@ -1827,11 +1827,15 @@ local function followEyes(model)
 		dotConn:Disconnect()
 	end
 	local pairsList = {}
-	for _, dot in ipairs(eyeParts(model)) do
-		local bone = model:FindFirstChild(dot:GetAttribute("Bone"), true)
-		if bone then
-			table.insert(pairsList, { dot, bone, dot:GetAttribute("Offset") })
+	for _, p in ipairs(model:GetChildren()) do   -- ojos y punto de goteo siguen a su hueso
+		if p:IsA("BasePart") and p:GetAttribute("Offset") then
+			local bone = model:FindFirstChild(p:GetAttribute("Bone"), true)
+			if bone then
+				table.insert(pairsList, { p, bone, p:GetAttribute("Offset") })
+			end
 		end
+	end
+	for _, dot in ipairs(eyeParts(model)) do
 		dot.Transparency = night and DOT_NIGHT or DOT_DAY
 	end
 	dotConn = RunService.RenderStepped:Connect(function()
@@ -1863,6 +1867,33 @@ local function spawnDragon()
 		end
 		busy = true
 		animator:SetLookTarget(nil)
+		-- gore: charco de sangre que se extiende bajo el cuerpo
+		local scale = dragon:GetAttribute("RigScale") or 1
+		local pool = Instance.new("Part")
+		pool.Name = "BloodPool"
+		pool.Shape = Enum.PartType.Cylinder
+		pool.Anchored = true
+		pool.CanCollide = false
+		pool.CanQuery = false
+		pool.Material = Enum.Material.SmoothPlastic
+		pool.Reflectance = 0.18
+		pool.Color = Color3.fromRGB(62, 3, 7)
+		pool.Size = Vector3.new(0.06, 0.5, 0.5)
+		local ground = stage.CFrame * CFrame.new(0, stage.Size.Y / 2 + 0.03, 0)
+		pool.CFrame = CFrame.new(dragon:GetPivot().Position.X, ground.Y, dragon:GetPivot().Position.Z) * CFrame.Angles(0, 0, math.rad(90))
+		pool.Parent = showcase
+		TweenService:Create(pool, TweenInfo.new(2.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.06, 14 * scale, 11 * scale) }):Play()
+		task.delay(3.4, function()
+			TweenService:Create(pool, TweenInfo.new(0.8), { Transparency = 1 }):Play()
+			task.delay(0.9, function()
+				pool:Destroy()
+			end)
+		end)
+		for _, d in ipairs(dragon:GetDescendants()) do
+			if d:IsA("ParticleEmitter") then
+				d.Rate = 18 -- la sangre sigue cayendo mientras muere
+			end
+		end
 		-- el cuerpo se disuelve en la oscuridad; los ojos aguantan un momento más
 		local eyes = eyeParts(dragon)
 		for _, p in ipairs(dragon:GetDescendants()) do
@@ -2110,9 +2141,46 @@ for _, name in ipairs({ "EyeL", "EyeR" }) do
 	dot.CastShadow = false
 	dot.CFrame = CFrame.new(W(EYES[name]))
 	dot:SetAttribute("Bone", EYES.bone)
+	dot:SetAttribute("Kind", "eye")
 	dot:SetAttribute("Offset", head.WorldCFrame:ToObjectSpace(dot.CFrame))
 	dot.Parent = model
 end
+
+-- Gore: goteo de sangre desde la punta de la mandíbula (sigue al hueso Jaw igual que los ojos)
+local jaw = bones.Jaw
+local drip = Instance.new("Part")
+drip.Name = "BloodDripPoint"
+drip.Size = Vector3.one * 0.05 * scale
+drip.Transparency = 1
+drip.Anchored = true
+drip.CanCollide = false
+drip.CanQuery = false
+drip.CanTouch = false
+drip.CastShadow = false
+drip.CFrame = CFrame.new(W(byName.Jaw.tail) + Vector3.new(0, -0.15 * scale, 0))
+drip:SetAttribute("Bone", "Jaw")
+drip:SetAttribute("Kind", "drip")
+drip:SetAttribute("Offset", jaw.WorldCFrame:ToObjectSpace(drip.CFrame))
+local att = Instance.new("Attachment")
+att.Parent = drip
+local pe = Instance.new("ParticleEmitter")
+pe.Name = "Blood"
+pe.Texture = "rbxasset://textures/particles/smoke_main.dds"
+pe.Color = ColorSequence.new(Color3.fromRGB(120, 6, 10), Color3.fromRGB(60, 2, 5))
+pe.LightEmission = 0
+pe.LightInfluence = 1
+pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.07 * scale), NumberSequenceKeypoint.new(1, 0.12 * scale) })
+pe.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.8, 0.1), NumberSequenceKeypoint.new(1, 1) })
+pe.Squash = NumberSequence.new(-0.8)
+pe.Orientation = Enum.ParticleOrientation.VelocityParallel
+pe.Lifetime = NumberRange.new(0.9, 1.4)
+pe.Rate = 6
+pe.Speed = NumberRange.new(0.2, 0.8)
+pe.SpreadAngle = Vector2.new(10, 10)
+pe.EmissionDirection = Enum.NormalId.Bottom
+pe.Acceleration = Vector3.new(0, -35 * scale, 0)
+pe.Parent = att
+drip.Parent = model
 
 if math.abs(DESIRED_SCALE / scale - 1) > 1e-3 then
 	model:ScaleTo(DESIRED_SCALE / scale)
@@ -2207,4 +2275,4 @@ Selection:Set({ statue })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Dragón Depredador instalado")
 end)
-print("[Predator] Listo: " .. #RIG .. " huesos, 3 mallas. Pulsa Play: noche cerrada, solo dos puntos blancos te observan. Botones 1-9 y L para la luz.")
+print("[Predator] Listo: " .. #RIG .. " huesos, 3 mallas, goteo de sangre en la mandíbula. Pulsa Play: noche cerrada, solo dos puntos blancos te observan. Botones 1-9 y L para la luz.")

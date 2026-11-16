@@ -24,7 +24,10 @@ g = Grid((-6.3, -0.6, -27.0), (6.3, 14.2, 26.5), vox)
 BODY.build(g, rng)
 gh = None
 HEAD.build(g, BODY.HEAD_XF, np.random.default_rng(7))
-g.noise(0.03, 1.6, mask_mats=('teeth', 'horn', 'drool', 'tongue', 'claw', 'bone', 'membrane'))
+import gore as GORE
+GORE.apply(g, np.random.default_rng(13))
+print('gore aplicado', round(time.time() - t0, 1), 's')
+g.noise(0.03, 1.6, mask_mats=('teeth', 'horn', 'drool', 'tongue', 'claw', 'bone', 'membrane', 'blood', 'wood'))
 bv, bf, bmat, bpart = g.mesh()
 print('cuerpo', len(bf), 'triángulos', round(time.time() - t0, 1), 's'); del g
 from sdf import open_edges

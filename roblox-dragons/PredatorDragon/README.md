@@ -5,6 +5,13 @@ Es un cuadrúpedo negro carbón con heridas y costillas al aire, fauces babeante
 
 **No tiene ojos.** En cada cuenca hay un punto de luz blanca diminuto: de día casi no se ve y en la oscuridad es lo único visible.
 
+## Heridas de batalla (gore)
+- Mejilla izquierda arrancada con el maxilar, las raíces de los dientes y tiras de músculo al aire. Babas con sangre, y sangre en labios, colmillos y mentón.
+- Lomo abierto con las vértebras expuestas, costillar desgarrado con jirones de carne y regueros de sangre.
+- Lanza rota en el hombro izquierdo, dos flechas en el cuello, zarpazos en el muslo derecho y garras delanteras ensangrentadas.
+- En el juego: `BloodDripPoint` (partículas de sangre que caen de la mandíbula y siguen al hueso `Jaw`) y un charco de sangre que se extiende al morir.
+- ⚠️ Roblox exige declarar la sangre y el gore en el cuestionario de madurez del contenido. El gore realista solo se permite en experiencias 17+. Para una versión sin gore, quita `gore.apply` en `sculpt/stage_body.py` y regenera.
+
 ## Cómo se construyó
 1. **Escultura** (`sculpt/sdf.py`, `head.py`, `body.py`, `membrane.py`): campos de distancia con uniones suaves. Cada músculo, hueso, cuerno y diente es una forma que se funde con las demás, y el resultado es una piel continua de alta resolución (vóxel de 0,05 studs). Primero se esculpió la cabeza, comparándola con la hoja de referencia, y después el cuerpo, la cola y las alas.
 2. **Retopología** (`sculpt/produce.py`): decimado en dos pasos para que la cabeza conserve los dientes. Resultado: Body unos 19k triángulos y WingL/WingR unos 9k cada una, bajo el límite de 20k por MeshPart.
