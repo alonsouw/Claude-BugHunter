@@ -63,6 +63,15 @@ figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted
 .anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
 .anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
 .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
 .note { font-size: .88rem; color: #bdb5ab; }
 
 .views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -97,10 +106,10 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
     <div>
       <div class="kicker">Bestiario Umbral · Especie VI · La Sonrisa en la Oscuridad</div>
       <h1>Dragón Sombrío</h1>
-      <div class="latin">Umbrafex ridens · versión 1, cuerpo de zancos y sonrisa de agujas</div>
+      <div class="latin">Umbrafex ridens · versión 2, remaster nocturno: más detalle, nuevas animaciones y un comportamiento que te observa</div>
     </div>
     <div class="stages" aria-label="Etapas">
-      <span class="done">Cabeza</span><span class="done">Cuerpo y cola</span><span class="done">Alas</span><span class="done">Horneado</span><span class="done">Huesos</span><span class="done">Animaciones</span><span class="done">Sonrisa Neon</span><span class="wait">Prueba en Studio</span>
+      <span class="done">Cabeza</span><span class="done">Cuerpo y cola</span><span class="done">Alas</span><span class="done">Horneado</span><span class="done">Huesos</span><span class="done">Animaciones v2</span><span class="done">Sonrisa Neon</span><span class="done">Comportamiento</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
     </div>
   </header>
 
@@ -135,11 +144,12 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
         <div><h3>Animación</h3><div class="anims" id="anims"></div></div>
         <div><h3>Ver</h3><div class="toggles">
           <button type="button" id="tDark" aria-pressed="false">Oscuridad</button>
+          <button type="button" id="tNV" aria-pressed="false">Visión nocturna</button>
           <button type="button" id="tLook" aria-pressed="true">Te mira</button>
           <button type="button" id="tBones" aria-pressed="false">Huesos</button>
           <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
-        <p class="note">Es el archivo exportado para Roblox: mallas con skinning, 36 huesos y texturas horneadas. Las animaciones usan los mismos datos que el script de Studio.</p>
-        <p class="note">«Te mira» hace que la cabeza y el cuello sigan a la cámara. «Oscuridad» apaga las luces: solo quedan los ojos rojos y la sonrisa.</p>
+        <p class="note">Es el archivo exportado para Roblox: cinco mallas con skinning (la cabeza tiene malla y textura propias), 35 huesos y texturas horneadas. Las animaciones usan los mismos datos que el script de Studio.</p>
+        <p class="note">«Te mira» hace que la cabeza y el cuello sigan a la cámara. «Oscuridad» apaga las luces: solo quedan los ojos rojos y la sonrisa. «Visión nocturna» lo muestra como lo verá el jugador con las gafas puestas.</p>
       </div>
     </div>
   </section>
@@ -161,25 +171,56 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
       <h2>Cómo es</h2>
       <ul class="list">
         <li><b>La cara</b>: cráneo negro con un domo de mechones que caen hacia atrás como humo, cara que se estrecha en V hasta una barbilla en punta y ceño de crestas óseas.</li>
-        <li><b>La sonrisa</b>: de oreja a oreja, con labios rojos, encías granates y unas 60 agujas blancas, largas y desiguales, arriba y abajo. La mandíbula es una parte propia y se abre en el ataque y al sonreír.</li>
-        <li><b>Los ojos</b> no son globos: son dos puntos rojos pequeños y muy separados, en fosas poco profundas.</li>
+        <li><b>La sonrisa (v2)</b>: de oreja a oreja, con labios de grosor irregular y encías hinchadas en cada raíz. Los dientes son desiguales: largos y cortos, torcidos, algunos rotos o que faltan, nueve colmillos sueltos y una segunda fila detrás de los del frente.</li>
+        <li><b>La mandíbula (v2)</b>: barbilla más larga y adelantada, crestas óseas con nudos a los lados y una púa en el mentón.</li>
+        <li><b>Los ojos</b> no son globos: son dos puntos rojos dentro de cuencas hondas con borde de hueso. Llevan una luz roja diminuta (unos 2 studs) que solo tiñe la cuenca y el ceño.</li>
+        <li><b>Lomo y cuello (v2)</b>: pliegues en anillo, tendones, venas moradas en relieve, nódulos, racimos de púas finas, cicatrices y colgajos de piel mudada. El cuello es más fino y los dedos más largos.</li>
+        <li><b>Texturas (v2)</b>: piel gris carbón con manchas moradas de moratón, grietas finas de piel seca y sombras de cavidad horneadas. Así la visión nocturna saca relieve en lugar de una mancha negra.</li>
         <li><b>El cuerpo de zancos</b>: torso pequeño y huesudo en joroba, colgado muy alto; cuello largo que baja hacia delante.</li>
         <li><b>Brazos larguísimos</b> con el codo por encima del lomo y manos de cinco dedos curvados; el izquierdo llega más lejos que el derecho.</li>
         <li><b>Patas traseras en zigzag</b>, con articulaciones nudosas, espolones y pies de tres dedos.</li>
         <li>Costillas marcadas, vértebras con púas finas, jirones de piel colgando del vientre y del cuello, alas hechas jirones plegadas como un manto y cola larga que se arrastra.</li>
-        <li>Se mueve como una araña de zancos, despacio y a tirones, y ladea la cabeza de golpe mientras te mira.</li>
+        <li>Respira despacio y hondo, camina a zancos irregulares con las articulaciones temblando a destiempo y gira la cabeza muy despacio para seguirte.</li>
       </ul>
     </div>
     <figure><img src="design/renders/right.jpg" alt="Lado derecho: joroba, brazos de zancos y jirones colgando" loading="lazy"><figcaption>Lado derecho</figcaption></figure>
   </section>
 
   <section>
+    <h2>Comportamiento: un dragón para todos que te observa</h2>
+    <p style="margin-bottom:14px">Hay un solo Dragón Sombrío en el servidor y todos los jugadores lo ven en el mismo sitio. Cada jugador envía hacia dónde mira su cámara, así el dragón sabe quién lo está viendo. No persigue de forma constante y no repite siempre lo mismo: los tiempos son aleatorios y evita la última opción que eligió.</p>
+    <div class="states">
+      <div><b>Ausente</b><span>Desaparece durante uno o dos minutos. A veces el ambiente se queda en silencio de golpe.</span></div>
+      <div><b>Observa</b><span>Aparece lejos, en la visión periférica, y mejor junto a árboles o rocas. Se queda quieto y ladea la cabeza despacio.</span></div>
+      <div><b>Inmóvil</b><span>Si lo miras directamente, se congela en mitad del movimiento. Si apartas la vista y vuelves a mirar, puede estar en otra postura o más cerca.</span></div>
+      <div><b>Acecha</b><span>Solo avanza mientras no miras hacia él, a zancos irregulares. Se detiene a unos 40 studs.</span></div>
+      <div><b>Se desvanece</b><span>Si te acercas demasiado o lo miras fijamente mucho rato, se disuelve poco a poco delante de ti y vuelve a aparecer en otro sitio.</span></div>
+      <div><b>Detecta</b><span>Cuando lo ves de reojo, levanta la cabeza muy despacio. A veces sonríe abriendo la boca al máximo.</span></div>
+      <div><b>Persigue</b><span>Muy rara vez (como mucho una vez cada 4 minutos): una carrera corta y agresiva que termina con su desaparición y un silencio.</span></div>
+    </div>
+    <p class="note" style="margin-top:12px">No hace daño: es terror psicológico. La lógica se ha probado simulando 4 horas de juego. Nunca se mueve mientras alguien lo mira, cambia de postura solo cuando nadie lo ve, deja al menos 4 minutos entre persecuciones y está visible menos de un tercio del tiempo.</p>
+  </section>
+
+  <section>
+    <h2>Sonido</h2>
+    <p style="margin-bottom:14px">Sintetizados desde cero para este dragón. Hay que subirlos a Roblox y pegar sus ids en el instalador. Los de ambiente suenan cada vez en un punto distinto alrededor del jugador, para que cueste saber de dónde vienen.</p>
+    <div class="sounds">
+      <div><b>Breath</b><span class="note">Respiración grave en bucle, sale de su cuerpo.</span><audio controls preload="none" src="sounds/Breath.ogg"></audio></div>
+      <div><b>Creak</b><span class="note">Crujido de articulaciones, cuando está cerca.</span><audio controls preload="none" src="sounds/Creak.ogg"></audio></div>
+      <div><b>Shriek</b><span class="note">Chillido de la sonrisa (rugido).</span><audio controls preload="none" src="sounds/Shriek.ogg"></audio></div>
+      <div><b>Whisper</b><span class="note">Ambiente: susurro sin palabras.</span><audio controls preload="none" src="sounds/Whisper.ogg"></audio></div>
+      <div><b>DistantBreath</b><span class="note">Ambiente: respiración lejana.</span><audio controls preload="none" src="sounds/DistantBreath.ogg"></audio></div>
+      <div><b>Crack</b><span class="note">Ambiente: rama que cruje.</span><audio controls preload="none" src="sounds/Crack.ogg"></audio></div>
+    </div>
+  </section>
+
+  <section>
     <h2>Cómo se rehízo</h2>
     <div class="steps4">
       <div><b>1 · Escultura</b><span>Cada músculo, hueso, cuerno y diente es una forma que se funde con las demás. El resultado es una piel continua de alta resolución, no piezas pegadas. Primero la cara, comparada con tu imagen hasta cuadrar la sonrisa.</span></div>
-      <div><b>2 · Retopología</b><span>La escultura se reduce a mallas de juego: unos 19 mil triángulos en el cuerpo, 7 mil en los dientes (malla propia, para que brillen) y unos 9 mil por ala. Todo bajo el límite de 20 mil de Roblox.</span></div>
-      <div><b>3 · Horneado</b><span>El color, las escamas, el relieve y el brillo de la escultura se hornean en texturas de 1024 px: color, normal y rugosidad para cada malla.</span></div>
-      <div><b>4 · Huesos</b><span>36 huesos con pesos por zona: la mandíbula se lleva el labio y los dientes de abajo, la columna tiene un hueso más para la joroba y la membrana sigue a los dedos del ala.</span></div>
+      <div><b>2 · Retopología</b><span>La escultura se reduce a mallas de juego. El cuerpo tiene unos 15 mil triángulos y la cabeza otros tantos en su propia malla (Skull). Los dientes, en malla aparte, brillan de noche, y cada ala lleva unos 8 mil. Todo queda bajo el límite de 20 mil de Roblox.</span></div>
+      <div><b>3 · Horneado + oclusión</b><span>El color, las escamas, el relieve y el brillo de la escultura se hornean en texturas de 1024 px: color, normal y rugosidad para cada malla.</span></div>
+      <div><b>4 · Huesos</b><span>Los mismos 35 huesos de la v1: el rig no cambia. La mandíbula se lleva el labio y los dientes de abajo, la columna tiene un hueso más para la joroba y la membrana sigue a los dedos del ala.</span></div>
     </div>
   </section>
 
@@ -197,7 +238,7 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
    ├─ LegBL_Upper ─ LegBL_Lower ─ LegBL_Foot
    ├─ LegBR_Upper ─ LegBR_Lower ─ LegBR_Foot
    └─ Tail1 ─ Tail2 ─ … ─ Tail8
-Mallas: Body · Teeth · WingL · WingR (skinning)
+Mallas: Body · Skull · Teeth · WingL · WingR (skinning)
 Ojos: EyeLPoint · EyeRPoint (puntos Neon rojos que siguen a Head)</pre>
     </div>
     <div>
@@ -205,13 +246,17 @@ Ojos: EyeLPoint · EyeRPoint (puntos Neon rojos que siguen a Head)</pre>
       <div class="files">
         <div><b>model/ShadowDragon.fbx</b><span>Mallas con huesos y texturas. Impórtalo con Rig Type «Custom».</span></div>
         <div><b>model/*_color · _normal · _roughness.png</b><span>Texturas de Body, WingL y WingR para SurfaceAppearance. Teeth es marfil liso.</span></div>
-        <div><b>roblox/InstallShadow.lua</b><span>Instalador para la Command Bar: ensambla el modelo, crea los ojos rojos, las carpetas y los scripts.</span></div>
+        <div><b>roblox/InstallShadow.lua</b><span>Instalador para la Command Bar: ensambla el modelo, crea los ojos con su luz y los sonidos, instala el comportamiento y guarda la v1 como respaldo.</span></div>
+        <div><b>roblox/ShadowStalker · ShadowClient · ShadowBrain</b><span>Comportamiento en el servidor, parte visual y sonora en cada jugador, y la lógica de estados.</span></div>
+        <div><b>sounds/*.ogg</b><span>Seis sonidos para subir con el Asset Manager.</span></div>
         <div><b>roblox/DragonAnimator.lua</b><span>Animaciones por datos para Motor6D y Bones, con mirada (<code>SetLookTarget</code>).</span></div>
       </div>
       <ol class="steps" style="margin-top:14px">
         <li><code>Import 3D</code> → <code>ShadowDragon.fbx</code> → <code>Rig Type: Custom</code>, sin combinar mallas.</li>
+        <li>Opcional: sube <code>sounds/*.ogg</code> y las texturas, y pega sus ids en <code>SOUND_IDS</code> y <code>MAPS</code> al principio del instalador.</li>
         <li>Selecciona el modelo importado y pega <code>InstallShadow.lua</code> en la Command Bar.</li>
-        <li>Play: noche cerrada, dos puntos rojos y una sonrisa que te siguen, teclas 1 a 9 para las animaciones y L para la luz.</li>
+        <li>Opcional: pon partes con la etiqueta <code>ShadowPerch</code> (o dentro de <code>Workspace.ShadowPerches</code>) junto a árboles y zonas oscuras. Son los sitios preferidos para aparecer.</li>
+        <li>Play: al cabo de un rato aparece lejos, en la periferia. Si lo miras, se queda inmóvil. La tecla N activa una visión nocturna de prueba.</li>
       </ol>
     </div>
   </section>
@@ -220,7 +265,7 @@ Ojos: EyeLPoint · EyeRPoint (puntos Neon rojos que siguen a Head)</pre>
     <div>
       <h2>Lo que conviene revisar</h2>
       <ul class="list todo">
-        <li>Ni el instalador ni el skinning se han probado dentro de Roblox Studio. El modelo, los huesos y las animaciones funcionan en Blender y en este visor, pero falta la prueba de tu amigo.</li>
+        <li>Ni el instalador, ni el skinning, ni el comportamiento se han probado dentro de Roblox Studio con jugadores reales; la lógica sí, en simulación. El modelo, los huesos y las animaciones funcionan en Blender y en este visor, pero falta la prueba de tu amigo.</li>
         <li>Si al importar Studio duplica el esqueleto por cada malla, el animador ya mueve todas las copias. Si las alas o los dientes no se deforman, hay que revisar que estén soldados al cuerpo; el instalador lo hace.</li>
         <li>El brillo de la sonrisa depende del Bloom de Lighting: la vitrina lo activa de noche.</li>
         <li>Las texturas de 1024 px son el máximo de Roblox. De muy cerca, las escamas se ven más suaves que en la escultura.</li>
@@ -244,9 +289,9 @@ Ojos: EyeLPoint · EyeRPoint (puntos Neon rojos que siguen a Head)</pre>
 <script>
 (() => {
 const D2R = Math.PI / 180, ANIMS = SHADOW_ANIMS;
-const ORDER = ['Idle', 'Walk', 'Run', 'Fly', 'TakeOff', 'Landing', 'Attack', 'Roar', 'Death'];
-const LABEL = { Idle: 'Acechar', Walk: 'Caminar', Run: 'Correr', Fly: 'Volar', TakeOff: 'Despegar', Landing: 'Aterrizar', Attack: 'Atacar', Roar: 'Sonreír', Death: 'Morir' };
-const LOOK = { NeckShare: 0.4, MaxYaw: 80 * D2R, MaxPitch: 35 * D2R, RestPitch: -5 * D2R, Speed: 4 };
+const ORDER = ['Idle', 'Walk', 'Detect', 'Chase', 'Roar', 'Freeze1', 'Freeze2', 'Freeze3', 'Attack', 'Run', 'Fly', 'Death'];
+const LABEL = { Idle: 'Acechar', Walk: 'Caminar', Run: 'Correr', Fly: 'Volar', TakeOff: 'Despegar', Landing: 'Aterrizar', Attack: 'Atacar', Roar: 'Sonreír', Death: 'Morir', Detect: 'Detectar', Watch: 'Vigilar', Chase: 'Perseguir', Freeze1: 'Inmóvil 1', Freeze2: 'Inmóvil 2', Freeze3: 'Inmóvil 3' };
+const LOOK = { NeckShare: 0.45, MaxYaw: 85 * D2R, MaxPitch: 35 * D2R, RestPitch: -5 * D2R, Speed: 1.1 };
 const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -287,11 +332,12 @@ Promise.all([fetch('model/rig.json').then(r => r.json()), new Promise((res, rej)
     const p = new THREE.Vector3(...rig.eyes[k]).applyMatrix4(headInv);
     const dot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff1a0e', transparent: true, opacity: 0.6 }));
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
-    glow.scale.setScalar(0.8); dot.position.copy(p); glow.position.copy(p); head.add(dot); head.add(glow); dots.push([dot, glow]);
+    glow.scale.setScalar(0.8); dot.position.copy(p); glow.position.copy(p); head.add(dot); head.add(glow);
+    const pl = new THREE.PointLight('#ff1e14', 0, 2.4, 2); pl.position.copy(p); head.add(pl); dot.userData.light = pl; dots.push([dot, glow]);
   }
   const b = rig.bounds, f = n => n.toFixed(1).replace('.', ',');
   document.getElementById('dims').innerHTML = [['Longitud', b.max[2] - b.min[2]], ['Altura', b.max[1] - b.min[1]], ['Envergadura', b.max[0] - b.min[0]]].map(([k, v]) => `<div><div class="v">${f(v)}</div><div class="k">${k} (studs)</div></div>`).join('') +
-    `<div><div class="v">${Object.values(rig.meshes).reduce((a, x) => a + x, 0).toLocaleString('es')}</div><div class="k">Triángulos (4 mallas)</div></div><div><div class="v">${rig.bones.length}</div><div class="k">Huesos</div></div>`;
+    `<div><div class="v">${Object.values(rig.meshes).reduce((a, x) => a + x, 0).toLocaleString('es')}</div><div class="k">Triángulos (5 mallas)</div></div><div><div class="v">${rig.bones.length}</div><div class="k">Huesos</div></div>`;
   document.getElementById('loading').hidden = true; updateUI(); requestAnimationFrame(frame);
 }).catch(e => { document.getElementById('loading').textContent = 'No se pudo cargar el modelo: ' + e.message; });
 
@@ -376,7 +422,7 @@ function setDark(on) {
   dark = on;
   for (const [l, day, night] of LIGHTS) l.intensity = on ? night : day;
   scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(on ? BG.night : BG.day);
-  dots.forEach(([d, g]) => { d.material.opacity = on ? 1 : 0.6; g.material.opacity = on ? 0.8 : 0; });
+  dots.forEach(([d, g]) => { d.material.opacity = on ? 1 : 0.6; g.material.opacity = on ? 0.8 : 0; if (d.userData.light) d.userData.light.intensity = on ? 2.2 : 0.6; });
   if (teethMat) { teethMat.emissive.set(on ? '#cfc9bc' : '#000000'); teethMat.emissiveIntensity = on ? 1.1 : 0; }
 }
 
@@ -394,6 +440,13 @@ tg('tBones', () => bonesOn, v => { bonesOn = v; toggleBones(v); });
 /* cámara orbital */
 let yaw = -2.35, pitch = 0.1, dist = 78, drag = null;
 const target = new THREE.Vector3(0, 8, 0);
+const nvBtn = tg('tNV', () => box.classList.contains('nv'), v => {
+  box.classList.toggle('nv', v);
+  if (v && !dark) document.getElementById('tDark').click();
+  else setDark(dark);
+  // las gafas amplifican la poca luz que hay: se ve el relieve del cuerpo, y los ojos y la sonrisa deslumbran
+  if (v) { hemi.intensity = 0.7; key.intensity = 0.55; rim.intensity = 0.35; }
+});
 tg('tDark', () => dark, v => { setDark(v); dist = v ? 24 : 78; pitch = v ? 0.02 : 0.1; target.set(0, v ? 6.6 : 8, v ? -13 : 0); if (v) yaw = Math.PI; });
 canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
 canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.05, Math.min(1.25, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
