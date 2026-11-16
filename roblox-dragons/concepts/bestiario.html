@@ -1,0 +1,757 @@
+<title>Bestiario Umbral</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: grimorio oscuro. Selector de especie arriba, lámina 3D (vista héroe + 6 vistas técnicas) y ficha de datos al lado. Tema único oscuro, elegido a propósito. */
+:root {
+  color-scheme: dark;
+  --bg: #0c0b0d;
+  --panel: #141215;
+  --panel-2: #1b181c;
+  --ink: #e6e0d6;
+  --muted: #9b928a;
+  --line: #2b272c;
+  --accent: #c23a2c;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.6rem, 6vw, 4.4rem); line-height: .9; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.stage { font-family: var(--font-data); font-size: .78rem; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; }
+.stage span { border: 1px solid var(--line); padding: 3px 8px; }
+.stage span.on { border-color: var(--accent); color: var(--ink); }
+nav.species { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 20px 0; }
+nav.species button { all: unset; cursor: pointer; padding: 10px 12px; border: 1px solid var(--line); background: var(--panel); display: grid; gap: 2px; min-width: 0; }
+nav.species button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav.species button:hover { border-color: #4a4248; }
+nav.species button[aria-pressed="true"] { border-color: var(--sp, var(--accent)); background: var(--panel-2); box-shadow: inset 0 -3px 0 var(--sp, var(--accent)); }
+nav.species .num { font-family: var(--font-data); font-size: .7rem; color: var(--muted); letter-spacing: .12em; }
+nav.species .nm { font-family: var(--font-display); font-size: 1.35rem; line-height: 1; }
+nav.species .ep { font-size: .8rem; color: var(--muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #08070a; min-width: 0; }
+canvas#view { display: block; width: 100%; touch-action: pan-y; cursor: grab; }
+canvas#view:active { cursor: grabbing; }
+.vlabel { position: absolute; font-family: var(--font-data); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: #b4aba2; padding: 6px 8px; pointer-events: none; }
+.vlabel b { color: var(--sp, var(--accent)); font-weight: 500; }
+.hint { position: absolute; font-family: var(--font-data); font-size: .66rem; color: #7d756e; pointer-events: none; }
+aside.data { background: var(--panel); border: 1px solid var(--line); padding: 20px; display: grid; gap: 18px; min-width: 0; }
+aside h2 { font-family: var(--font-display); font-size: 2.3rem; line-height: .95; margin: 0; text-wrap: balance; }
+.latin { font-style: italic; color: var(--muted); margin-top: 4px; }
+aside h3 { font-family: var(--font-data); font-weight: 500; font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+aside p { margin: 0; }
+ul.traits { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+ul.traits li::marker { color: var(--sp, var(--accent)); }
+.dims { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 10px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.sw { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: center; font-size: .78rem; }
+.sw i { width: 26px; height: 26px; border: 1px solid #3a3439; display: block; }
+.sw span { display: grid; line-height: 1.2; }
+.sw code { font-family: var(--font-data); font-size: .68rem; color: var(--muted); }
+.mono { font-family: var(--font-data); font-size: .8rem; color: #c9c1b8; }
+section.notes { margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; border-top: 1px solid var(--line); padding-top: 20px; }
+section.notes h3 { font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 6px; font-weight: 500; }
+section.notes p, section.notes li { color: #c8c0b7; font-size: .95rem; }
+section.notes ol { margin: 0; padding-left: 1.2em; }
+section.notes li.now { color: var(--ink); }
+section.notes li.now::marker { color: var(--accent); }
+pre.tree { font-family: var(--font-data); font-size: .78rem; color: #c9c1b8; margin: 0; overflow-x: auto; }
+@media (max-width: 1000px) { .sheet { grid-template-columns: 1fr; } nav.species { grid-template-columns: repeat(3, minmax(0, 1fr)); } section.notes { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { nav.species { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Bestiario de fantasía oscura · Roblox Studio</div>
+      <h1>Bestiario Umbral</h1>
+    </div>
+    <div class="stage" aria-label="Etapas del proyecto">
+      <span class="on">1 Conceptos</span><span>2 Diseño</span><span>3 Modelo</span><span>4 Rig</span><span>5 Animación</span><span>6 Studio</span><span>7 Optimización</span>
+    </div>
+  </header>
+
+  <nav class="species" id="nav" aria-label="Especies"></nav>
+
+  <div class="sheet">
+    <div class="stagebox" id="stagebox">
+      <canvas id="view" aria-label="Lámina 3D de la especie seleccionada"></canvas>
+      <div id="labels"></div>
+    </div>
+    <aside class="data" id="data"></aside>
+  </div>
+
+  <section class="notes">
+    <div>
+      <h3>Qué estás viendo</h3>
+      <p>Cada lámina se dibuja en tiempo real a partir de un esbozo 3D procedural de la especie: columna, cráneo con mandíbula articulada, extremidades, alas con huesos de dedo y membrana, cola y garras. Son proxies de volumen para fijar silueta y proporciones. Todavía no son las mallas finales de Roblox. Las medidas se calculan sobre el modelo, en studs.</p>
+    </div>
+    <div>
+      <h3>Plan de trabajo</h3>
+      <ol>
+        <li class="now">Fichas conceptuales de las seis especies (esta página).</li>
+        <li>Elegir el primer dragón y cerrar su diseño.</li>
+        <li>Modelo 3D en Blender: MeshParts por segmento, texturas PBR.</li>
+        <li>Rig con Bones y Motor6D, exportación .fbx.</li>
+        <li>Idle, Walk, Run, Fly, TakeOff, Landing, Attack, Roar, Death.</li>
+        <li>Importación y prueba en Roblox Studio.</li>
+        <li>Optimización y siguiente especie.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Estructura en Studio</h3>
+<pre class="tree">ReplicatedStorage
+└─ Dragons
+   ├─ AbyssalDragon
+   ├─ PredatorDragon
+   ├─ AberrantDragon
+   ├─ AerialDragon
+   ├─ AncientDragon
+   └─ ShadowDragon
+ServerStorage
+└─ DragonAssets
+Workspace
+└─ DragonShowcase
+StarterPlayer
+└─ StarterPlayerScripts</pre>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+const V = THREE.Vector3;
+const D2R = Math.PI / 180;
+
+/* ---------- utilidades ---------- */
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function samp(arr, u) { if (typeof arr === 'number') return arr; const f = Math.min(Math.max(u, 0), 1) * (arr.length - 1); const i = Math.min(Math.floor(f), arr.length - 2); const k = f - i; return arr[i] * (1 - k) + arr[i + 1] * k; }
+const v3 = p => new V(p[0], p[1], p[2]);
+
+/* ---------- texturas procedurales ---------- */
+function scaleTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#5a5a5a'; g.fillRect(0, 0, 256, 256);
+  const n = 16, s = 256 / n;
+  for (let r = -1; r <= n; r++) for (let q = -1; q <= n; q++) {
+    const x = q * s + (r % 2 ? s / 2 : 0), y = r * s * 0.8;
+    const gr = g.createRadialGradient(x, y - s * 0.15, 1, x, y, s * 0.72);
+    gr.addColorStop(0, '#d8d8d8'); gr.addColorStop(0.7, '#7a7a7a'); gr.addColorStop(1, '#2a2a2a');
+    g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, s * 0.62, s * 0.55, 0, 0, Math.PI * 2); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+function veinTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 256, 256);
+  const r = rng(7); g.strokeStyle = 'rgba(40,20,20,0.55)'; g.lineCap = 'round';
+  function branch(x, y, a, len, w) {
+    if (len < 6 || w < 0.4) return;
+    const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len;
+    g.lineWidth = w; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo((x + x2) / 2 + (r() - .5) * 10, (y + y2) / 2, x2, y2); g.stroke();
+    branch(x2, y2, a + (r() - .5) * 0.6, len * 0.8, w * 0.78);
+    if (r() < 0.45) branch(x2, y2, a + (r() < .5 ? -1 : 1) * (0.4 + r() * 0.5), len * 0.6, w * 0.6);
+  }
+  for (let i = 0; i < 9; i++) branch(i * 32 + 12, 256, -Math.PI / 2 + (r() - .5) * 0.3, 40, 3.2);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+function glowSprite() {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+}
+const TEX = { scale: scaleTexture(), vein: veinTexture(), glow: glowSprite() };
+
+/* ---------- tubo de radio variable (base de toda la anatomía) ---------- */
+function tube(pts, radii, o = {}) {
+  const curve = new THREE.CatmullRomCurve3(pts.map(v3), false, 'centripetal');
+  const len = curve.getLength();
+  const seg = o.seg || Math.max(10, Math.min(120, Math.round(len * 3.2)));
+  const rs = o.rs || 12, sx = o.sx || 1, sy = o.sy || 1, flat = o.flat || 1;
+  const frames = []; let N = null;
+  for (let i = 0; i <= seg; i++) {
+    const u = i / seg, p = curve.getPointAt(u), T = curve.getTangentAt(u).normalize();
+    if (!N) { N = new V(0, 1, 0).addScaledVector(T, -T.y); if (N.lengthSq() < 1e-4) N = new V(1, 0, 0).addScaledVector(T, -T.x); N.normalize(); }
+    else { N = N.clone().addScaledVector(T, -N.dot(T)).normalize(); }
+    const B = new V().crossVectors(T, N).normalize();
+    frames.push({ p, T, N: N.clone(), B, r: samp(radii, u), u });
+  }
+  const pos = [], uv = [], idx = [];
+  const avgR = frames.reduce((a, f) => a + f.r, 0) / frames.length;
+  const uvLen = len / (2 * Math.PI * Math.max(avgR, 0.05));
+  for (const f of frames) for (let j = 0; j <= rs; j++) {
+    const a = j / rs * Math.PI * 2; let s = Math.sin(a); if (s < 0) s *= flat;
+    const q = f.p.clone().addScaledVector(f.B, Math.cos(a) * f.r * sx).addScaledVector(f.N, s * f.r * sy);
+    pos.push(q.x, q.y, q.z); uv.push(j / rs * 4, f.u * uvLen * 4);
+  }
+  const row = rs + 1;
+  for (let i = 0; i < seg; i++) for (let j = 0; j < rs; j++) {
+    const a = i * row + j, b = a + row; idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const c0 = pos.length / 3; pos.push(frames[0].p.x, frames[0].p.y, frames[0].p.z); uv.push(0, 0);
+  const c1 = c0 + 1; const fl = frames[seg].p; pos.push(fl.x, fl.y, fl.z); uv.push(0, 0);
+  for (let j = 0; j < rs; j++) { idx.push(c0, j + 1, j); const e = seg * row; idx.push(c1, e + j, e + j + 1); }
+  // Comprueba la orientación de las caras y la invierte si apunta hacia dentro.
+  const m = Math.floor(seg / 2) * row;
+  const A = new V(pos[m * 3], pos[m * 3 + 1], pos[m * 3 + 2]), Bv = new V(pos[(m + row) * 3], pos[(m + row) * 3 + 1], pos[(m + row) * 3 + 2]), C = new V(pos[(m + 1) * 3], pos[(m + 1) * 3 + 1], pos[(m + 1) * 3 + 2]);
+  const nrm = new V().crossVectors(Bv.clone().sub(A), C.clone().sub(A));
+  if (nrm.dot(A.clone().sub(frames[Math.floor(seg / 2)].p)) < 0) for (let k = 0; k < idx.length; k += 3) { const t = idx[k]; idx[k] = idx[k + 1]; idx[k + 1] = t; }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  return { geo, frames, sx, sy, len, frameAt(u) { return frames[Math.round(Math.min(Math.max(u, 0), 1) * seg)]; } };
+}
+function surf(t, f, th, lift = 1) {
+  return f.p.clone().addScaledVector(f.B, Math.cos(th) * f.r * t.sx * lift).addScaledVector(f.N, Math.sin(th) * f.r * t.sy * lift);
+}
+function outward(t, f, th) { return f.B.clone().multiplyScalar(Math.cos(th) * t.sx).addScaledVector(f.N, Math.sin(th) * t.sy).normalize(); }
+function mesh(geo, mat, parent) { const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m; }
+function addTube(parent, pts, radii, mat, o) { const t = tube(pts, radii, o); mesh(t.geo, mat, parent); return t; }
+function cone(parent, base, dir, len, rad, mat, seg = 7) {
+  const g = new THREE.ConeGeometry(rad, len, seg); g.translate(0, len / 2, 0);
+  const m = mesh(g, mat, parent); m.position.copy(base); m.quaternion.setFromUnitVectors(new V(0, 1, 0), dir.clone().normalize()); return m;
+}
+function basisMesh(parent, geo, mat, pos, x, y, scale) {
+  const z = new V().crossVectors(x, y).normalize(); const yy = new V().crossVectors(z, x).normalize();
+  const m = new THREE.Mesh(geo, mat); m.castShadow = m.receiveShadow = true; m.matrixAutoUpdate = false;
+  m.matrix.makeBasis(x.clone().normalize(), yy, z).scale(scale).setPosition(pos); parent.add(m); return m;
+}
+function curvedSpike(parent, base, dir, up, len, r, curl, mat) {
+  const d = dir.clone().normalize();
+  const pts = [base, base.clone().addScaledVector(d, len * 0.55).addScaledVector(up, len * curl * 0.35), base.clone().addScaledVector(d, len).addScaledVector(up, len * curl)];
+  return addTube(parent, pts.map(p => [p.x, p.y, p.z]), [r, r * 0.55, 0.012], mat, { rs: 7, seg: 8 });
+}
+
+/* ---------- cabeza con mandíbula articulada ---------- */
+function buildHead(h, M, R) {
+  const g = new THREE.Group(); const { L, W, H } = h;
+  const prof = (h.prof || [0.5, 0.52, 0.4, 0.3, 0.14]).map(k => k * W);
+  const skull = addTube(g, [[0, 0, 0], [0, H * 0.1, L * 0.3], [0, H * 0.02, L * 0.62], [0, -H * 0.08, L * 0.85], [0, -H * 0.14, L]], prof, M.skin, { sy: H / W, rs: 16, flat: 0.55 });
+  // mandíbula: pivote propio para animarla
+  const jaw = new THREE.Group(); jaw.position.set(0, -H * 0.28, L * 0.1); g.add(jaw);
+  const jl = L * (h.jawLen || 0.86);
+  const jawT = addTube(jaw, [[0, 0, 0], [0, -H * 0.06, jl * 0.5], [0, -H * 0.04, jl]], (h.jawProf || [0.42, 0.36, 0.12]).map(k => k * W), M.skin, { sy: 0.45 * (h.jawSy || 1), rs: 12 });
+  jaw.rotation.x = h.jaw || 0.3;
+  // interior de la boca
+  const mouth = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), M.mouth);
+  mouth.scale.set(W * 0.34, H * 0.16, L * 0.36); mouth.position.set(0, -H * 0.3, L * 0.5); g.add(mouth);
+  // dientes
+  const tn = h.teeth?.n || 10, tl = h.teeth?.len || 0.25;
+  for (let side of [-1, 1]) for (let k = 0; k < tn; k++) {
+    const u = 0.3 + 0.62 * k / Math.max(tn - 1, 1);
+    const f = skull.frameAt(u); const jitter = 0.65 + R() * 0.7 * (h.teeth?.uneven ? 1.6 : 1);
+    const base = f.p.clone().addScaledVector(f.B, side * f.r * 0.72).addScaledVector(f.N, -f.r * skull.sy * 0.55);
+    cone(g, base, new V(side * 0.05, -1, 0.15), tl * jitter, tl * 0.18, M.teeth, 5);
+    const fj = jawT.frameAt(Math.min(u * 1.05, 0.97));
+    const bj = fj.p.clone().addScaledVector(fj.B, side * fj.r * 0.7).addScaledVector(fj.N, fj.r * jawT.sy * 0.6);
+    cone(jaw, bj, new V(side * 0.05, 1, 0.12), tl * jitter * 0.8, tl * 0.16, M.teeth, 5);
+  }
+  // ojos luminosos
+  for (const e of h.eyes || []) {
+    const sides = e.mirror === false ? [1] : [1, -1];
+    const fe = skull.frameAt(e.u), base = surf(skull, fe, e.th * D2R, 0.93);
+    for (const s of sides) {
+      const p = new V(base.x * s, base.y, base.z);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(e.r, 12, 10), M.eye); m.position.copy(p); g.add(m);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEX.glow, color: M.eye.color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.85 }));
+      sp.scale.setScalar(e.r * 6); sp.position.copy(p); g.add(sp);
+    }
+  }
+  // cuernos y crestas
+  for (const hn of h.horns || []) {
+    const sides = hn.mirror === false ? [1] : [1, -1];
+    for (const s of sides) addTube(g, hn.pts.map(p => [p[0] * s, p[1], p[2]]), [...hn.r, 0.015], hn.mat === 'skin' ? M.skin : M.bone, { rs: 9, seg: 18 });
+  }
+  if (h.crest) for (let k = 0; k < h.crest.n; k++) {
+    const u = h.crest.u0 + (h.crest.u1 - h.crest.u0) * k / Math.max(h.crest.n - 1, 1); const f = skull.frameAt(u);
+    cone(g, surf(skull, f, Math.PI / 2, 0.85), f.N.clone().addScaledVector(f.T, -0.9), h.crest.len * (1 - 0.4 * k / h.crest.n), h.crest.len * 0.18, M.bone, 6);
+  }
+  return { g, jaw, jawBase: jaw.rotation.x };
+}
+
+/* ---------- extremidades y garras ---------- */
+function buildLimb(parent, l, M, sgn) {
+  const pts = l.pts.map(p => [p[0] * sgn, p[1], p[2]]);
+  addTube(parent, pts, l.r, M.skin, { rs: 12, seg: 30, sx: 1, sy: 1 });
+  if (l.knobs) for (let i = 1; i < pts.length - 1; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(samp(l.r, i / (pts.length - 1)) * 1.35, 10, 8), M.bone); m.position.set(...pts[i]); m.castShadow = true; parent.add(m);
+  }
+  const end = v3(pts[pts.length - 1]); const fwd = v3(l.clawDir || [0, 0, 1]); fwd.x *= sgn; fwd.normalize();
+  const side = new V().crossVectors(fwd, new V(0, 1, 0)).normalize();
+  const n = l.claws || 3, len = l.clawLen || 0.6, cr = l.clawR || len * 0.16, spread = l.spread || len * 0.45;
+  for (let k = 0; k < n; k++) {
+    const off = (k - (n - 1) / 2);
+    const d = fwd.clone().addScaledVector(side, off * 0.35).normalize();
+    curvedSpike(parent, end.clone().addScaledVector(side, off * spread), d, new V(0, -1, 0), len, cr, 0.45, M.claw);
+  }
+}
+
+/* ---------- alas: huesos de dedo + membrana con curvatura ---------- */
+function buildWing(w, M, sgn, R) {
+  const mir = p => new V(p[0] * sgn, p[1], p[2]);
+  const S = mir(w.shoulder), E = mir(w.elbow), Wr = mir(w.wrist), tips = w.tips.map(mir), rear = mir(w.rear);
+  const g = new THREE.Group(); g.position.copy(S);
+  const loc = p => p.clone().sub(S);
+  const ar = w.armR || 0.3;
+  addTube(g, [loc(S), loc(E), loc(Wr)].map(p => [p.x, p.y, p.z]), [ar, ar * 0.75, ar * 0.55], M.skin, { rs: 10, seg: 24 });
+  for (const t of tips) {
+    const mid = Wr.clone().lerp(t, 0.5).add(new V(0, 0.25, 0));
+    addTube(g, [loc(Wr), loc(mid), loc(t)].map(p => [p.x, p.y, p.z]), [ar * 0.42, ar * 0.28, 0.03], M.skin, { rs: 7, seg: 20 });
+  }
+  // garra del pulgar
+  curvedSpike(g, loc(Wr), new V(0.2 * sgn, 0.6, 0.8), new V(0, -1, 0), (w.thumb || 0.7), ar * 0.3, 0.4, M.claw);
+  // membrana
+  const pos = [], uv = [], idx = [];
+  const chain = [...tips, rear];
+  const rows = 5, cols = 10, sc = w.scallop ?? 0.16, bil = w.billow ?? 0.5, tat = w.tatter || 0;
+  const W0 = loc(Wr);
+  const addPatch = (apex, A, B, u0, u1, scal) => {
+    const nrm = new V().crossVectors(A.clone().sub(apex), B.clone().sub(apex)).normalize(); if (nrm.y > 0) nrm.negate();
+    const span = A.distanceTo(B);
+    const base = pos.length / 3; const edge = [];
+    for (let c = 0; c <= cols; c++) {
+      const u = c / cols; let q = A.clone().lerp(B, u);
+      let s = scal * Math.sin(Math.PI * u); if (tat) s *= 1 + tat * (R() - 0.3) * 2.6;
+      q.lerp(apex, Math.max(0, Math.min(0.85, s))); edge.push(q);
+    }
+    for (let r = 0; r <= rows; r++) for (let c = 0; c <= cols; c++) {
+      const rr = r / rows, u = c / cols;
+      const q = apex.clone().lerp(edge[c], rr).addScaledVector(nrm, bil * span * 0.08 * Math.sin(Math.PI * rr) * Math.sin(Math.PI * u));
+      pos.push(q.x, q.y, q.z); uv.push(u0 + (u1 - u0) * u, rr);
+    }
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      if (tat && r >= rows - 2 && R() < tat * 0.35) continue;
+      const a = base + r * (cols + 1) + c, b = a + cols + 1; idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  };
+  for (let i = 0; i < chain.length - 1; i++) addPatch(W0, loc(chain[i]), loc(chain[i + 1]), i / chain.length, (i + 1) / chain.length, i === chain.length - 2 ? sc * 1.4 : sc);
+  addPatch(W0, loc(rear), new V(0, 0, 0), 0.9, 1, 0.05);   // unión al cuerpo
+  addPatch(loc(E), new V(0, 0, 0), W0, 0, 0.1, 0.12);       // propatagio
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, M.mem); m.castShadow = true; m.receiveShadow = true; g.add(m);
+  // puntas brillantes en los dedos (opcional)
+  if (w.tipGlow) for (const t of tips) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), M.glow); s.position.copy(loc(t)); g.add(s); }
+  return { g, sgn };
+}
+
+/* ---------- cola: piezas terminales ---------- */
+function ribbon(fn, n, wfn) {
+  const L = [], Rr = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, p = fn(t), p2 = fn(Math.min(t + 0.01, 1)), p1 = fn(Math.max(t - 0.01, 0));
+    let dx = p2[0] - p1[0], dy = p2[1] - p1[1]; const l = Math.hypot(dx, dy) || 1; const nx = -dy / l, ny = dx / l; const w = wfn(t);
+    L.push([p[0] + nx * w, p[1] + ny * w]); Rr.unshift([p[0] - nx * w, p[1] - ny * w]);
+  }
+  return [...L, ...Rr];
+}
+function fin(parent, poly, f, plane, thick, mat, offset) {
+  const shape = new THREE.Shape(poly.map(p => new THREE.Vector2(p[0], p[1])));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thick, bevelEnabled: true, bevelThickness: thick * 0.3, bevelSize: thick * 0.5, bevelSegments: 1, curveSegments: 4 });
+  geo.translate(0, 0, -thick / 2);
+  const y = plane === 'v' ? f.N : f.B;
+  const pos = f.p.clone(); if (offset) pos.add(offset);
+  return basisMesh(parent, geo, mat, pos, f.T.clone(), y.clone(), new V(1, 1, 1));
+}
+function buildTail(spine, t, M, R, parent) {
+  const g = new THREE.Group(); parent.add(g);
+  const f = spine.frames[spine.frames.length - 1], S = t.size;
+  if (t.type === 'crescent') {
+    const poly = ribbon(u => { const a = (-115 + 230 * u) * D2R; return [S * 0.55 * Math.cos(a) - S * 0.15, S * Math.sin(a)]; }, 40, u => S * 0.2 * Math.pow(Math.sin(Math.PI * u), 1.4) + 0.01);
+    fin(g, poly, f, 'v', 0.12, M.bone);
+  } else if (t.type === 'vanes') {
+    for (const [u, k] of [[1, 1], [0.86, 0.7], [0.74, 0.5]]) {
+      const ff = spine.frameAt(u);
+      for (const s of [1, -1]) {
+        const poly = ribbon(v => [S * k * (0.9 * v - 0.25), s * S * k * 0.95 * Math.sin(v * 1.4)], 24, v => S * k * 0.22 * Math.sin(Math.PI * v) + 0.01);
+        fin(g, poly, ff, 'h', 0.06, M.mem2);
+      }
+    }
+    const poly = ribbon(v => [S * 0.9 * v, S * 0.35 * Math.sin(v * 2)], 20, v => S * 0.16 * Math.sin(Math.PI * v) + 0.01);
+    fin(g, poly, f, 'v', 0.06, M.mem2);
+  } else if (t.type === 'spikes') {
+    for (let k = 0; k < 7; k++) {
+      const a = (k / 7) * Math.PI * 2; const d = f.T.clone().multiplyScalar(1.2).addScaledVector(f.B, Math.cos(a)).addScaledVector(f.N, Math.sin(a));
+      cone(g, f.p, d, S * (0.6 + R() * 0.5), S * 0.12, M.bone, 6);
+    }
+    cone(g, f.p, f.T, S * 1.3, S * 0.14, M.bone, 6);
+  } else if (t.type === 'club') {
+    for (let k = 0; k < 9; k++) {
+      const a = k / 9 * Math.PI * 2; const o = f.B.clone().multiplyScalar(Math.cos(a)).addScaledVector(f.N, Math.sin(a));
+      const p = f.p.clone().addScaledVector(o, S * 0.55).addScaledVector(f.T, (R() - 0.3) * S * 0.6);
+      basisMesh(g, new THREE.DodecahedronGeometry(1, 0), M.bone, p, f.T.clone(), o, new V(S * 0.6, S * 0.45, S * 0.45));
+      cone(g, p.clone().addScaledVector(o, S * 0.3), o.clone().addScaledVector(f.T, 0.3), S * 0.55, S * 0.13, M.bone, 6);
+    }
+    basisMesh(g, new THREE.DodecahedronGeometry(1, 1), M.skin, f.p.clone().addScaledVector(f.T, S * 0.2), f.T.clone(), f.N.clone(), new V(S * 0.9, S * 0.6, S * 0.7));
+  } else if (t.type === 'barb') {
+    curvedSpike(g, f.p, f.T, f.N, S, 0.12, 0.6, M.bone);
+    for (const s of [1, -1]) curvedSpike(g, f.p.clone().addScaledVector(f.T, S * 0.2), f.T.clone().addScaledVector(f.B, s * 0.8), f.N, S * 0.45, 0.06, -0.3, M.bone);
+  } else if (t.type === 'fork') {
+    for (const [s, k] of [[1, 1], [-1, 0.6]]) {
+      const p0 = f.p, p1 = p0.clone().addScaledVector(f.T, S * 0.5 * k).addScaledVector(f.B, s * S * 0.35 * k), p2 = p1.clone().addScaledVector(f.T, S * 0.6 * k).addScaledVector(f.B, s * S * 0.1).addScaledVector(f.N, S * 0.3 * k);
+      addTube(g, [p0, p1, p2].map(p => [p.x, p.y, p.z]), [0.13, 0.1, 0.03], M.skin, { rs: 8, seg: 16 });
+      for (const q of [1, -1]) curvedSpike(g, p2, f.T.clone().addScaledVector(f.N, q * 0.6), f.B.clone().multiplyScalar(-s), S * 0.3 * k, 0.05, 0.5, M.claw);
+    }
+  }
+  return g;
+}
+
+/* ---------- ensamblaje del dragón ---------- */
+function makeMats(c) {
+  const std = (col, rough, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: col, roughness: rough, metalness: 0.04 }, extra));
+  return {
+    skin: std(c.skin, 0.84, { bumpMap: TEX.scale, bumpScale: c.bump ?? 0.045 }),
+    bone: std(c.bone, 0.68, { bumpMap: TEX.scale, bumpScale: 0.015 }),
+    claw: std(c.claw, 0.42),
+    teeth: std(c.teeth || '#ddd2bf', 0.4),
+    mem: std(c.mem, 0.9, { map: TEX.vein, side: THREE.DoubleSide, transparent: (c.memAlpha ?? 1) < 1, opacity: c.memAlpha ?? 1 }),
+    mem2: std(c.mem, 0.9, { side: THREE.DoubleSide }),
+    eye: new THREE.MeshBasicMaterial({ color: c.eye }),
+    glow: new THREE.MeshBasicMaterial({ color: c.glow || c.eye }),
+    mouth: new THREE.MeshBasicMaterial({ color: c.mouth || '#2a0a0a' })
+  };
+}
+function buildDragon(sp) {
+  const R = rng(sp.seed || 1), M = makeMats(sp.colors), root = new THREE.Group();
+  const spine = addTube(root, sp.spine.pts, sp.spine.r, M.skin, { sx: sp.spine.sx, sy: sp.spine.sy, rs: 16, flat: sp.spine.flat || 0.85 });
+  // cabeza
+  const d = v3(sp.spine.pts[0]).sub(v3(sp.spine.pts[1])).normalize();
+  const head = buildHead(sp.head, M, R);
+  head.g.position.copy(v3(sp.spine.pts[0]).addScaledVector(d, -sp.head.W * 0.25));
+  head.g.quaternion.setFromUnitVectors(new V(0, 0, 1), d); head.g.rotateX(sp.head.pitch || 0);
+  root.add(head.g);
+  // espinas, placas, costillas, líneas brillantes, nódulos
+  for (const s of sp.spikes || []) for (const th of (s.th || [90])) for (let k = 0; k < s.n; k++) {
+    const u = s.u0 + (s.u1 - s.u0) * k / Math.max(s.n - 1, 1); const f = spine.frameAt(u); const a = th * D2R;
+    const prof = s.prof ? samp(s.prof, k / Math.max(s.n - 1, 1)) : 1;
+    const dir = outward(spine, f, a).multiplyScalar(Math.cos((s.tilt || 35) * D2R)).addScaledVector(f.T, Math.sin((s.tilt || 35) * D2R));
+    cone(root, surf(spine, f, a, 0.8), dir, s.len * prof, s.len * prof * (s.thick || 0.16), s.mat === 'skin' ? M.skin : M.bone, 6);
+  }
+  for (const s of sp.plates || []) for (const th of (s.th || [90])) for (let k = 0; k < s.n; k++) {
+    const u = s.u0 + (s.u1 - s.u0) * k / Math.max(s.n - 1, 1); const f = spine.frameAt(u); const a = th * D2R;
+    const prof = s.prof ? samp(s.prof, k / Math.max(s.n - 1, 1)) : 1;
+    const o = outward(spine, f, a); const tilt = o.clone().addScaledVector(f.T, 0.35).normalize();
+    basisMesh(root, new THREE.DodecahedronGeometry(1, 0), M.bone, surf(spine, f, a, 0.92).addScaledVector(o, s.h * prof * 0.35), f.T.clone(), tilt, new V(s.l * prof, s.h * prof, s.w * prof));
+  }
+  for (const s of sp.ribs || []) for (let k = 0; k < s.n; k++) {
+    const f = spine.frameAt(s.u0 + (s.u1 - s.u0) * k / Math.max(s.n - 1, 1));
+    for (const [a0, a1] of s.arcs) {
+      const pts = []; for (let i = 0; i <= 8; i++) { const q = surf(spine, f, (a0 + (a1 - a0) * i / 8) * D2R, 1.0); pts.push([q.x, q.y, q.z]); }
+      addTube(root, pts, s.r, M.bone, { rs: 6, seg: 16 });
+    }
+  }
+  for (const s of sp.glow || []) for (const th of s.th) {
+    const pts = []; for (let i = 0; i <= 30; i++) { const u = s.u0 + (s.u1 - s.u0) * i / 30; const f = spine.frameAt(u); const z = s.zig ? Math.sin(i * 1.7) * s.zig : 0; const q = surf(spine, f, (th + z) * D2R, 1.02); pts.push([q.x, q.y, q.z]); }
+    addTube(root, pts, s.w, M.glow, { rs: 5, seg: 90 });
+  }
+  for (const s of sp.nodules || []) for (let k = 0; k < s.n; k++) {
+    const f = spine.frameAt(s.u0 + (s.u1 - s.u0) * R()); const a = (s.th0 + (s.th1 - s.th0) * R()) * D2R;
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(s.r * (0.5 + R()), 0), M.bone); m.position.copy(surf(spine, f, a, 0.95)); m.castShadow = true; root.add(m);
+  }
+  for (const l of sp.limbs) { buildLimb(root, l, M, 1); if (l.mirror !== false) buildLimb(root, l, M, -1); }
+  const wings = [];
+  for (const w of sp.wings) { const a = buildWing(w, M, 1, R); root.add(a.g); wings.push(Object.assign(a, { main: w.main })); if (w.mirror !== false) { const b = buildWing(w, M, -1, R); root.add(b.g); wings.push(b); } }
+  const tail = buildTail(spine, sp.tail, M, R, root);
+  return { root, spine, head, wings, tail, M };
+}
+
+/* ---------- las seis especies ---------- */
+const SPECIES = [
+{
+  id: 'abisal', num: 'I', name: 'Dragón Abisal', latin: 'Vharneth pallidus', epithet: 'El Ahogado Pálido', seed: 11,
+  concept: 'Cazador de fosas y ruinas sumergidas. Cuerpo de anguila en forma de S; las alas no salen de los hombros, nacen de los flancos y se prolongan hasta la base de la cola como un manto de piel.',
+  traits: ['Columna serpenteante, torso de solo 2,3 studs de grosor', 'Alas fusionadas al cuerpo: la membrana se ancla hasta la cola', 'Cráneo estrecho y alargado con colmillos de aguja', 'Aleta caudal ósea en media luna', 'Garras negras que contrastan con la piel blanca'],
+  anim: 'Idle: ondulación lenta de toda la columna, como si flotara en agua. Fly: las alas ondulan en olas del hombro a la cola en lugar de aletear.',
+  rig: '≈ 52 Bones · 20 columna y cola · 4 cráneo y mandíbula · 4×4 patas · 2×6 alas',
+  palette: [['Piel', '#d9d6cf'], ['Hueso', '#efe9dc'], ['Membrana', '#bdb3aa'], ['Garra', '#2a2624'], ['Ojo', '#a8e6ff']],
+  colors: { skin: '#d9d6cf', bone: '#efe9dc', mem: '#bdb3aa', claw: '#2a2624', eye: '#a8e6ff', mouth: '#3a1414', memAlpha: 0.93, rim: '#9fc6dd', bump: 0.035 },
+  spine: { pts: [[0, 7.6, 12], [0, 7.2, 10], [0.4, 5.6, 7.5], [0, 4.6, 5], [-0.6, 4.3, 2], [0, 4.1, -1], [1.2, 3.7, -4], [2, 3.1, -7.5], [0.8, 2.7, -11], [-1.5, 2.9, -14], [-2.5, 3.5, -17], [-1.5, 4.1, -19.5]], r: [0.55, 0.6, 0.75, 1.05, 1.15, 1.0, 0.8, 0.62, 0.48, 0.34, 0.22, 0.14], sx: 0.85, sy: 1 },
+  head: { L: 4.2, W: 0.95, H: 0.8, pitch: 0.28, jaw: 0.28, prof: [0.5, 0.5, 0.36, 0.26, 0.1], teeth: { n: 14, len: 0.2 },
+    eyes: [{ u: 0.56, th: 28, r: 0.1 }],
+    horns: [{ pts: [[0.25, 0.25, 0.4], [0.5, 0.5, -0.8], [0.6, 0.4, -2.4]], r: [0.14, 0.08] }, { pts: [[0.32, 0, 0.3], [0.7, -0.1, -0.5], [0.9, -0.3, -1.3]], r: [0.08, 0.05] }] },
+  limbs: [
+    { pts: [[0.9, 4.4, 5], [2.0, 3.0, 5.8], [2.3, 1.2, 6.4], [2.4, 0.2, 7.3]], r: [0.35, 0.25, 0.18, 0.12], claws: 3, clawLen: 0.6 },
+    { pts: [[0.9, 4.0, -1], [2.0, 2.9, 0.2], [2.1, 1.6, -1.8], [2.2, 0.2, -1.2]], r: [0.42, 0.28, 0.18, 0.12], claws: 3, clawLen: 0.6 }],
+  wings: [{ shoulder: [0.5, 5.3, 4.5], elbow: [3, 7.5, 2.5], wrist: [6.5, 8.2, 0.5], tips: [[12, 8.5, -1], [11, 6.8, -5.5], [8.5, 5.5, -8.5], [5, 4.6, -10.5]], rear: [1.4, 3.0, -9.5], armR: 0.24, scallop: 0.12, billow: 0.6, main: true }],
+  spikes: [{ u0: 0.08, u1: 0.95, n: 34, len: 0.35, tilt: 45 }],
+  ribs: [{ u0: 0.26, u1: 0.42, n: 6, r: 0.07, arcs: [[-50, 40], [140, 230]] }],
+  tail: { type: 'crescent', size: 2.2 }
+},
+{
+  id: 'depredador', num: 'II', name: 'Dragón Depredador', latin: 'Karnathys sanguifauces', epithet: 'Fauce Roja', seed: 22,
+  concept: 'Cuadrúpedo de emboscada, compacto y musculoso. Caza a ras de suelo con la cabeza baja; las franjas rojas del cuerpo se encienden cuando prepara el ataque o el aliento.',
+  traits: ['Mandíbula ancha con dos hileras de colmillos y garganta incandescente', 'Cuatro ojos rojos: un par principal y un par auxiliar', 'Patas delanteras y traseras de gran volumen muscular', 'Franjas incandescentes en flancos y cola', 'Cola segmentada rematada en un haz de púas'],
+  anim: 'Idle: respiración pesada, las franjas laten con la respiración. Attack: embestida con la cabeza baja y apertura máxima de mandíbula. Roar: las franjas pasan a brillo completo.',
+  rig: '≈ 48 Bones · 14 columna y cola · 5 cráneo y mandíbula · 4×4 patas · 2×6 alas',
+  palette: [['Piel', '#181416'], ['Hueso', '#3a3134'], ['Membrana', '#2a1214'], ['Franjas', '#ff3b1a'], ['Ojo', '#ff2418']],
+  colors: { skin: '#181416', bone: '#3a3134', light: 1.3, mem: '#2a1214', claw: '#0b0909', eye: '#ff2418', glow: '#ff3b1a', mouth: '#ff4a1a', teeth: '#d9c9b0', memAlpha: 1, rim: '#ff4a2a', bump: 0.06 },
+  spine: { pts: [[0, 5.2, 9.5], [0, 5.6, 8], [0, 5.4, 6], [0, 5.0, 3.5], [0, 4.6, 0], [0, 4.4, -3], [0, 4.2, -6], [0.6, 3.6, -9], [1.6, 2.8, -12], [1.8, 2.2, -15], [0.6, 2.0, -17.5]], r: [0.95, 1.1, 1.35, 1.75, 1.6, 1.4, 0.95, 0.7, 0.5, 0.32, 0.18], sx: 1.05, sy: 1 },
+  head: { L: 4.2, W: 2.0, H: 1.5, pitch: 0.15, jaw: 0.5, prof: [0.5, 0.55, 0.48, 0.38, 0.2], jawProf: [0.46, 0.42, 0.2], teeth: { n: 12, len: 0.42 },
+    eyes: [{ u: 0.5, th: 32, r: 0.17 }, { u: 0.66, th: 18, r: 0.1 }],
+    horns: [{ pts: [[0.55, 0.5, 0.6], [1.0, 1.0, -0.6], [1.1, 0.9, -2.0]], r: [0.32, 0.16] }, { pts: [[0.95, -0.2, 0.6], [1.6, -0.2, 0.2], [1.9, -0.5, -0.5]], r: [0.16, 0.08] }],
+    crest: { n: 5, u0: 0.1, u1: 0.5, len: 0.6 } },
+  limbs: [
+    { pts: [[1.3, 5, 3.8], [2.4, 3.2, 4.6], [2.3, 1.4, 4.2], [2.5, 0.3, 5.2]], r: [0.85, 0.6, 0.42, 0.3], claws: 4, clawLen: 0.9 },
+    { pts: [[1.3, 4.6, -3], [2.3, 3.0, -1.6], [2.4, 1.6, -4.0], [2.5, 0.3, -3.2]], r: [0.95, 0.65, 0.4, 0.3], claws: 4, clawLen: 0.85 }],
+  wings: [{ shoulder: [0.9, 6.0, 2.8], elbow: [3.5, 8.5, 0.5], wrist: [7.5, 9.2, -1.5], tips: [[13.5, 8, -3], [12.5, 5.5, -7], [10, 4.5, -9.5], [7, 4.3, -10.5]], rear: [1.2, 4.6, -4], armR: 0.38, scallop: 0.18, main: true }],
+  spikes: [{ u0: 0.04, u1: 0.78, n: 18, len: 0.9, tilt: 40, prof: [0.6, 1, 1, 0.5] }],
+  glow: [{ th: [35, 145], u0: 0.1, u1: 0.8, w: 0.06, zig: 6 }, { th: [90], u0: 0.55, u1: 0.95, w: 0.05 }],
+  tail: { type: 'spikes', size: 1.0 }
+},
+{
+  id: 'aberrante', num: 'III', name: 'Dragón Aberrante', latin: 'Xethra contorta', epithet: 'El Torcido', seed: 33,
+  concept: 'Una especie que parece haber crecido mal a propósito. Camina sobre zancos digitígrados, alza un cuello de jirafa y deja colgar la cabeza. Ningún lado de su cuerpo coincide con el otro.',
+  traits: ['Ala izquierda completa; ala derecha atrofiada con dos dedos', 'Brazo derecho largo hasta el suelo; brazo izquierdo pequeño y plegado', 'Tres ojos repartidos de forma desigual', 'Cuello de 9 studs y cabeza colgante con fauces abiertas', 'Nódulos óseos en el hombro derecho y cola bifurcada desigual'],
+  anim: 'Walk: paso cojo, cada pata con su propio ritmo. Idle: la cabeza se balancea como un péndulo. Fly: vuelo torpe, el ala izquierda compensa a la derecha.',
+  rig: '≈ 50 Bones · 12 cuello · 10 columna y cola · 4 cráneo · patas y brazos asimétricos · alas 6 + 3',
+  palette: [['Piel', '#cfc4bf'], ['Hueso', '#e7ddd0'], ['Membrana', '#7a4a4c'], ['Garra', '#3b2b2b'], ['Ojo', '#d9f56a']],
+  colors: { skin: '#cfc4bf', bone: '#e7ddd0', mem: '#7a4a4c', claw: '#3b2b2b', eye: '#d9f56a', mouth: '#5a1a1e', memAlpha: 0.95, rim: '#c9e06a', bump: 0.03 },
+  spine: { pts: [[0.6, 17, 6.5], [0.8, 17.6, 5], [0.5, 16.5, 3], [0, 13.5, 1.5], [-0.3, 10.5, 0.4], [0, 8.5, 0], [0.2, 7.6, -1.5], [0, 7.2, -3.2], [-0.6, 6.4, -5.5], [-1.8, 5.0, -7.5], [-2.2, 3.6, -9.8], [-1.0, 2.6, -12], [0.8, 2.4, -13.5]], r: [0.5, 0.5, 0.5, 0.55, 0.75, 1.4, 1.5, 1.25, 0.8, 0.55, 0.38, 0.24, 0.12], sx: 0.9, sy: 1.1 },
+  head: { L: 3.2, W: 1.1, H: 1.3, pitch: 1.15, jaw: 0.7, prof: [0.5, 0.55, 0.45, 0.32, 0.18], teeth: { n: 9, len: 0.32, uneven: true },
+    eyes: [{ u: 0.45, th: 160, r: 0.12, mirror: false }, { u: 0.63, th: 130, r: 0.08, mirror: false }, { u: 0.55, th: 10, r: 0.14, mirror: false }],
+    horns: [{ pts: [[0.3, 0.4, 0.5], [0.5, 1.2, 0.2], [0.3, 1.7, -0.6]], r: [0.16, 0.08], mirror: false }] },
+  limbs: [
+    { pts: [[0.9, 7.3, -3], [2.2, 5.2, 0.5], [2.4, 2.6, -3.5], [2.6, 0.2, -2.3]], r: [0.6, 0.35, 0.22, 0.15], knobs: true, claws: 3, clawLen: 0.55, mirror: false },
+    { pts: [[-0.9, 7.2, -3.1], [-2.6, 5.6, -0.2], [-2.8, 3.0, -4.6], [-3.2, 0.2, -3.6]], r: [0.6, 0.35, 0.22, 0.15], knobs: true, claws: 3, clawLen: 0.55, mirror: false },
+    { pts: [[1.1, 9.6, 0.6], [2.8, 7.0, 3.0], [2.5, 3.5, 4.5], [2.7, 0.2, 5.5]], r: [0.4, 0.28, 0.2, 0.14], knobs: true, claws: 2, clawLen: 1.3, mirror: false },
+    { pts: [[-1.0, 9.2, 0.8], [-1.6, 8.0, 2.2], [-1.1, 7.6, 3.0]], r: [0.3, 0.2, 0.14], knobs: true, claws: 3, clawLen: 0.35, clawDir: [0, -0.5, 1], mirror: false }],
+  wings: [
+    { shoulder: [-0.6, 10, -0.3], elbow: [-4, 13.5, -1.5], wrist: [-8, 13, -3.5], tips: [[-13, 11, -5], [-12, 7, -8], [-8.5, 5, -9.5]], rear: [-0.8, 7.2, -4], armR: 0.3, tatter: 0.25, mirror: false, main: true },
+    { shoulder: [0.6, 10, -0.3], elbow: [2.2, 11.6, -1.4], wrist: [3.6, 11.2, -2.2], tips: [[5.6, 10.4, -3], [4.6, 8.6, -3.6]], rear: [0.8, 8.4, -1.6], armR: 0.2, scallop: 0.25, mirror: false }],
+  ribs: [{ u0: 0.38, u1: 0.52, n: 6, r: 0.08, arcs: [[-60, 50], [130, 240]] }],
+  nodules: [{ n: 14, u0: 0.36, u1: 0.48, th0: -40, th1: 40, r: 0.28 }],
+  spikes: [{ u0: 0.5, u1: 0.9, n: 9, len: 0.5, tilt: 30 }],
+  tail: { type: 'fork', size: 1.6 }
+},
+{
+  id: 'aereo', num: 'IV', name: 'Dragón Aéreo', latin: 'Silvanyx ventisecans', epithet: 'Cortavientos', seed: 44,
+  concept: 'Planeador de altura. Las patas delanteras se convirtieron en alas de casi 40 studs; el cuerpo es una quilla ligera y la cola larga lleva tres pares de aletas que actúan como timón.',
+  traits: ['Envergadura de unas cuatro veces su longitud de torso', 'Brazos fusionados al ala: solo dos patas de apoyo', 'Pecho en quilla y cuerpo ligero', 'Cola de látigo con aletas horizontales en tres alturas', 'Puntas de los dedos con brillo ámbar para leer su silueta en vuelo'],
+  anim: 'Fly: aleteo amplio y lento con planeos largos; la cola corrige el rumbo. TakeOff: salto desde las patas traseras con un único golpe de ala. Landing: frenado con las alas abiertas.',
+  rig: '≈ 46 Bones · 18 columna y cola · 4 cráneo · 2×4 patas · 2×8 alas',
+  palette: [['Piel', '#8f8a86'], ['Hueso', '#c9bfb2'], ['Membrana', '#3f3a39'], ['Garra', '#2b2726'], ['Ojo', '#ffb347']],
+  colors: { skin: '#8f8a86', bone: '#c9bfb2', mem: '#3f3a39', claw: '#2b2726', eye: '#ffb347', glow: '#ff9a2e', mouth: '#3a1a10', memAlpha: 0.9, rim: '#ffb066', bump: 0.035 },
+  spine: { pts: [[0, 7.2, 6.2], [0, 6.8, 4.8], [0, 6.0, 3.2], [0, 5.0, 1.5], [0, 4.6, -0.5], [0, 4.3, -2.2], [0, 4.0, -4.5], [0.4, 3.8, -7.5], [0.8, 4.1, -11], [0.4, 4.8, -14.5], [-0.6, 5.4, -18], [-1.2, 5.8, -21.5]], r: [0.45, 0.5, 0.62, 0.95, 0.9, 0.75, 0.5, 0.36, 0.26, 0.18, 0.12, 0.07], sx: 0.8, sy: 1.05, flat: 1.25 },
+  head: { L: 2.6, W: 0.8, H: 0.75, pitch: 0.1, jaw: 0.18, teeth: { n: 8, len: 0.14 },
+    eyes: [{ u: 0.5, th: 30, r: 0.09 }],
+    horns: [{ pts: [[0.15, 0.35, 0.6], [0.3, 0.9, -0.4], [0.35, 1.0, -2.2]], r: [0.11, 0.06] }, { pts: [[0.3, 0.1, 0.3], [0.55, 0.2, -0.4], [0.7, 0.1, -1.1]], r: [0.06, 0.04] }] },
+  limbs: [{ pts: [[0.7, 4.3, -2.2], [1.3, 3.2, -0.8], [1.4, 1.8, -2.6], [1.5, 0.2, -1.8]], r: [0.45, 0.3, 0.18, 0.12], claws: 3, clawLen: 0.55 }],
+  wings: [{ shoulder: [0.6, 5.6, 2.0], elbow: [4, 8.5, 2.8], wrist: [9, 11, 1.5], tips: [[19, 12.5, -1], [19.5, 9, -4.5], [17, 5.5, -7.5], [13, 3.5, -9], [8, 3, -8.5]], rear: [0.8, 4.2, -3.5], armR: 0.32, scallop: 0.14, billow: 0.4, tipGlow: true, thumb: 0.9, main: true }],
+  spikes: [{ u0: 0.06, u1: 0.4, n: 10, len: 0.35, tilt: 55 }],
+  tail: { type: 'vanes', size: 2.4 }
+},
+{
+  id: 'ancestral', num: 'V', name: 'Dragón Ancestral', latin: 'Gorrmathos primaevus', epithet: 'El Primero', seed: 55,
+  concept: 'Un superviviente de otra era. Pesa como una colina, camina sobre columnas y su lomo es un campo de placas óseas. Por las grietas de la piel asoma un brillo de brasa.',
+  traits: ['Longitud cercana a 40 studs, unas 8 veces la altura de un avatar', 'Hileras de placas óseas dorsales y laterales', 'Corona de cuernos curvados hacia delante', 'Patas de columna con garras cortas y gruesas', 'Maza ósea con púas al final de la cola'],
+  anim: 'Walk: pasos lentos que levantan polvo; el lomo apenas se mueve. Roar: la cabeza se eleva y las grietas brillan. Fly: pocos aleteos muy potentes, casi un salto planeado.',
+  rig: '≈ 44 Bones · 12 columna y cola · 5 cráneo y mandíbula · 4×4 patas · 2×5 alas',
+  palette: [['Piel', '#3b3835'], ['Placas', '#c2b59b'], ['Membrana', '#2b2420'], ['Brasa', '#ff6a00'], ['Ojo', '#ff8a1e']],
+  colors: { skin: '#3b3835', bone: '#c2b59b', mem: '#2b2420', claw: '#1c1916', eye: '#ff8a1e', glow: '#ff6a00', mouth: '#ff5a10', teeth: '#cfc2a8', memAlpha: 1, rim: '#ff8a3a', bump: 0.08 },
+  spine: { pts: [[0, 8.5, 16], [0, 9, 13.5], [0, 9, 10.5], [0, 9, 7], [0, 9.4, 2], [0, 9, -3], [0, 8.4, -7], [0, 7.5, -11], [0.8, 6.0, -15], [1.6, 4.6, -19], [1.2, 3.6, -22.5]], r: [2.0, 2.4, 2.9, 3.6, 4.0, 3.7, 3.1, 2.2, 1.5, 1.0, 0.7], sx: 1.15, sy: 0.95 },
+  head: { L: 6, W: 4, H: 3, pitch: 0.25, jaw: 0.25, prof: [0.5, 0.52, 0.46, 0.38, 0.22], jawProf: [0.44, 0.4, 0.24], teeth: { n: 9, len: 0.55 },
+    eyes: [{ u: 0.52, th: 30, r: 0.22 }],
+    horns: [{ pts: [[1.1, 1.0, 1.4], [2.4, 2.6, 0.6], [3.2, 2.8, 2.2], [3.0, 1.8, 3.4]], r: [0.75, 0.5, 0.25] }, { pts: [[1.5, 0.3, 0.6], [2.8, 0.6, -0.4], [3.6, 0.0, 0.4]], r: [0.45, 0.25] }, { pts: [[0.6, 1.4, 0.4], [0.9, 2.8, -0.4], [0.8, 3.3, -1.6]], r: [0.4, 0.2] }],
+    crest: { n: 4, u0: 0.12, u1: 0.45, len: 1.0 } },
+  limbs: [
+    { pts: [[2.4, 8.6, 7], [3.8, 5.2, 8.0], [4.0, 2.2, 7.6], [4.2, 0.3, 8.4]], r: [2.1, 1.5, 1.2, 1.0], claws: 4, clawLen: 1.1, clawR: 0.32, spread: 0.6 },
+    { pts: [[2.4, 8.2, -7], [4.0, 5.6, -5.5], [4.2, 2.6, -7.5], [4.3, 0.3, -6.8]], r: [2.3, 1.6, 1.2, 1.0], claws: 4, clawLen: 1.1, clawR: 0.32, spread: 0.6 }],
+  wings: [{ shoulder: [1.6, 11.6, 5.5], elbow: [5, 15.5, 3], wrist: [8, 17, -1], tips: [[14, 15, -5], [12, 11, -9], [8.5, 10, -11]], rear: [2.5, 10.5, -5], armR: 0.7, scallop: 0.2, thumb: 1.4, main: true }],
+  plates: [{ u0: 0.12, u1: 0.8, n: 14, l: 1.6, h: 2.4, w: 0.35, prof: [0.6, 1, 1, 0.5] }, { th: [40, 140], u0: 0.2, u1: 0.68, n: 11, l: 1.0, h: 0.9, w: 0.4 }, { th: [10, 170], u0: 0.25, u1: 0.6, n: 8, l: 0.8, h: 0.6, w: 0.35 }],
+  glow: [{ th: [-10, 190], u0: 0.15, u1: 0.65, w: 0.08, zig: 9 }, { th: [-35, 215], u0: 0.3, u1: 0.55, w: 0.06, zig: 12 }],
+  tail: { type: 'club', size: 1.8 }
+},
+{
+  id: 'sombrio', num: 'VI', name: 'Dragón Sombrío', latin: 'Nhulgarax umbrifer', epithet: 'La Sonrisa en la Niebla', seed: 66,
+  concept: 'Apenas una silueta. Un cuerpo consumido y encorvado sostenido por extremidades de araña cuyos codos se elevan por encima del lomo. Lo primero que se ve en la niebla son sus ojos y la sonrisa.',
+  traits: ['Cuerpo extremadamente delgado con costillas marcadas', 'Codos y rodillas por encima de la línea del lomo', 'Sonrisa ancha con 28 dientes finos', 'Alas rasgadas y translúcidas, usadas como capa', 'Aguijón curvo en la cola'],
+  anim: 'Idle: inmóvil salvo un temblor de dedos y la cabeza inclinándose. Walk: movimiento a saltos cortos, como de insecto. Death: se deshace en humo desde las alas hacia el cráneo.',
+  rig: '≈ 50 Bones · 14 columna y cola · 4 cráneo · 4×5 extremidades · 2×6 alas',
+  palette: [['Piel', '#1b1b21'], ['Hueso', '#34333a'], ['Membrana', '#1a1920'], ['Dientes', '#e8e2d6'], ['Ojo', '#e8f0ff']],
+  colors: { skin: '#1b1b21', bone: '#34333a', mem: '#1a1920', light: 1.5, claw: '#060607', eye: '#e8f0ff', mouth: '#1a0606', teeth: '#e8e2d6', memAlpha: 0.82, rim: '#8aa0c8', bump: 0.05 },
+  spine: { pts: [[0, 6.5, 7.5], [0, 7.6, 6.0], [0, 9.2, 4.0], [0, 10.2, 1.5], [0, 9.6, -1], [0, 8.6, -3], [0, 7.2, -5], [0, 5.2, -6.5], [0.5, 3.4, -8.5], [1.2, 2.4, -11], [0.6, 2.0, -13.5]], r: [0.45, 0.42, 0.5, 0.75, 0.7, 0.6, 0.42, 0.3, 0.22, 0.14, 0.08], sx: 0.72, sy: 1 },
+  head: { L: 3.0, W: 1.6, H: 1.2, pitch: 0.35, jaw: 0.32, prof: [0.45, 0.55, 0.5, 0.4, 0.2], jawProf: [0.48, 0.45, 0.25], teeth: { n: 14, len: 0.3 },
+    eyes: [{ u: 0.58, th: 35, r: 0.12 }] },
+  limbs: [
+    { pts: [[0.6, 9.6, 2.5], [3.5, 11.5, 4.5], [4.5, 5.0, 8.5], [4.8, 0.2, 10.0]], r: [0.3, 0.2, 0.14, 0.08], knobs: true, claws: 3, clawLen: 0.9 },
+    { pts: [[0.6, 8.6, -3], [3.8, 11, -4.5], [4.8, 4.5, -7.5], [5.0, 0.2, -8.6]], r: [0.32, 0.2, 0.14, 0.08], knobs: true, claws: 3, clawLen: 0.8 }],
+  wings: [{ shoulder: [0.5, 10.4, 1.2], elbow: [3, 14.5, -0.5], wrist: [5.5, 16, -3], tips: [[10, 13, -6], [9, 9, -9], [6.5, 6.5, -10], [3.5, 5, -9.5]], rear: [0.6, 8.2, -4], armR: 0.2, tatter: 0.6, scallop: 0.2, main: true }],
+  ribs: [{ u0: 0.26, u1: 0.5, n: 9, r: 0.06, arcs: [[-70, 60], [120, 250]] }],
+  spikes: [{ u0: 0.2, u1: 0.7, n: 14, len: 0.6, tilt: 50, thick: 0.1 }],
+  tail: { type: 'barb', size: 1.8 }
+}];
+
+/* ---------- escena y render ---------- */
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.autoClear = false;
+const scene = new THREE.Scene();
+const hemi = new THREE.HemisphereLight('#9aa0aa', '#141012', 0.6); scene.add(hemi);
+const key = new THREE.DirectionalLight('#fff1e0', 1.15); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.004; key.shadow.normalBias = 0.04; scene.add(key, key.target);
+const rim = new THREE.DirectionalLight('#ffffff', 0.7); scene.add(rim);
+const fill = new THREE.DirectionalLight('#8090a8', 0.25); fill.position.set(-20, 6, 20); scene.add(fill);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 48), new THREE.MeshStandardMaterial({ color: '#1a181b', roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const grid = new THREE.GridHelper(160, 32, '#3a3438', '#262226'); grid.position.y = 0.01; scene.add(grid);
+// avatar de referencia de Roblox (5 studs), visible solo en la vista lateral
+const avatar = new THREE.Group(); const am = new THREE.MeshStandardMaterial({ color: '#6f7a86', roughness: 0.7 });
+[[0, 4.4, 0, 1.1, 1.1, 1.1], [0, 3.0, 0, 2, 1.6, 1], [-1.45, 3.0, 0, 0.8, 1.7, 0.8], [1.45, 3.0, 0, 0.8, 1.7, 0.8], [-0.5, 1.1, 0, 0.9, 2.2, 0.9], [0.5, 1.1, 0, 0.9, 2.2, 0.9]].forEach(b => { const m = new THREE.Mesh(new THREE.BoxGeometry(b[3], b[4], b[5]), am); m.position.set(b[0], b[1], b[2]); m.castShadow = true; avatar.add(m); });
+avatar.traverse(o => o.layers.set(1)); scene.add(avatar);
+
+const hero = new THREE.PerspectiveCamera(32, 1, 0.1, 500);
+const VIEWS = [
+  { key: 'front', label: 'Vista frontal', ortho: true, dir: [0, 0, 1], up: [0, 1, 0] },
+  { key: 'side', label: 'Vista lateral', ortho: true, dir: [1, 0, 0], up: [0, 1, 0], avatar: true },
+  { key: 'back', label: 'Vista posterior', ortho: true, dir: [0, 0, -1], up: [0, 1, 0] },
+  { key: 'head', label: 'Cabeza', dir: [1, 0.35, 1.1], up: [0, 1, 0], target: 'head' },
+  { key: 'wing', label: 'Ala · planta', ortho: true, dir: [0, 1, 0], up: [0, 0, 1], target: 'wing' },
+  { key: 'tail', label: 'Cola', dir: [1, 0.5, -0.6], up: [0, 1, 0], target: 'tail' }];
+VIEWS.forEach(v => { v.cam = v.ortho ? new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500) : new THREE.PerspectiveCamera(30, 1, 0.1, 500); if (v.avatar) v.cam.layers.enable(1); });
+
+let cur = null, layout = null, staticDirty = true, yaw = 0.75, pitch = 0.22, userTouched = false;
+const cache = {};
+
+function boxOf(obj) { obj.updateMatrixWorld(true); return new THREE.Box3().setFromObject(obj); }
+function fitOrtho(cam, box, dir, up, aspect, pad = 1.12) {
+  const c = box.getCenter(new V()), d = v3(dir).normalize();
+  cam.position.copy(c).addScaledVector(d, 200); cam.up.copy(v3(up)); cam.lookAt(c); cam.updateMatrixWorld();
+  const inv = cam.matrixWorldInverse; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < 8; i++) { const p = new V(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).applyMatrix4(inv); x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
+  let w = (x1 - x0) * pad, h = (y1 - y0) * pad; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (w / h > aspect) h = w / aspect; else w = h * aspect;
+  cam.left = cx - w / 2; cam.right = cx + w / 2; cam.top = cy + h / 2; cam.bottom = cy - h / 2; cam.near = 1; cam.far = 420; cam.updateProjectionMatrix();
+}
+function fitPersp(cam, box, dir, aspect, k = 1.0) {
+  const c = box.getCenter(new V()), r = box.getSize(new V()).length() / 2;
+  const dist = r / Math.sin(cam.fov * D2R / 2) * k / Math.min(1, aspect);
+  cam.aspect = aspect; cam.position.copy(c).addScaledVector(v3(dir).normalize(), dist); cam.lookAt(c); cam.near = Math.max(0.05, dist / 100); cam.far = dist * 4; cam.updateProjectionMatrix();
+}
+
+function select(id) {
+  const sp = SPECIES.find(s => s.id === id) || SPECIES[0];
+  if (cur) scene.remove(cur.root);
+  cur = cache[sp.id] || (cache[sp.id] = buildDragon(sp)); cur.sp = sp;
+  scene.add(cur.root);
+  const box = boxOf(cur.root); cur.box = box;
+  const size = box.getSize(new V()), c = box.getCenter(new V());
+  key.position.set(c.x + 30, c.y + 45, c.z + 28); key.target.position.copy(c);
+  const s = Math.max(size.x, size.z) * 0.65; Object.assign(key.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 1, far: 160 }); key.shadow.camera.updateProjectionMatrix();
+  const L = sp.colors.light || 1; hemi.intensity = 0.6 * L; key.intensity = 1.15 * Math.sqrt(L); rim.intensity = 0.7 * L; rim.color.set(sp.colors.rim); rim.position.set(c.x - 25, c.y + 12, c.z - 30);
+  avatar.position.set(0, 0, box.max.z + 3);
+  document.documentElement.style.setProperty('--sp', sp.colors.eye);
+  document.querySelectorAll('nav.species button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === sp.id));
+  renderData(sp, size);
+  staticDirty = true;
+}
+
+function renderData(sp, size) {
+  const f = n => n.toFixed(1).replace('.', ',');
+  document.getElementById('data').innerHTML = `
+    <div><div class="kicker">Especie ${sp.num} · ${sp.epithet}</div><h2>${sp.name}</h2><div class="latin">${sp.latin}</div></div>
+    <p>${sp.concept}</p>
+    <div><h3>Rasgos que la distinguen</h3><ul class="traits">${sp.traits.map(t => `<li>${t}</li>`).join('')}</ul></div>
+    <div><h3>Proporciones del modelo</h3><div class="dims">
+      <div><div class="v">${f(size.z)}</div><div class="k">Longitud (studs)</div></div>
+      <div><div class="v">${f(size.y)}</div><div class="k">Altura (studs)</div></div>
+      <div><div class="v">${f(size.x)}</div><div class="k">Envergadura (studs)</div></div>
+      <div><div class="v">×${f(size.y / 5)}</div><div class="k">Altura frente a un avatar de 5 studs</div></div></div></div>
+    <div><h3>Paleta</h3><div class="swatches">${sp.palette.map(([n, c]) => `<div class="sw"><i style="background:${c}"></i><span>${n}<code>${c}</code></span></div>`).join('')}</div></div>
+    <div><h3>Notas de animación</h3><p>${sp.anim}</p></div>
+    <div><h3>Rig previsto</h3><p class="mono">${sp.rig}</p></div>`;
+}
+
+function computeLayout() {
+  const W = canvas.parentElement.clientWidth; let H, hero, cells = [];
+  if (W >= 760) {
+    const hw = Math.round(W * 0.56); const cw = Math.floor((W - hw) / 2); const ch = Math.round(cw * 0.78); H = ch * 3;
+    hero = { x: 0, y: 0, w: hw, h: H };
+    for (let i = 0; i < 6; i++) cells.push({ x: hw + (i % 2) * cw, y: Math.floor(i / 2) * ch, w: i % 2 ? W - hw - cw : cw, h: ch });
+  } else {
+    const hh = Math.round(W * 0.85); const cw = Math.floor(W / 2); const ch = Math.round(cw * 0.8); H = hh + ch * 3;
+    hero = { x: 0, y: 0, w: W, h: hh };
+    for (let i = 0; i < 6; i++) cells.push({ x: (i % 2) * cw, y: hh + Math.floor(i / 2) * ch, w: i % 2 ? W - cw : cw, h: ch });
+  }
+  canvas.style.height = H + 'px'; renderer.setSize(W, H, false);
+  layout = { W, H, hero, cells };
+  const lab = document.getElementById('labels');
+  lab.innerHTML = `<div class="vlabel" style="left:${hero.x}px;top:${hero.y}px"><b>●</b> Vista libre · idle</div><div class="hint" style="left:${hero.x + 10}px;top:${hero.y + hero.h - 22}px">Arrastra para girar</div>` +
+    VIEWS.map((v, i) => `<div class="vlabel" style="left:${cells[i].x}px;top:${cells[i].y}px">${v.label}</div>`).join('');
+  staticDirty = true;
+}
+
+function drawView(rect, cam, bg) {
+  const y = layout.H - rect.y - rect.h;
+  renderer.setViewport(rect.x, y, rect.w, rect.h); renderer.setScissor(rect.x + 1, y + 1, rect.w - 2, rect.h - 2); renderer.setScissorTest(true);
+  renderer.setClearColor(bg, 1); renderer.clear(); renderer.render(scene, cam);
+}
+
+function pose(t) {
+  if (!cur) return;
+  const sp = cur.sp;
+  for (const w of cur.wings) { w.g.rotation.z = w.sgn * (Math.sin(t * 1.1) * 0.09); w.g.rotation.x = Math.sin(t * 1.1 + 0.6) * 0.03; }
+  cur.head.jaw.rotation.x = cur.head.jawBase + (t ? (Math.sin(t * 0.9) * 0.5 + 0.5) * 0.12 : 0);
+  cur.head.g.position.y += 0; cur.root.position.y = t ? Math.sin(t * 1.4) * 0.05 : 0;
+}
+
+function renderStatics() {
+  pose(0);
+  const box = boxOf(cur.root);
+  layout.cells.forEach((rect, i) => {
+    const v = VIEWS[i], aspect = rect.w / rect.h; let b = box.clone();
+    if (v.avatar) b.union(boxOf(avatar));
+    if (v.target === 'head') b = boxOf(cur.head.g);
+    if (v.target === 'wing') b = boxOf((cur.wings.find(w => w.main) || cur.wings[0]).g);
+    if (v.target === 'tail') { b = boxOf(cur.tail); const fr = cur.spine.frames; for (const f of fr.slice(Math.floor(fr.length * 0.8))) b.expandByPoint(f.p.clone().addScalar(f.r)).expandByPoint(f.p.clone().addScalar(-f.r)); }
+    if (v.ortho) fitOrtho(v.cam, b, v.dir, v.up, aspect, v.target ? 1.08 : 1.1); else fitPersp(v.cam, b, v.dir, aspect, v.target === 'head' ? 0.8 : 0.85);
+    drawView(rect, v.cam, i % 2 ? '#0d0c0f' : '#0a090c');
+  });
+  staticDirty = false;
+}
+
+function frame(ms) {
+  if (!cur || !layout) return requestAnimationFrame(frame);
+  if (staticDirty) renderStatics();
+  const t = ms / 1000;
+  if (!userTouched && !reduceMotion) yaw += 0.0025;
+  pose(reduceMotion ? 0 : t);
+  const box = cur.box, c = box.getCenter(new V()), r = box.getSize(new V()).length() / 2;
+  const aspect = layout.hero.w / layout.hero.h;
+  const dist = r / Math.sin(hero.fov * D2R / 2) * 0.8 / Math.min(1, aspect);
+  hero.aspect = aspect; hero.position.set(c.x + Math.sin(yaw) * Math.cos(pitch) * dist, c.y + Math.sin(pitch) * dist, c.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+  hero.lookAt(c); hero.near = dist / 50; hero.far = dist * 4; hero.updateProjectionMatrix();
+  drawView(layout.hero, hero, '#110f12');
+  requestAnimationFrame(frame);
+}
+
+/* ---------- interacción ---------- */
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let drag = null;
+canvas.addEventListener('pointerdown', e => { const r = canvas.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top, h = layout.hero; if (x < h.x || x > h.x + h.w || y < h.y || y > h.y + h.h) return; drag = { x: e.clientX, y: e.clientY }; userTouched = true; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.1, Math.min(1.2, pitch + (e.clientY - drag.y) * 0.006)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+
+const nav = document.getElementById('nav');
+nav.innerHTML = SPECIES.map(s => `<button type="button" data-id="${s.id}" style="--sp:${s.colors.eye}" aria-pressed="false"><span class="num">${s.num}</span><span class="nm">${s.name.replace('Dragón ', '')}</span><span class="ep">${s.epithet}</span></button>`).join('');
+nav.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; location.hash = b.dataset.id; });
+window.addEventListener('hashchange', () => select(location.hash.slice(1)));
+new ResizeObserver(() => computeLayout()).observe(canvas.parentElement);
+
+computeLayout();
+select(location.hash.slice(1) || 'abisal');
+requestAnimationFrame(frame);
+})();
+</script>
