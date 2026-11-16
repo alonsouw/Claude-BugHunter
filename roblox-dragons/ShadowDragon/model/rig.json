@@ -1,0 +1,528 @@
+{
+ "name": "ShadowDragon",
+ "units": "studs",
+ "forward": "-Z",
+ "meshes": {
+  "Body": 18931,
+  "WingL": 7953,
+  "WingR": 8012,
+  "Teeth": 3743
+ },
+ "bones": [
+  {
+   "name": "Root",
+   "parent": null,
+   "head": [
+    0.0,
+    0.0,
+    4.4
+   ],
+   "tail": [
+    0.0,
+    1.5,
+    4.4
+   ]
+  },
+  {
+   "name": "Hips",
+   "parent": "Root",
+   "head": [
+    0.0,
+    12.0,
+    4.4
+   ],
+   "tail": [
+    0.0,
+    13.6,
+    2.0
+   ]
+  },
+  {
+   "name": "Spine1",
+   "parent": "Hips",
+   "head": [
+    0.0,
+    13.6,
+    2.0
+   ],
+   "tail": [
+    0.0,
+    14.3,
+    -0.8
+   ]
+  },
+  {
+   "name": "Chest",
+   "parent": "Spine1",
+   "head": [
+    0.0,
+    14.3,
+    -0.8
+   ],
+   "tail": [
+    0.0,
+    13.4,
+    -3.4
+   ]
+  },
+  {
+   "name": "Neck1",
+   "parent": "Chest",
+   "head": [
+    0.0,
+    13.4,
+    -3.4
+   ],
+   "tail": [
+    0.0,
+    12.0,
+    -5.6
+   ]
+  },
+  {
+   "name": "Neck2",
+   "parent": "Neck1",
+   "head": [
+    0.0,
+    12.0,
+    -5.6
+   ],
+   "tail": [
+    0.0,
+    10.2,
+    -7.6
+   ]
+  },
+  {
+   "name": "Neck3",
+   "parent": "Neck2",
+   "head": [
+    0.0,
+    10.2,
+    -7.6
+   ],
+   "tail": [
+    0.0,
+    7.2,
+    -10.6
+   ]
+  },
+  {
+   "name": "Head",
+   "parent": "Neck3",
+   "head": [
+    0.0,
+    7.2,
+    -10.6
+   ],
+   "tail": [
+    0.0,
+    6.8139,
+    -13.2854
+   ]
+  },
+  {
+   "name": "Jaw",
+   "parent": "Head",
+   "head": [
+    0.0,
+    7.1589,
+    -11.8035
+   ],
+   "tail": [
+    0.0,
+    4.3383,
+    -13.3875
+   ]
+  },
+  {
+   "name": "Tail1",
+   "parent": "Hips",
+   "head": [
+    0.0,
+    12.0,
+    4.4
+   ],
+   "tail": [
+    0.0,
+    10.0,
+    6.4
+   ]
+  },
+  {
+   "name": "Tail2",
+   "parent": "Tail1",
+   "head": [
+    0.0,
+    10.0,
+    6.4
+   ],
+   "tail": [
+    0.3,
+    7.8,
+    8.4
+   ]
+  },
+  {
+   "name": "Tail3",
+   "parent": "Tail2",
+   "head": [
+    0.3,
+    7.8,
+    8.4
+   ],
+   "tail": [
+    0.5,
+    5.6,
+    10.6
+   ]
+  },
+  {
+   "name": "Tail4",
+   "parent": "Tail3",
+   "head": [
+    0.5,
+    5.6,
+    10.6
+   ],
+   "tail": [
+    0.2,
+    3.6,
+    13.0
+   ]
+  },
+  {
+   "name": "Tail5",
+   "parent": "Tail4",
+   "head": [
+    0.2,
+    3.6,
+    13.0
+   ],
+   "tail": [
+    -0.4,
+    2.0,
+    15.6
+   ]
+  },
+  {
+   "name": "Tail6",
+   "parent": "Tail5",
+   "head": [
+    -0.4,
+    2.0,
+    15.6
+   ],
+   "tail": [
+    -1.0,
+    1.0,
+    18.4
+   ]
+  },
+  {
+   "name": "Tail7",
+   "parent": "Tail6",
+   "head": [
+    -1.0,
+    1.0,
+    18.4
+   ],
+   "tail": [
+    -1.4,
+    0.6,
+    21.0
+   ]
+  },
+  {
+   "name": "Tail8",
+   "parent": "Tail7",
+   "head": [
+    -1.4,
+    0.6,
+    21.0
+   ],
+   "tail": [
+    -1.851,
+    0.149,
+    23.9314
+   ]
+  },
+  {
+   "name": "LegFL_Upper",
+   "parent": "Chest",
+   "head": [
+    -1.1,
+    13.0,
+    -3.6
+   ],
+   "tail": [
+    -3.2,
+    15.6,
+    -6.0
+   ]
+  },
+  {
+   "name": "LegFL_Lower",
+   "parent": "LegFL_Upper",
+   "head": [
+    -3.2,
+    15.6,
+    -6.0
+   ],
+   "tail": [
+    -3.7,
+    6.2,
+    -12.9
+   ]
+  },
+  {
+   "name": "LegFL_Foot",
+   "parent": "LegFL_Lower",
+   "head": [
+    -3.7,
+    6.2,
+    -12.9
+   ],
+   "tail": [
+    -3.9,
+    0.45,
+    -16.4
+   ]
+  },
+  {
+   "name": "LegBL_Upper",
+   "parent": "Hips",
+   "head": [
+    -1.2,
+    11.6,
+    4.4
+   ],
+   "tail": [
+    -3.0,
+    4.6,
+    9.8
+   ]
+  },
+  {
+   "name": "LegBL_Lower",
+   "parent": "LegBL_Upper",
+   "head": [
+    -3.0,
+    4.6,
+    9.8
+   ],
+   "tail": [
+    -3.3,
+    8.6,
+    3.2
+   ]
+  },
+  {
+   "name": "LegBL_Foot",
+   "parent": "LegBL_Lower",
+   "head": [
+    -3.3,
+    8.6,
+    3.2
+   ],
+   "tail": [
+    -3.5,
+    0.45,
+    5.5
+   ]
+  },
+  {
+   "name": "LegFR_Upper",
+   "parent": "Chest",
+   "head": [
+    1.1,
+    13.0,
+    -3.6
+   ],
+   "tail": [
+    3.2,
+    15.6,
+    -6.0
+   ]
+  },
+  {
+   "name": "LegFR_Lower",
+   "parent": "LegFR_Upper",
+   "head": [
+    3.2,
+    15.6,
+    -6.0
+   ],
+   "tail": [
+    3.7,
+    6.2,
+    -12.0
+   ]
+  },
+  {
+   "name": "LegFR_Foot",
+   "parent": "LegFR_Lower",
+   "head": [
+    3.7,
+    6.2,
+    -12.0
+   ],
+   "tail": [
+    3.9,
+    0.45,
+    -15.5
+   ]
+  },
+  {
+   "name": "LegBR_Upper",
+   "parent": "Hips",
+   "head": [
+    1.2,
+    11.6,
+    4.4
+   ],
+   "tail": [
+    3.0,
+    4.6,
+    9.8
+   ]
+  },
+  {
+   "name": "LegBR_Lower",
+   "parent": "LegBR_Upper",
+   "head": [
+    3.0,
+    4.6,
+    9.8
+   ],
+   "tail": [
+    3.3,
+    8.6,
+    3.2
+   ]
+  },
+  {
+   "name": "LegBR_Foot",
+   "parent": "LegBR_Lower",
+   "head": [
+    3.3,
+    8.6,
+    3.2
+   ],
+   "tail": [
+    3.5,
+    0.45,
+    5.5
+   ]
+  },
+  {
+   "name": "WingL_Arm",
+   "parent": "Chest",
+   "head": [
+    -1.0,
+    14.0,
+    -2.8
+   ],
+   "tail": [
+    -2.1,
+    15.7,
+    1.2
+   ]
+  },
+  {
+   "name": "WingL_Fore",
+   "parent": "WingL_Arm",
+   "head": [
+    -2.1,
+    15.7,
+    1.2
+   ],
+   "tail": [
+    -2.6,
+    14.3,
+    5.0
+   ]
+  },
+  {
+   "name": "WingL_Hand",
+   "parent": "WingL_Fore",
+   "head": [
+    -2.6,
+    14.3,
+    5.0
+   ],
+   "tail": [
+    -4.0,
+    7.9,
+    3.8
+   ]
+  },
+  {
+   "name": "WingR_Arm",
+   "parent": "Chest",
+   "head": [
+    1.0,
+    14.0,
+    -2.8
+   ],
+   "tail": [
+    2.1,
+    15.7,
+    1.2
+   ]
+  },
+  {
+   "name": "WingR_Fore",
+   "parent": "WingR_Arm",
+   "head": [
+    2.1,
+    15.7,
+    1.2
+   ],
+   "tail": [
+    2.6,
+    14.3,
+    5.0
+   ]
+  },
+  {
+   "name": "WingR_Hand",
+   "parent": "WingR_Fore",
+   "head": [
+    2.6,
+    14.3,
+    5.0
+   ],
+   "tail": [
+    4.0,
+    7.9,
+    3.8
+   ]
+  }
+ ],
+ "eyes": {
+  "EyeL": [
+   0.8580000000000001,
+   8.018442843022068,
+   -12.958924678318873
+  ],
+  "EyeR": [
+   -0.8580000000000001,
+   8.018442843022068,
+   -12.958924678318873
+  ],
+  "bone": "Head"
+ },
+ "bounds": {
+  "min": [
+   -5.333,
+   -0.156,
+   -17.377
+  ],
+  "max": [
+   5.298,
+   16.088,
+   21.063
+  ]
+ }
+}
