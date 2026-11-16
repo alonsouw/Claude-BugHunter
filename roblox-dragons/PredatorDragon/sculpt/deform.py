@@ -67,7 +67,36 @@ def growth(g, p, size, rng, pus=True, part=BP):
         g.apply(Ellipsoid(q, (s, s, s)), k=s * 0.5, mat='pus' if pus and rng.random() < 0.35 else 'rot', part=part)
 
 
+def emaciate(g, rng):
+    """Desnutrición: costillas y vértebras que se marcan bajo la piel, sienes hundidas."""
+    X = BODY.HEAD_XF
+    for z in np.arange(-10.8, -3.4, 0.62):                 # costillas bajo la piel
+        for angs in (np.linspace(62, -55, 8), np.linspace(118, 235, 8)):
+            pts = []
+            for a in angs:
+                if -7.9 < z < -4.0 and (abs(a) < 38 or abs(a - 180) < 38):   # ahí están las heridas con costillas al aire
+                    pts = []; continue
+                p = body_point(g, z + 0.1 * np.cos(np.radians(a)), np.radians(a))
+                c0, r0 = spine_at(z)
+                if p is None or np.linalg.norm(p - c0) > r0 * 1.7:   # el rayo dio en una pata o un ala: se descarta
+                    pts = []; continue
+                pts.append(p + normal(g, p) * 0.05)
+            if len(pts) >= 3:
+                g.apply(Chain(pts, [0.1] * len(pts)), k=0.16, mat='skin', part=BP)
+    for z in np.arange(-17.2, 15.5, 0.62):                 # vértebras a lo largo del lomo
+        p = body_point(g, z, np.radians(90))
+        if p is None: continue
+        c, r = spine_at(z)
+        if np.linalg.norm(p - c) > r * 1.6: continue
+        sz = 0.08 + 0.08 * min(r, 1.8) / 1.8
+        g.apply(Ellipsoid(p - np.array([0, sz * 0.2, 0]), (sz * 1.6, sz * 0.8, sz * 1.8)), k=0.22, mat='skin', part=BP)
+    for s in (1, -1):                                       # sienes y mejillas hundidas: el cráneo se marca
+        g.apply(Ellipsoid((s * 1.32, 0.35, -0.55), (0.32, 0.3, 0.55)), xf=X, op='sub', k=0.25)
+        g.apply(Ellipsoid((s * 1.22, -0.35, -2.6), (0.22, 0.2, 0.6)), xf=X, op='sub', k=0.2)
+
+
 def apply(g, rng):
+    emaciate(g, rng)
     X = BODY.HEAD_XF
     XJ = X @ Xf.about(HEAD.HINGE, rot((1, 0, 0), HEAD.JAW_OPEN))
     A = lambda prim, xf=X, **kw: g.apply(prim, xf=xf, **kw)

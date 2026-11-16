@@ -5,7 +5,8 @@ Es un cuadrúpedo negro carbón con heridas y costillas al aire, fauces babeante
 
 **No tiene ojos.** En cada cuenca hay un punto de luz blanca diminuto: de día casi no se ve y en la oscuridad es lo único visible.
 
-## Deformidad (sculpt/deform.py)
+## Desnutrición y deformidad (sculpt/body.py, sculpt/deform.py)
+- Famélico: torso y cuello estrechos, vientre hundido, costillas y vértebras marcadas bajo la piel, caderas y omóplatos salientes, patas flacas de articulaciones nudosas y sienes hundidas.
 - Segunda boca dentada en el flanco derecho, más de 30 tajos abiertos repartidos por todo el cuerpo (colocados con rayos contra la piel real), joroba de vértebras que rompen la piel y costillas astilladas.
 - Mandíbula derecha hinchada de tumores, cuerno torcido en la mejilla, cráneo pelado, placas de podredumbre con pústulas, cola descarnada hasta las vértebras y antebrazo izquierdo con el hueso al aire. Alas hechas jirones.
 

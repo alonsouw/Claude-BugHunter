@@ -11,8 +11,8 @@ from sdf import Ellipsoid, RoundCone, Chain, Xf, horn, rot, bezier
 PART = {'Head': 1, 'Jaw': 2, 'Tongue': 3, 'Drool': 4, 'Body': 5, 'LegFL': 6, 'LegFR': 7, 'LegBL': 8, 'LegBR': 9, 'WingL': 10, 'WingR': 11}
 
 # columna (cuello → cola) que también usa el rig: puntos y radios
-SPINE = [((0, 9.05, -18.4), 1.3), ((0, 9.55, -16.6), 1.5), ((0, 9.2, -14.5), 1.8), ((0, 8.2, -12.2), 2.15), ((0, 7.4, -10.4), 2.3),
-         ((0, 6.9, -8.6), 2.25), ((0, 6.7, -5.6), 1.95), ((0, 6.6, -2.4), 1.85), ((0, 6.3, 0.6), 1.65),
+SPINE = [((0, 9.05, -18.4), 1.02), ((0, 9.55, -16.6), 1.12), ((0, 9.2, -14.5), 1.3), ((0, 8.2, -12.2), 1.6), ((0, 7.4, -10.4), 1.85),
+         ((0, 6.9, -8.6), 1.8), ((0, 6.8, -5.6), 1.35), ((0, 6.75, -2.4), 1.45), ((0, 6.4, 0.6), 1.3),
          ((0.1, 5.9, 4.0), 1.3), ((0.25, 5.4, 7.6), 1.0), ((0.35, 4.95, 11.2), 0.74), ((0.2, 4.65, 14.6), 0.52),
          ((-0.15, 4.5, 17.8), 0.34), ((-0.3, 4.45, 20.6), 0.2)]
 HEAD_XF = Xf(rot((1, 0, 0), -0.3), (0, 9.3, -18.2), 1.22)
@@ -20,8 +20,8 @@ HEAD_XF = Xf(rot((1, 0, 0), -0.3), (0, 9.3, -18.2), 1.22)
 # patas: (nombre, lado, puntos hombro/cadera → codo/rodilla → muñeca/corvejón → pie, radios)
 LEGS = []
 for s, side in ((-1, 'L'), (1, 'R')):
-    LEGS.append(('LegF' + side, s, [(s * 2.0, 6.5, -9.6), (s * 2.75, 3.7, -7.6), (s * 2.55, 1.3, -9.2), (s * 2.65, 0.45, -10.4)], [1.4, 0.95, 0.62, 0.5]))
-    LEGS.append(('LegB' + side, s, [(s * 1.9, 6.3, -2.0), (s * 2.7, 3.7, -4.0), (s * 2.7, 2.0, -0.8), (s * 2.8, 0.45, -2.0)], [1.65, 0.98, 0.6, 0.5]))
+    LEGS.append(('LegF' + side, s, [(s * 2.0, 6.5, -9.6), (s * 2.75, 3.7, -7.6), (s * 2.55, 1.3, -9.2), (s * 2.65, 0.45, -10.4)], [1.0, 0.6, 0.4, 0.42]))
+    LEGS.append(('LegB' + side, s, [(s * 1.9, 6.3, -2.0), (s * 2.7, 3.7, -4.0), (s * 2.7, 2.0, -0.8), (s * 2.8, 0.45, -2.0)], [1.15, 0.62, 0.4, 0.42]))
 
 # alas (lado izquierdo; el derecho es su espejo). Pose de reposo: medio alzadas como en la referencia
 WING = dict(shoulder=(-1.7, 8.6, -8.6), elbow=(-5.6, 12.6, -7.6), wrist=(-11.2, 15.0, -9.4),
@@ -42,19 +42,23 @@ def build(g, rng, include_wing_bones=True):
     # --- columna continua: cuello, torso y cola ---
     g.apply(Chain(pts, rad, squash=(1.0, 1.0)), k=0.6, part=B)
     # masas musculares y óseas que dan anatomía al torso
-    g.apply(Ellipsoid((0, 6.0, -8.6), (2.0, 2.4, 2.7)), k=0.8, part=B)            # pecho profundo
-    g.apply(Ellipsoid((0, 6.1, -5.0), (1.8, 1.8, 2.7)), k=0.8, part=B)            # costillar
-    g.apply(Ellipsoid((0, 6.3, -1.6), (1.75, 1.7, 2.2)), k=0.8, part=B)             # cadera
-    g.apply(Ellipsoid((0, 4.55, -8.0), (1.45, 1.0, 2.0)), k=0.7, part=B, mat='belly')  # quilla del pecho
-    g.apply(Ellipsoid((0, 5.0, -4.0), (1.25, 0.6, 2.2)), k=0.7, part=B, mat='belly')  # vientre recogido
+    g.apply(Ellipsoid((0, 6.0, -8.4), (1.6, 2.3, 2.6)), k=0.7, part=B)            # pecho: jaula estrecha y profunda
+    g.apply(Ellipsoid((0, 6.25, -5.6), (1.45, 1.8, 2.4)), k=0.7, part=B)            # costillar
+    g.apply(Ellipsoid((0, 6.6, -1.6), (1.3, 1.35, 1.8)), k=0.6, part=B)             # cadera huesuda
+    g.apply(Ellipsoid((0, 4.35, -8.2), (0.75, 0.75, 1.9)), k=0.5, part=B, mat='belly')  # esternón marcado
+    g.apply(Ellipsoid((0, 4.55, -3.4), (1.7, 0.95, 1.7)), op='sub', k=0.7)  # vientre hundido detrás de las costillas
     for s in (-1, 1):
-        g.apply(Ellipsoid((s * 1.55, 7.6, -9.4), (0.95, 1.4, 1.7)), k=0.6, part=B)      # escápula
-        g.apply(Ellipsoid((s * 1.4, 7.9, -12.4), (0.75, 1.0, 1.8)), k=0.7, part=B)      # músculo del cuello
-        g.apply(Ellipsoid((s * 1.45, 6.7, -1.3), (0.9, 1.3, 1.6)), k=0.6, part=B)       # ilíaco
+        g.apply(Ellipsoid((s * 1.35, 8.15, -9.4), (0.32, 1.1, 1.0)), k=0.35, part=B)      # escápula saliente
+        g.apply(RoundCone((s * 0.55, 9.6, -16.2), (s * 0.95, 7.6, -11.6), 0.18, 0.24), k=0.25, part=B)      # tendón del cuello
+        g.apply(Ellipsoid((s * 1.15, 7.85, -1.6), (0.38, 0.32, 0.9)), k=0.3, part=B)       # cresta ilíaca saliente
+        g.apply(Ellipsoid((s * 0.95, 7.3, 0.3), (0.3, 0.3, 0.4)), k=0.3, part=B)        # isquion
     # piel del cuello con pliegues ventrales (garganta)
-    for i in range(7):
-        z = -17.6 + i * 0.85; y = 9.2 + (z + 18.4) * 0.05 - (1.3 + (z + 18.4) * 0.12) * 0.93
-        g.apply(Ellipsoid((0, y, z), (0.95, 0.2, 0.3)), k=0.3, part=B, mat='belly')
+    from gore import surface
+    for i in range(7):   # pliegues de la garganta, colocados sobre la piel real
+        z = -17.6 + i * 0.85; y0 = np.interp(z, [p[2] for p, _ in SPINE[:5]], [p[1] for p, _ in SPINE[:5]])
+        hit = surface(g, (0, y0 - 4.0, z), (0, y0, z))
+        if hit is not None:
+            g.apply(Ellipsoid(hit + np.array([0, 0.05, 0]), (0.7, 0.14, 0.26)), k=0.25, part=B, mat='belly')
 
     # --- patas ---
     for name, s, P, R in LEGS:
@@ -64,10 +68,11 @@ def build(g, rng, include_wing_bones=True):
         g.apply(RoundCone(P[2], P[3], R[2], R[3]), k=0.25, part=part)
         up = P[0] + (P[1] - P[0]) * 0.42
         front = 'F' in name
-        g.apply(Ellipsoid(up + np.array([s * 0.15, 0.1, -0.25 if front else 0.35]), (R[0] * 0.95, R[0] * 1.35, R[0] * 1.15)), k=0.45, part=part)   # bíceps / muslo
+        g.apply(Ellipsoid(up + np.array([s * 0.15, 0.1, -0.25 if front else 0.35]), (R[0] * 0.8, R[0] * 1.2, R[0] * 0.95)), k=0.4, part=part)   # músculo consumido
         mid = P[1] + (P[2] - P[1]) * 0.35
         g.apply(Ellipsoid(mid + np.array([0, 0, -0.18 if front else 0.2]), (R[1] * 0.8, R[1] * 1.25, R[1] * 0.95)), k=0.3, part=part)
-        g.apply(Ellipsoid(P[1], (R[1] * 0.85, R[1] * 0.85, R[1] * 0.85)), k=0.2, part=part)
+        g.apply(Ellipsoid(P[1], (R[1] * 1.25, R[1] * 1.15, R[1] * 1.25)), k=0.15, part=part)   # articulación nudosa
+        g.apply(Ellipsoid(P[2], (R[2] * 1.3, R[2] * 1.2, R[2] * 1.3)), k=0.12, part=part)
         # codo/corvejón con espolón
         spur_dir = np.array([0, 0.3, 1.0]) if front else np.array([0, 0.5, 1.0])
         j = P[1] if front else P[2]
@@ -115,11 +120,14 @@ def build(g, rng, include_wing_bones=True):
 
     # --- heridas con costillas al aire (flancos y pecho, como en la referencia) ---
     for s in (-1, 1):
-        c = np.array([s * 2.2, 5.75, -6.0])
+        from gore import surface
+        hit = surface(g, (s * 5.0, 5.75, -6.0), (0.0, 5.75, -6.0))
+        dx = (abs(hit[0]) - 2.15) if hit is not None else 0.0   # el cuerpo es más flaco: todo se desplaza hacia dentro
+        c = np.array([s * (2.2 + dx), 5.75, -6.0])
         g.apply(Ellipsoid(c, (0.7, 1.25, 2.2)), op='sub', k=0.35, carve_mat='wound')
         for i in range(6):
             z = c[2] - 1.7 + i * 0.66 + rng.uniform(-0.12, 0.12); th = rng.uniform(0.75, 1.25); sink = rng.uniform(0.0, 0.18)
-            ribs = [np.array([s * (1.75 - sink), 7.05, z]), np.array([s * (2.25 - sink), 6.2, z + 0.12]), np.array([s * (2.22 - sink), 5.2, z + 0.24]), np.array([s * (1.8 - sink), 4.5, z + 0.3])]
+            ribs = [np.array([s * (1.75 + dx - sink), 7.05, z]), np.array([s * (2.25 + dx - sink), 6.2, z + 0.12]), np.array([s * (2.22 + dx - sink), 5.2, z + 0.24]), np.array([s * (1.8 + dx - sink), 4.5, z + 0.3])]
             g.apply(Chain(ribs, [0.08 * th, 0.12 * th, 0.11 * th, 0.07 * th]), k=0.08, mat='bone', part=B)
         for i in range(4):  # jirones de carne
             q = c + np.array([s * -0.05, rng.uniform(-0.8, 0.8), rng.uniform(-1.5, 1.5)])

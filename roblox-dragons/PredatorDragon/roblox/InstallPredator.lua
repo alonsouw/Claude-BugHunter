@@ -28,16 +28,16 @@ local MAPS = {
 
 local RIG = {
 	{ name = "Root", parent = nil, head = { 0, 0, -2.4 }, tail = { 0, 1.5, -2.4 } },
-	{ name = "Hips", parent = "Root", head = { 0, 6.6, -2.4 }, tail = { 0, 6.7, -5.6 } },
-	{ name = "Chest", parent = "Hips", head = { 0, 6.7, -5.6 }, tail = { 0, 7.4, -10.4 } },
+	{ name = "Hips", parent = "Root", head = { 0, 6.75, -2.4 }, tail = { 0, 6.8, -5.6 } },
+	{ name = "Chest", parent = "Hips", head = { 0, 6.8, -5.6 }, tail = { 0, 7.4, -10.4 } },
 	{ name = "Neck1", parent = "Chest", head = { 0, 7.4, -10.4 }, tail = { 0, 8.2, -12.2 } },
 	{ name = "Neck2", parent = "Neck1", head = { 0, 8.2, -12.2 }, tail = { 0, 9.2, -14.5 } },
 	{ name = "Neck3", parent = "Neck2", head = { 0, 9.2, -14.5 }, tail = { 0, 9.05, -18.4 } },
 	{ name = "Head", parent = "Neck3", head = { 0, 9.05, -18.4 }, tail = { 0, 7.3087, -24.2246 } },
 	{ name = "Jaw", parent = "Head", head = { 0, 8.6493, -18.4457 }, tail = { 0, 5.0291, -22.1756 } },
 	{ name = "Tongue", parent = "Jaw", head = { 0, 7.6881, -19.1514 }, tail = { 0, 5.2516, -22.044 } },
-	{ name = "Tail1", parent = "Hips", head = { 0, 6.6, -2.4 }, tail = { 0, 6.3, 0.6 } },
-	{ name = "Tail2", parent = "Tail1", head = { 0, 6.3, 0.6 }, tail = { 0.1, 5.9, 4 } },
+	{ name = "Tail1", parent = "Hips", head = { 0, 6.75, -2.4 }, tail = { 0, 6.4, 0.6 } },
+	{ name = "Tail2", parent = "Tail1", head = { 0, 6.4, 0.6 }, tail = { 0.1, 5.9, 4 } },
 	{ name = "Tail3", parent = "Tail2", head = { 0.1, 5.9, 4 }, tail = { 0.25, 5.4, 7.6 } },
 	{ name = "Tail4", parent = "Tail3", head = { 0.25, 5.4, 7.6 }, tail = { 0.35, 4.95, 11.2 } },
 	{ name = "Tail5", parent = "Tail4", head = { 0.35, 4.95, 11.2 }, tail = { 0.2, 4.65, 14.6 } },
@@ -64,7 +64,7 @@ local RIG = {
 	{ name = "WingR_Hand", parent = "WingR_Fore", head = { 11.2, 15, -9.4 }, tail = { 20.2, 10.8, 2.6 } },
 }
 local EYES = { EyeL = { 1.22, 9.1967, -20.7221 }, EyeR = { -1.22, 9.1967, -20.7221 }, bone = "Head" }
-local GROUND_Y = -0.088
+local GROUND_Y = -0.029
 local SOURCES = {
 	DragonAnimator = [=======[
 --[[
