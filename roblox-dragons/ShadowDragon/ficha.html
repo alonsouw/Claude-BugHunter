@@ -1,0 +1,418 @@
+<title>Dragón Sombrío</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de bestiario. La sonrisa en la oscuridad abre la página; después la comparación con la referencia, el visor 3D del modelo de juego, el proceso, el rig y el paquete para Studio. Tema oscuro único, elegido a propósito. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #a3262e;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Bestiario Umbral · Especie VI · La Sonrisa en la Oscuridad</div>
+      <h1>Dragón Sombrío</h1>
+      <div class="latin">Umbrafex ridens · versión 1, cuerpo de zancos y sonrisa de agujas</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">Cabeza</span><span class="done">Cuerpo y cola</span><span class="done">Alas</span><span class="done">Horneado</span><span class="done">Huesos</span><span class="done">Animaciones</span><span class="done">Sonrisa Neon</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section class="gaze">
+    <img src="design/renders/gaze.jpg" alt="Oscuridad casi total: dos puntos rojos pequeños y separados y, debajo, una sonrisa enorme de agujas blancas" width="1200" height="900">
+    <div class="cap"><strong>Algo te sonríe desde la oscuridad</strong><p>De noche el cuerpo negro desaparece. Solo quedan dos puntos rojos, pequeños y muy separados, y debajo una sonrisa de oreja a oreja llena de agujas blancas. En Roblox los dientes son una malla aparte que pasa a Neon de noche.</p></div>
+  </section>
+
+  <section class="compare">
+    <h2>Referencia frente al modelo</h2>
+    <p>La izquierda es tu imagen; la derecha, el modelo de juego (el mismo que va a Roblox) renderizado desde un ángulo parecido.</p>
+    <div class="pair">
+      <figure><img src="design/reference_face.jpg" alt="Referencia del usuario: cara oscura con dos ojos rojos pequeños y una sonrisa enorme de dientes blancos"><figcaption><span class="tag ref">Referencia</span> · la cara</figcaption></figure>
+      <figure><img src="design/renders/headfront.jpg" alt="Modelo de juego, cabeza de frente con la sonrisa de agujas" loading="lazy"><figcaption><span class="tag ours">Modelo</span> · cabeza de frente</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="design/reference_body.jpg" alt="Referencia del usuario: criatura encorvada de extremidades larguísimas con jirones colgando" loading="lazy"><figcaption><span class="tag ref">Referencia</span> · el cuerpo</figcaption></figure>
+      <figure><img src="design/renders/side.jpg" alt="Modelo de juego, vista lateral del cuerpo alargado" loading="lazy"><figcaption><span class="tag ours">Modelo</span> · lateral</figcaption></figure>
+    </div>
+    <div class="dims" id="dims"></div>
+  </section>
+
+  <section>
+    <h2>El modelo de juego, en vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D del Dragón Sombrío"></canvas>
+        <div class="status" id="status"><b>●</b> Idle</div>
+        <div class="loading" id="loading">Cargando el modelo con huesos…</div>
+      </div>
+      <div class="controls">
+        <div><h3>Animación</h3><div class="anims" id="anims"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tDark" aria-pressed="false">Oscuridad</button>
+          <button type="button" id="tLook" aria-pressed="true">Te mira</button>
+          <button type="button" id="tBones" aria-pressed="false">Huesos</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
+        <p class="note">Es el archivo exportado para Roblox: mallas con skinning, 36 huesos y texturas horneadas. Las animaciones usan los mismos datos que el script de Studio.</p>
+        <p class="note">«Te mira» hace que la cabeza y el cuello sigan a la cámara. «Oscuridad» apaga las luces: solo quedan los ojos rojos y la sonrisa.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Vistas del modelo de juego</h2>
+    <div class="views">
+      <figure class="wide"><img src="design/renders/hero.jpg" alt="Vista tres cuartos del dragón completo" loading="lazy"><figcaption>Tres cuartos</figcaption></figure>
+      <figure><img src="design/renders/head.jpg" alt="Cabeza en tres cuartos: melena de mechones, cuernos laterales y la sonrisa" loading="lazy"><figcaption>Cabeza</figcaption></figure>
+      <figure><img src="design/renders/front.jpg" alt="Vista frontal: brazos larguísimos a los lados de la cabeza" loading="lazy"><figcaption>Frontal</figcaption></figure>
+      <figure><img src="design/renders/top.jpg" alt="Vista superior del cuerpo alargado" loading="lazy"><figcaption>Superior</figcaption></figure>
+      <figure><img src="design/renders/wing.jpg" alt="Detalle de las alas plegadas como un manto hecho jirones" loading="lazy"><figcaption>Alas plegadas</figcaption></figure>
+      <figure><img src="design/renders/tail.jpg" alt="Detalle de la cola larga y fina" loading="lazy"><figcaption>Cola</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Cómo es</h2>
+      <ul class="list">
+        <li><b>La cara</b>: cráneo negro con un domo de mechones que caen hacia atrás como humo, cara que se estrecha en V hasta una barbilla en punta y ceño de crestas óseas.</li>
+        <li><b>La sonrisa</b>: de oreja a oreja, con labios rojos, encías granates y unas 60 agujas blancas, largas y desiguales, arriba y abajo. La mandíbula es una parte propia y se abre en el ataque y al sonreír.</li>
+        <li><b>Los ojos</b> no son globos: son dos puntos rojos pequeños y muy separados, en fosas poco profundas.</li>
+        <li><b>El cuerpo de zancos</b>: torso pequeño y huesudo en joroba, colgado muy alto; cuello largo que baja hacia delante.</li>
+        <li><b>Brazos larguísimos</b> con el codo por encima del lomo y manos de cinco dedos curvados; el izquierdo llega más lejos que el derecho.</li>
+        <li><b>Patas traseras en zigzag</b>, con articulaciones nudosas, espolones y pies de tres dedos.</li>
+        <li>Costillas marcadas, vértebras con púas finas, jirones de piel colgando del vientre y del cuello, alas hechas jirones plegadas como un manto y cola larga que se arrastra.</li>
+        <li>Se mueve como una araña de zancos, despacio y a tirones, y ladea la cabeza de golpe mientras te mira.</li>
+      </ul>
+    </div>
+    <figure><img src="design/renders/right.jpg" alt="Lado derecho: joroba, brazos de zancos y jirones colgando" loading="lazy"><figcaption>Lado derecho</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>Cómo se rehízo</h2>
+    <div class="steps4">
+      <div><b>1 · Escultura</b><span>Cada músculo, hueso, cuerno y diente es una forma que se funde con las demás. El resultado es una piel continua de alta resolución, no piezas pegadas. Primero la cara, comparada con tu imagen hasta cuadrar la sonrisa.</span></div>
+      <div><b>2 · Retopología</b><span>La escultura se reduce a mallas de juego: unos 19 mil triángulos en el cuerpo, 7 mil en los dientes (malla propia, para que brillen) y unos 9 mil por ala. Todo bajo el límite de 20 mil de Roblox.</span></div>
+      <div><b>3 · Horneado</b><span>El color, las escamas, el relieve y el brillo de la escultura se hornean en texturas de 1024 px: color, normal y rugosidad para cada malla.</span></div>
+      <div><b>4 · Huesos</b><span>36 huesos con pesos por zona: la mandíbula se lleva el labio y los dientes de abajo, la columna tiene un hueso más para la joroba y la membrana sigue a los dedos del ala.</span></div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Esqueleto</h2>
+<pre>Root
+└─ Hips
+   ├─ Spine1 ─ Chest
+   │  ├─ Neck1 ─ Neck2 ─ Neck3 ─ Head ─ Jaw
+   │  ├─ LegFL_Upper ─ LegFL_Lower ─ LegFL_Foot
+   │  ├─ LegFR_Upper ─ LegFR_Lower ─ LegFR_Foot
+   │  ├─ WingL_Arm ─ WingL_Fore ─ WingL_Hand
+   │  └─ WingR_Arm ─ WingR_Fore ─ WingR_Hand
+   ├─ LegBL_Upper ─ LegBL_Lower ─ LegBL_Foot
+   ├─ LegBR_Upper ─ LegBR_Lower ─ LegBR_Foot
+   └─ Tail1 ─ Tail2 ─ … ─ Tail8
+Mallas: Body · Teeth · WingL · WingR (skinning)
+Ojos: EyeLPoint · EyeRPoint (puntos Neon rojos que siguen a Head)</pre>
+    </div>
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <div class="files">
+        <div><b>model/ShadowDragon.fbx</b><span>Mallas con huesos y texturas. Impórtalo con Rig Type «Custom».</span></div>
+        <div><b>model/*_color · _normal · _roughness.png</b><span>Texturas de Body, WingL y WingR para SurfaceAppearance. Teeth es marfil liso.</span></div>
+        <div><b>roblox/InstallShadow.lua</b><span>Instalador para la Command Bar: ensambla el modelo, crea los ojos rojos, las carpetas y los scripts.</span></div>
+        <div><b>roblox/DragonAnimator.lua</b><span>Animaciones por datos para Motor6D y Bones, con mirada (<code>SetLookTarget</code>).</span></div>
+      </div>
+      <ol class="steps" style="margin-top:14px">
+        <li><code>Import 3D</code> → <code>ShadowDragon.fbx</code> → <code>Rig Type: Custom</code>, sin combinar mallas.</li>
+        <li>Selecciona el modelo importado y pega <code>InstallShadow.lua</code> en la Command Bar.</li>
+        <li>Play: noche cerrada, dos puntos rojos y una sonrisa que te siguen, teclas 1 a 9 para las animaciones y L para la luz.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Lo que conviene revisar</h2>
+      <ul class="list todo">
+        <li>Ni el instalador ni el skinning se han probado dentro de Roblox Studio. El modelo, los huesos y las animaciones funcionan en Blender y en este visor, pero falta la prueba de tu amigo.</li>
+        <li>Si al importar Studio duplica el esqueleto por cada malla, el animador ya mueve todas las copias. Si las alas o los dientes no se deforman, hay que revisar que estén soldados al cuerpo; el instalador lo hace.</li>
+        <li>El brillo de la sonrisa depende del Bloom de Lighting: la vitrina lo activa de noche.</li>
+        <li>Las texturas de 1024 px son el máximo de Roblox. De muy cerca, las escamas se ven más suaves que en la escultura.</li>
+        <li>Walk y Run se animan en el sitio. Faltan movimiento, IA, daño y sonido.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Para la siguiente vuelta</h2>
+      <ul class="list">
+        <li>Que se desplace de verdad por el escenario a cuatro patas, a tirones, y se pare a mirarte.</li>
+        <li>Que la sonrisa se ensanche poco a poco cuanto más cerca estés.</li>
+        <li>Una segunda pasada de escultura a mano en Blender para las arrugas de la cara.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="src/shadow_anims.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, ANIMS = SHADOW_ANIMS;
+const ORDER = ['Idle', 'Walk', 'Run', 'Fly', 'TakeOff', 'Landing', 'Attack', 'Roar', 'Death'];
+const LABEL = { Idle: 'Acechar', Walk: 'Caminar', Run: 'Correr', Fly: 'Volar', TakeOff: 'Despegar', Landing: 'Aterrizar', Attack: 'Atacar', Roar: 'Sonreír', Death: 'Morir' };
+const LOOK = { NeckShare: 0.4, MaxYaw: 80 * D2R, MaxPitch: 35 * D2R, RestPitch: -5 * D2R, Speed: 4 };
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); const BG = { day: new THREE.Color('#3a3a3c'), night: new THREE.Color('#000000') };
+scene.background = BG.day.clone(); scene.fog = new THREE.Fog('#3a3a3c', 80, 200);
+const camera = new THREE.PerspectiveCamera(34, 1.6, 0.3, 500);
+const hemi = new THREE.HemisphereLight('#c9ccd4', '#262020', 0.75); scene.add(hemi);
+const key = new THREE.DirectionalLight('#fff1e2', 1.6); key.position.set(-26, 40, -24); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -36, right: 36, top: 36, bottom: -36, near: 1, far: 140 }); key.shadow.bias = -0.0012; key.shadow.normalBias = 0.04; scene.add(key);
+const rim = new THREE.DirectionalLight('#b4c4ff', 1.1); rim.position.set(22, 18, 34); scene.add(rim);
+const LIGHTS = [[hemi, 0.75, 0.0], [key, 1.6, 0.0], [rim, 1.1, 0.025]];
+const ground = new THREE.Mesh(new THREE.CircleGeometry(150, 64), new THREE.MeshStandardMaterial({ color: '#0b0a0c', roughness: 0.95 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+let model = null, bones = {}, rest = {}, mats = [], dots = [], skel = null, rig = null, teethMat = null;
+const A = { cur: 'Idle', t: 0, fade: 0, fadeT: 0.25, from: {}, values: {}, dead: 0, yaw: 0, pitch: 0 };
+
+Promise.all([fetch('model/rig.json').then(r => r.json()), new Promise((res, rej) => new THREE.GLTFLoader().load('model/ShadowDragon.gltf.json', res, undefined, rej))]).then(([rj, gltf]) => {
+  rig = rj; model = gltf.scene; scene.add(model);
+  model.traverse(o => {
+    if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; const m = o.material; m.transparent = true; m.side = THREE.FrontSide; mats.push(m); if (o.name.startsWith('Teeth') || /Teeth/.test(m.name)) teethMat = m; }
+    if (o.isBone) bones[o.name] = o;
+  });
+  model.updateMatrixWorld(true);
+  const inv = new THREE.Quaternion();
+  for (const [n, b] of Object.entries(bones)) {
+    const w = b.getWorldQuaternion(new THREE.Quaternion());
+    rest[n] = { q0: b.quaternion.clone(), p0: b.position.clone(), w, wInv: w.clone().invert() };
+  }
+  // puntos de los ojos: no son geometría; siguen al hueso de la cabeza
+  const head = bones[rig.eyes.bone], headInv = new THREE.Matrix4().copy(head.matrixWorld).invert();
+  const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,60,40,1)'); r.addColorStop(0.25, 'rgba(255,20,10,.4)'); r.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  for (const k of ['EyeL', 'EyeR']) {
+    const p = new THREE.Vector3(...rig.eyes[k]).applyMatrix4(headInv);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff1a0e', transparent: true, opacity: 0.6 }));
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+    glow.scale.setScalar(0.8); dot.position.copy(p); glow.position.copy(p); head.add(dot); head.add(glow); dots.push([dot, glow]);
+  }
+  const b = rig.bounds, f = n => n.toFixed(1).replace('.', ',');
+  document.getElementById('dims').innerHTML = [['Longitud', b.max[2] - b.min[2]], ['Altura', b.max[1] - b.min[1]], ['Envergadura', b.max[0] - b.min[0]]].map(([k, v]) => `<div><div class="v">${f(v)}</div><div class="k">${k} (studs)</div></div>`).join('') +
+    `<div><div class="v">${Object.values(rig.meshes).reduce((a, x) => a + x, 0).toLocaleString('es')}</div><div class="k">Triángulos (4 mallas)</div></div><div><div class="v">${rig.bones.length}</div><div class="k">Huesos</div></div>`;
+  document.getElementById('loading').hidden = true; updateUI(); requestAnimationFrame(frame);
+}).catch(e => { document.getElementById('loading').textContent = 'No se pudo cargar el modelo: ' + e.message; });
+
+/* conversión: transformación en ejes del modelo → hueso local (igual que DragonAnimator.lua) */
+const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), va = new THREE.Vector3();
+function setBone(n, q, t) {
+  const r = rest[n], b = bones[n];
+  qa.copy(r.wInv).multiply(q).multiply(r.w);
+  b.quaternion.copy(r.q0).multiply(qa);
+  va.copy(t).applyQuaternion(r.wInv).applyQuaternion(r.q0); b.position.copy(r.p0).add(va);
+}
+function play(name, fadeT = 0.25) {
+  if (A.dead) return;
+  const airborne = A.cur === 'Fly' || A.cur === 'TakeOff';
+  if (name === 'Fly' && !airborne) name = 'TakeOff';
+  else if (airborne && ['Idle', 'Walk', 'Run', 'Attack', 'Roar'].includes(name)) name = 'Landing';
+  A.from = JSON.parse(JSON.stringify(A.values)); A.cur = name; A.t = 0; A.fade = 0; A.fadeT = fadeT; updateUI();
+}
+const E = new THREE.Euler(), Q = new THREE.Quaternion(), T = new THREE.Vector3();
+function step(dt) {
+  const anim = ANIMS[A.cur]; A.t += dt; A.fade += dt;
+  if (!anim.loop && A.t >= anim.dur) {
+    if (anim.next) { play(anim.next, 0.2); return step(0); }
+    A.t = anim.dur;
+    if (A.cur === 'Death' && !A.dead) A.dead = performance.now();
+    else if (A.cur !== 'Death') { play('Idle', 0.35); return step(0); }
+  }
+  const t = anim.loop ? A.t % anim.dur : A.t, w = A.fadeT > 0 ? Math.min(A.fade / A.fadeT, 1) : 1, ws = w * w * (3 - 2 * w);
+  const frames = {};
+  for (const n in bones) {
+    if (!rest[n]) continue;
+    const j = anim.joints[n]; let v = [0, 0, 0, 0, 0, 0];
+    if (j) { const { r, p } = AnimEval.evalJoint(j, t, anim.dur, anim.loop); v = [...r, ...p]; }
+    const f = A.from[n]; if (f && ws < 1) v = v.map((x, i) => f[i] + (x - f[i]) * ws);
+    A.values[n] = v;
+    frames[n] = { q: new THREE.Quaternion().setFromEuler(E.set(v[0] * D2R, v[1] * D2R, v[2] * D2R, 'XYZ')), t: new THREE.Vector3(v[3], v[4], v[5]) };
+  }
+  // mirada (misma fórmula que DragonAnimator:_applyLook)
+  let gy = 0, gp = 0;
+  if (lookOn && !A.dead && A.cur !== 'Death') {
+    const neck = bones.Neck2, head = bones.Head; neck.parent.updateMatrixWorld(true);
+    const base = neck.parent.getWorldQuaternion(new THREE.Quaternion()).multiply(rest.Neck2.q0).multiply(rest.Neck2.wInv);
+    head.updateMatrixWorld(true); const hp = head.getWorldPosition(new THREE.Vector3());
+    const p = camera.position.clone().sub(hp).applyQuaternion(base.invert());
+    gy = Math.max(-LOOK.MaxYaw, Math.min(LOOK.MaxYaw, Math.atan2(-p.x, -p.z)));
+    gp = Math.max(-LOOK.MaxPitch, Math.min(LOOK.MaxPitch, Math.atan2(p.y, Math.hypot(p.x, p.z)) - LOOK.RestPitch));
+  }
+  const k = Math.min(1, dt * LOOK.Speed); A.yaw += (gy - A.yaw) * k; A.pitch += (gp - A.pitch) * k;
+  for (const [n, share] of [['Neck2', LOOK.NeckShare], ['Head', 1 - LOOK.NeckShare]]) {
+    const look = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), A.yaw * share).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), A.pitch * share));
+    frames[n].q.premultiply(look); frames[n].t.applyQuaternion(look);
+  }
+  for (const n in frames) setBone(n, frames[n].q, frames[n].t);
+  if (A.dead) {
+    const el = performance.now() - A.dead, kb = Math.min(el / 1600, 1), ke = Math.min(Math.max((el - 1900) / 900, 0), 1);
+    mats.forEach(m => m.opacity = 1 - kb * kb);
+    dots.forEach(([d, g]) => { d.material.opacity = (dark ? 1 : 0.6) * (1 - ke); g.material.opacity = (dark ? 0.8 : 0) * (1 - ke); });
+    if (teethMat) teethMat.opacity = 1 - ke;
+    if (el > 3400) { A.dead = 0; mats.forEach(m => m.opacity = 1); setDark(dark); A.values = {}; play('Idle', 0); }
+  }
+}
+
+/* huesos visibles */
+function updateSkel() {
+  if (!skel || !skel.visible) return;
+  const pos = skel.geometry.attributes.position; let i = 0; const a = new THREE.Vector3(), b = new THREE.Vector3();
+  for (const n in bones) { const bo = bones[n]; if (!bo.parent || !bo.parent.isBone) continue; bo.getWorldPosition(a); bo.parent.getWorldPosition(b); pos.setXYZ(i++, a.x, a.y, a.z); pos.setXYZ(i++, b.x, b.y, b.z); }
+  pos.needsUpdate = true;
+}
+function toggleBones(on) {
+  if (on && !skel) {
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(Object.keys(bones).length * 6), 3));
+    skel = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#ff5a4a', depthTest: false, transparent: true })); skel.renderOrder = 10; scene.add(skel);
+  }
+  if (skel) skel.visible = on;
+  mats.forEach(m => { m.opacity = on ? 0.35 : 1; m.depthWrite = !on; });
+}
+
+/* oscuridad */
+let dark = false;
+function setDark(on) {
+  dark = on;
+  for (const [l, day, night] of LIGHTS) l.intensity = on ? night : day;
+  scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(on ? BG.night : BG.day);
+  dots.forEach(([d, g]) => { d.material.opacity = on ? 1 : 0.6; g.material.opacity = on ? 0.8 : 0; });
+  if (teethMat) { teethMat.emissive.set(on ? '#cfc9bc' : '#000000'); teethMat.emissiveIntensity = on ? 1.1 : 0; }
+}
+
+/* UI */
+const animBox = document.getElementById('anims');
+animBox.innerHTML = ORDER.map(n => `<button type="button" data-a="${n}" aria-pressed="false">${LABEL[n]}</button>`).join('');
+animBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b && model) play(b.dataset.a); });
+function updateUI() { animBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === A.cur)); document.getElementById('status').innerHTML = `<b>●</b> ${A.cur} · ${LABEL[A.cur]}`; }
+let spin = !reduce, bonesOn = false, lookOn = true;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tLook', () => lookOn, v => lookOn = v);
+tg('tBones', () => bonesOn, v => { bonesOn = v; toggleBones(v); });
+
+/* cámara orbital */
+let yaw = -2.35, pitch = 0.1, dist = 78, drag = null;
+const target = new THREE.Vector3(0, 8, 0);
+tg('tDark', () => dark, v => { setDark(v); dist = v ? 24 : 78; pitch = v ? 0.02 : 0.1; target.set(0, v ? 6.6 : 8, v ? -13 : 0); if (v) yaw = Math.PI; });
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.05, Math.min(1.25, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(12, Math.min(130, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  if (spin) yaw += dt * 0.15;
+  const lift = A.cur === 'Fly' || A.cur === 'TakeOff' || A.cur === 'Landing' ? 4 : 0, tgt = target.clone().add(new THREE.Vector3(0, lift, 0));
+  camera.position.set(tgt.x + Math.sin(yaw) * Math.cos(pitch) * dist, tgt.y + Math.sin(pitch) * dist, tgt.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+  camera.lookAt(tgt);
+  step(reduce && A.cur === 'Idle' ? 0 : dt);
+  updateSkel();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+})();
+</script>
