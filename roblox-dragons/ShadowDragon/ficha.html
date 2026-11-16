@@ -313,7 +313,49 @@ ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground)
 let model = null, bones = {}, rest = {}, mats = [], dots = [], skel = null, rig = null, teethMat = null;
 const A = { cur: 'Idle', t: 0, fade: 0, fadeT: 0.25, from: {}, values: {}, dead: 0, yaw: 0, pitch: 0 };
 
-Promise.all([fetch('model/rig.json').then(r => r.json()), new Promise((res, rej) => new THREE.GLTFLoader().load('model/ShadowDragon.gltf.json', res, undefined, rej))]).then(([rj, gltf]) => {
+/* Carga del modelo sin URLs data: ni blob: (la página publicada las bloquea):
+   el glTF se convierte en memoria a GLB y las texturas se decodifican con createImageBitmap. */
+const b64bytes = s => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+async function loadModel(url) {
+  const js = await (await fetch(url)).json();
+  const buf = b64bytes(js.buffers[0].uri.split(',')[1]);
+  const imgs = (js.images || []).map(im => {
+    if (im.uri) return { bytes: b64bytes(im.uri.split(',')[1]), mime: im.uri.slice(5, im.uri.indexOf(';')) };
+    const bv = js.bufferViews[im.bufferView], o = bv.byteOffset || 0;   // imagen dentro del buffer
+    return { bytes: buf.slice(o, o + bv.byteLength), mime: im.mimeType };
+  });
+  const texImg = i => js.textures[i].source;
+  const maps = {};   // por material: índice de imagen de color, normal y rugosidad
+  for (const m of js.materials || []) {
+    const pbr = m.pbrMetallicRoughness || {}, e = {};
+    if (pbr.baseColorTexture) { e.map = texImg(pbr.baseColorTexture.index); delete pbr.baseColorTexture; }
+    if (pbr.metallicRoughnessTexture) { e.roughnessMap = texImg(pbr.metallicRoughnessTexture.index); delete pbr.metallicRoughnessTexture; }
+    if (m.normalTexture) { e.normalMap = texImg(m.normalTexture.index); delete m.normalTexture; }
+    maps[m.name] = e;
+  }
+  delete js.images; delete js.textures; delete js.samplers;
+  js.buffers = [{ byteLength: buf.length }];
+  const enc = new TextEncoder().encode(JSON.stringify(js)), jl = (enc.length + 3) & ~3, bl = (buf.length + 3) & ~3;
+  const glb = new Uint8Array(12 + 8 + jl + 8 + bl), dv = new DataView(glb.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, glb.length, true);
+  dv.setUint32(12, jl, true); dv.setUint32(16, 0x4E4F534A, true); glb.fill(0x20, 20, 20 + jl); glb.set(enc, 20);
+  dv.setUint32(20 + jl, bl, true); dv.setUint32(24 + jl, 0x004E4942, true); glb.set(buf, 28 + jl);
+  const gltf = await new Promise((res, rej) => new THREE.GLTFLoader().parse(glb.buffer, '', res, rej));
+  const bitmaps = await Promise.all(imgs.map(im => createImageBitmap(new Blob([im.bytes], { type: im.mime }))));
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const e = maps[o.material.name]; if (!e) return;
+    for (const [slot, idx] of Object.entries(e)) {
+      const t = new THREE.Texture(bitmaps[idx]); t.flipY = false; t.needsUpdate = true;
+      if (slot === 'map') t.encoding = THREE.sRGBEncoding;
+      o.material[slot] = t;
+    }
+    o.material.needsUpdate = true;
+  });
+  return gltf;
+}
+const glOK = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
+(glOK ? Promise.all([fetch('model/rig.json').then(r => r.json()), loadModel('model/ShadowDragon.gltf.json')]) : Promise.reject(new Error('este navegador no tiene WebGL'))).then(([rj, gltf]) => {
   rig = rj; model = gltf.scene; scene.add(model);
   model.traverse(o => {
     if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; const m = o.material; m.transparent = true; m.side = THREE.FrontSide; mats.push(m); if (o.name.startsWith('Teeth') || /Teeth/.test(m.name)) teethMat = m; }
@@ -339,7 +381,7 @@ Promise.all([fetch('model/rig.json').then(r => r.json()), new Promise((res, rej)
   document.getElementById('dims').innerHTML = [['Longitud', b.max[2] - b.min[2]], ['Altura', b.max[1] - b.min[1]], ['Envergadura', b.max[0] - b.min[0]]].map(([k, v]) => `<div><div class="v">${f(v)}</div><div class="k">${k} (studs)</div></div>`).join('') +
     `<div><div class="v">${Object.values(rig.meshes).reduce((a, x) => a + x, 0).toLocaleString('es')}</div><div class="k">Triángulos (5 mallas)</div></div><div><div class="v">${rig.bones.length}</div><div class="k">Huesos</div></div>`;
   document.getElementById('loading').hidden = true; updateUI(); requestAnimationFrame(frame);
-}).catch(e => { document.getElementById('loading').textContent = 'No se pudo cargar el modelo: ' + e.message; });
+}).catch(e => { const l = document.getElementById('loading'); l.innerHTML = '<div>No se pudo cargar el visor 3D (' + e.message + '). Abajo están las vistas renderizadas del modelo.</div>'; l.style.background = '#060608 url(design/renders/hero.jpg) center/cover'; });
 
 /* conversión: transformación en ejes del modelo → hueso local (igual que DragonAnimator.lua) */
 const qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), va = new THREE.Vector3();
