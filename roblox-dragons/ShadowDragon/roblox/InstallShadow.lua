@@ -2210,10 +2210,11 @@ if statue then
 	statue.Parent = nil -- la estatua solo sirve en modo edición
 end
 
-local ORDER = { "Idle", "Walk", "Run", "Fly", "TakeOff", "Landing", "Attack", "Roar", "Death" }
+local ORDER = { "Idle", "Walk", "Detect", "Chase", "Roar", "Freeze2", "Attack", "Fly", "Death" }
 local LABELS = {
 	Idle = "Acechar", Walk = "Caminar", Run = "Correr", Fly = "Volar", TakeOff = "Despegar",
 	Landing = "Aterrizar", Attack = "Atacar", Roar = "Sonreír", Death = "Morir",
+	Detect = "Detectar", Chase = "Perseguir", Freeze2 = "Inmóvil",
 }
 local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.4, MaxYaw = 70, MaxPitch = 35, RestPitch = -5, Speed = 4 }
 local DOT_DAY, DOT_NIGHT = 0.4, 0
@@ -2358,7 +2359,7 @@ local function play(name: string)
 	local airborne = cur == "Fly" or cur == "TakeOff"
 	if name == "Fly" and not airborne then
 		name = "TakeOff"
-	elseif airborne and (name == "Idle" or name == "Walk" or name == "Run" or name == "Attack" or name == "Roar") then
+	elseif airborne and name ~= "Fly" and name ~= "Death" then
 		name = "Landing"
 	end
 	animator:Play(name, 0.25)
@@ -3135,6 +3136,7 @@ end
 
 -- movimiento: hacia el objetivo, girando con un límite y pegado al suelo
 local groundTimer = 0
+local blocked = false
 RunService.Heartbeat:Connect(function(dt)
 	if moveSpeed <= 0 or not target then
 		return
@@ -3153,10 +3155,18 @@ RunService.Heartbeat:Connect(function(dt)
 	local ang = math.atan2(cur:Cross(flat.Unit).Y, cur:Dot(flat.Unit))
 	local yaw = math.clamp(ang, -maxTurn, maxTurn)
 	local dir = (CFrame.Angles(0, yaw, 0) * cur).Unit
-	pos += dir * moveSpeed * dt
 	groundTimer -= dt
 	if groundTimer <= 0 then
 		groundTimer = 0.2
+		-- sin pathfinding: si hay un obstáculo delante (pared, tronco), se queda quieto en vez de atravesarlo
+		blocked = workspace:Raycast(pos + Vector3.new(0, 3 * scale, 0), dir * 7 * scale, rayParams) ~= nil
+	end
+	if blocked then
+		root = CFrame.lookAt(pos, pos + dir)
+		return
+	end
+	pos += dir * moveSpeed * dt
+	if groundTimer >= 0.19 then
 		local g = groundAt(pos.X, pos.Z, pos.Y)
 		if g then
 			pos = Vector3.new(pos.X, g.Y, pos.Z)
