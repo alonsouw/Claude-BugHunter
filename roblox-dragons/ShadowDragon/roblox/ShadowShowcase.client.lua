@@ -28,10 +28,11 @@ if statue then
 	statue.Parent = nil -- la estatua solo sirve en modo edición
 end
 
-local ORDER = { "Idle", "Walk", "Run", "Fly", "TakeOff", "Landing", "Attack", "Roar", "Death" }
+local ORDER = { "Idle", "Walk", "Detect", "Chase", "Roar", "Freeze2", "Attack", "Fly", "Death" }
 local LABELS = {
 	Idle = "Acechar", Walk = "Caminar", Run = "Correr", Fly = "Volar", TakeOff = "Despegar",
 	Landing = "Aterrizar", Attack = "Atacar", Roar = "Sonreír", Death = "Morir",
+	Detect = "Detectar", Chase = "Perseguir", Freeze2 = "Inmóvil",
 }
 local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.4, MaxYaw = 70, MaxPitch = 35, RestPitch = -5, Speed = 4 }
 local DOT_DAY, DOT_NIGHT = 0.4, 0
@@ -176,7 +177,7 @@ local function play(name: string)
 	local airborne = cur == "Fly" or cur == "TakeOff"
 	if name == "Fly" and not airborne then
 		name = "TakeOff"
-	elseif airborne and (name == "Idle" or name == "Walk" or name == "Run" or name == "Attack" or name == "Roar") then
+	elseif airborne and name ~= "Fly" and name ~= "Death" then
 		name = "Landing"
 	end
 	animator:Play(name, 0.25)

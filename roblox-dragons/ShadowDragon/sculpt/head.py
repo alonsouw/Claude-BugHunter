@@ -74,30 +74,68 @@ def build(g, X, rng):
     N2 = np.cross(face_n, T); N2[N2[:, 1] < 0] *= -1             # perpendicular a la sonrisa, hacia arriba
     N2 /= np.linalg.norm(N2, axis=1, keepdims=True)
     A(Chain(list(P - face_n * 0.05), [0.14] * len(P)), op='sub', k=0.03, carve_mat='gum')        # boca entreabierta: interior granate
-    A(Chain(list(P + N2 * 0.17 + face_n * 0.02), [0.05] * len(P)), k=0.04, mat='lip', part=H)        # labio superior
-    A(Chain(list(P - N2 * 0.17 + face_n * 0.02), [0.05] * len(P)), k=0.04, mat='lip', part=J)        # labio inferior
+    # labios: grosor irregular, como carne retraída y cuarteada
+    lw = 0.045 + 0.02 * np.abs(np.sin(np.arange(len(P)) * 1.7)) * rng.uniform(0.6, 1.2, len(P))
+    A(Chain(list(P + N2 * 0.17 + face_n * 0.02), list(lw)), k=0.04, mat='lip', part=H)        # labio superior
+    A(Chain(list(P - N2 * 0.17 + face_n * 0.035), list(lw * 1.1)), k=0.04, mat='lip', part=J)   # labio inferior, algo adelantado
+    # dientes irregulares: largos y grosores distintos, torcidos, rotos, algunos que faltan y colmillos sueltos
+    fang_up = set(rng.choice(np.arange(3, len(P) - 4), 5, replace=False).tolist())
+    fang_lo = set(rng.choice(np.arange(3, len(P) - 4), 4, replace=False).tolist())
+    def tooth(root, d, L, r, part, broken):
+        d = d / np.linalg.norm(d)
+        if broken:   # roto: tocón romo y astillado
+            A(RoundCone(root, root + d * L * 0.45, r * 1.15, r * 0.8), k=0.008, mat='needle', part=part)
+        else:
+            bend = np.cross(d, face_n) * rng.uniform(-0.12, 0.12)
+            A(horn(root, root + d * L * 0.5 + face_n * 0.04 + bend * L, root + d * L, r, n=4), k=0.008, mat='needle', part=part)
+        A(Ellipsoid(root - d * 0.02, (r * 2.2, r * 2.2, r * 2.0)), k=0.03, mat='gum', part=part)   # encía hinchada en la raíz
     for i in range(len(P) - 1):
         for f in ((0.0,) if i % 3 else (0.0, 0.5)):
             q = P[i] + (P[i + 1] - P[i]) * f; n2 = N2[i]
-            tw = (P[i + 1] - P[i]) / max(np.linalg.norm(P[i + 1] - P[i]), 1e-6) * rng.uniform(-0.35, 0.35)
-            L = 0.2 + 0.3 * rng.random() ** 1.3
-            up = q + n2 * 0.15 + face_n * 0.03
-            A(horn(up, up - (n2 + tw) * L * 0.5 + face_n * 0.04, up - (n2 + tw) * L, 0.024, n=4), k=0.008, mat='needle', part=H)
-            lo = q - n2 * 0.15 + face_n * 0.03 + (P[i + 1] - P[i]) * 0.25
-            L = 0.18 + 0.28 * rng.random() ** 1.3
-            A(horn(lo, lo + (n2 - tw) * L * 0.5 + face_n * 0.03, lo + (n2 - tw) * L, 0.019, n=4), k=0.008, mat='needle', part=J)
+            T_ = (P[i + 1] - P[i]) / max(np.linalg.norm(P[i + 1] - P[i]), 1e-6)
+            if rng.random() > 0.1:                     # ~10 % de huecos arriba
+                tw = T_ * rng.uniform(-0.6, 0.6)
+                fang = i in fang_up and f == 0.0
+                L = (0.5 + 0.2 * rng.random()) if fang else 0.16 + 0.34 * rng.random() ** 1.3
+                r = (0.04 if fang else 0.017 + 0.016 * rng.random())
+                up = q + n2 * 0.15 + face_n * 0.03
+                tooth(up, -(n2 + tw), L, r, H, broken=(not fang and rng.random() < 0.12))
+            if rng.random() > 0.12:
+                tw = T_ * rng.uniform(-0.6, 0.6)
+                fang = i in fang_lo and f == 0.0
+                lo = q - n2 * 0.15 + face_n * 0.04 + (P[i + 1] - P[i]) * 0.25
+                L = (0.45 + 0.2 * rng.random()) if fang else 0.15 + 0.3 * rng.random() ** 1.3
+                r = (0.036 if fang else 0.014 + 0.014 * rng.random())
+                tooth(lo, n2 - tw, L, r, J, broken=(not fang and rng.random() < 0.12))
+    # segunda fila, más corta y desordenada, detrás de los dientes del frente
+    for i in range(int(len(P) * 0.3), int(len(P) * 0.7), 2):
+        q = P[i] - face_n * 0.12; n2 = N2[i]; tw = rng.uniform(-0.5, 0.5, 3) * 0.3
+        tooth(q + n2 * 0.11, -(n2 + tw), 0.12 + 0.12 * rng.random(), 0.014, H, broken=False)
+        tooth(q - n2 * 0.11, n2 - tw, 0.1 + 0.1 * rng.random(), 0.012, J, broken=False)
+
+    # --- mandíbula más intimidante: barbilla larga y adelantada, crestas óseas a los lados ---
+    A(RoundCone((0, -2.25, -1.35), (0, -2.75, -1.75), 0.3, 0.16, squash=(0.85, 1.0)), k=0.3, part=J, mat='shadow')
+    for s in (1, -1):
+        ridge = [(s * 1.12, -0.95, -0.75), (s * 0.95, -1.45, -1.25), (s * 0.6, -2.0, -1.62), (s * 0.22, -2.45, -1.85)]
+        A(Chain(ridge, [0.07, 0.1, 0.09, 0.06]), k=0.1, part=J, mat='shadow')
+        for t in (0.25, 0.55, 0.8):                      # pequeños nudos de hueso en la cresta
+            p_ = np.array(ridge[0]) + (np.array(ridge[-1]) - np.array(ridge[0])) * t + np.array([s * 0.05, -0.04, -0.02])
+            A(horn(p_, p_ + np.array([s * 0.1, -0.06, 0.02]), p_ + np.array([s * 0.2, -0.16, 0.05]), 0.035, n=3), k=0.02, mat='horn', part=J)
+    A(horn((0, -2.7, -1.75), (0, -3.0, -1.8), (0, -3.3, -1.6), 0.06, n=4), k=0.04, mat='horn', part=J)   # púa del mentón
 
     # --- mandíbula: todo lo que queda por debajo de la sonrisa en la cara ---
     def below(x, y, z):
         return np.maximum(np.maximum(y - mouth_y(x) + 0.02, z + 0.25), np.abs(x) - 1.35)
-    A(Field(below, (-1.7, -3.0, -2.8), (1.7, 0.6, 0.0)), op='label', part=J)
+    A(Field(below, (-1.7, -3.4, -2.8), (1.7, 0.6, 0.0)), op='label', part=J)
 
     # --- puntos de los ojos: pequeñas fosas; la luz la pone Roblox ---
     eyes = []
     for (x, y) in EYE_LOCAL:
         hit = surface(g, X.apply((x, y, -4.0)), X.apply((x, y, 0.5)))
         loc = Xinv(hit) if hit is not None else np.array([x, y, -1.5])
-        A(Ellipsoid(loc, (0.075, 0.075, 0.075)), op='sub', k=0.02, carve_mat='socket')
-        eyes.append(X.apply(loc + face_n * 0.03))
+        n_out = face_n                                   # face_n apunta hacia fuera de la cara (-Z)
+        A(Ellipsoid(loc - face_n * 0.03, (0.12, 0.1, 0.11)), op='sub', k=0.05, carve_mat='socket')   # cuenca honda
+        A(Chain([loc + n_out * 0.02 + np.array([-0.17, 0.11, 0]), loc + n_out * 0.04 + np.array([0, 0.15, 0]), loc + n_out * 0.02 + np.array([0.17, 0.11, 0])], [0.035, 0.05, 0.035]), k=0.05, mat='horn', part=H)
+        eyes.append(X.apply(loc - face_n * 0.04))   # el punto de luz queda dentro de la cuenca
     return {'eyes': [list(map(float, e)) for e in eyes], 'chin': list(map(float, X.apply(CHIN))),
             'hinge': list(map(float, X.apply(HINGE))), 'snout': list(map(float, X.apply(SNOUT)))}

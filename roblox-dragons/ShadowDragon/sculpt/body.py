@@ -13,7 +13,7 @@ from sdf import Ellipsoid, RoundCone, Chain, Xf, horn, rot, bezier
 
 PART = {'Head': 1, 'Jaw': 2, 'Tongue': 3, 'Drool': 4, 'Body': 5, 'LegFL': 6, 'LegFR': 7, 'LegBL': 8, 'LegBR': 9, 'WingL': 10, 'WingR': 11}
 
-SPINE = [((0, 7.2, -10.6), 0.55), ((0, 8.4, -9.4), 0.55), ((0, 10.2, -7.6), 0.62), ((0, 12.0, -5.6), 0.78),
+SPINE = [((0, 7.2, -10.6), 0.5), ((0, 8.4, -9.4), 0.46), ((0, 10.2, -7.6), 0.52), ((0, 12.0, -5.6), 0.7),     # v2: cuello más fino
          ((0, 13.4, -3.4), 1.2), ((0, 14.3, -0.8), 1.45), ((0, 13.6, 2.0), 1.3), ((0, 12.0, 4.4), 1.2),
          ((0, 10.0, 6.4), 0.85), ((0.3, 7.8, 8.4), 0.66), ((0.5, 5.6, 10.6), 0.5), ((0.2, 3.6, 13.0), 0.36),
          ((-0.4, 2.0, 15.6), 0.25), ((-1.0, 1.0, 18.4), 0.15), ((-1.4, 0.6, 21.0), 0.08)]
@@ -102,8 +102,8 @@ def build(g, rng, include_wing_bones=True):
             for k2 in range(5):
                 a = (-0.55 + k2 * 0.27) * 1.3; d = np.array([np.sin(a) + s * 0.1, 0, -np.cos(a)])
                 b0 = foot + d * 0.3 + np.array([0, 0.05, 0])
-                pts2 = bezier(b0, b0 + d * 1.0 + np.array([0, 0.55, 0]), b0 + d * 1.5 + np.array([0, -0.35, 0]), 7)
-                g.apply(Chain(list(pts2), [0.1, 0.09, 0.08, 0.075, 0.07, 0.06, 0.05]), k=0.05, part=part, mat='shadow')
+                pts2 = bezier(b0, b0 + d * 1.3 + np.array([0, 0.7, 0]), b0 + d * 1.95 + np.array([0, -0.35, 0]), 8)   # v2: dedos más largos
+                g.apply(Chain(list(pts2), [0.1, 0.085, 0.07, 0.075, 0.06, 0.065, 0.05, 0.045]), k=0.05, part=part, mat='shadow')   # nudillos
                 tip = pts2[-1]; g.apply(horn(tip, tip + d * 0.15 + np.array([0, -0.15, 0]), tip + np.array([0, -0.3, 0]) - d * 0.12, 0.055, n=4), k=0.02, mat='claw', part=part)
         else:             # pie: tres dedos y espolón
             g.apply(Ellipsoid(foot + np.array([0, 0.05, -0.15]), (0.32, 0.2, 0.4)), k=0.12, part=part, mat='shadow')
@@ -136,6 +136,8 @@ def build(g, rng, include_wing_bones=True):
         w = rng.uniform(0.12, 0.26)
         g.apply(Chain(strip, [w, w * 0.85, w * 0.55, 0.03], squash=(1.0, 0.22)), k=0.06, mat='rag', part=B)
 
+    organic_details(g, rng)
+
     # ala: brazo que nace del hombro (antebrazo y dedos en su propia rejilla)
     if include_wing_bones:
         for s in (-1, 1):
@@ -156,3 +158,61 @@ def build_wing_bones(g, s):
     for T in w['tips']:
         T = np.array(T); mid = W + (T - W) * 0.45 + np.array([s * 0.35, 0.2, 0])
         g.apply(Chain(list(bezier(W, mid, T, 7)), [0.16 - 0.13 * i / 6 for i in range(7)]), k=0.1, part=part, mat='shadow')
+
+
+def organic_details(g, rng):
+    """v2: detalles orgánicos en lomo y cuello, colocados con rayos sobre la piel real.
+    Pliegues en anillo en el cuello, tendones laterales, venas, nódulos, púas finas en racimo,
+    cicatrices y colgajos de piel mudada. Pequeños y repartidos: no recargan la silueta."""
+    B = PART['Body']
+    def on_skin(z, ang_deg, out=3.0):
+        c, r = spine_at(z); a = np.radians(ang_deg); d = np.array([np.cos(a), np.sin(a), 0])
+        hit = surface(g, c + d * (r + out), c)
+        if hit is None or np.linalg.norm(hit - c) > r * 1.8: return None, d, r
+        return hit, d, r
+    # pliegues del cuello: arrugas en anillo que se acumulan en la parte baja
+    for z in np.arange(-10.0, -4.4, 0.42):
+        arc = []
+        for a in np.linspace(-20, 200, 13):
+            hit, d, r = on_skin(z + rng.uniform(-0.05, 0.05), a)
+            if hit is None: arc = []; continue
+            arc.append(hit + d * 0.02)
+        if len(arc) >= 4: g.apply(Chain(arc, [0.035 + 0.02 * rng.random() for _ in arc]), k=0.06, mat='fold', part=B)
+    # tendones a los lados del cuello, de la nuca al pecho
+    for s in (-1, 1):
+        pts = []
+        for z in np.linspace(-10.2, -3.8, 9):
+            hit, d, r = on_skin(z, 90 - s * 62)
+            if hit is not None: pts.append(hit + d * 0.03)
+        if len(pts) >= 4: g.apply(Chain(pts, [0.05, 0.08, 0.1, 0.1, 0.09, 0.09, 0.08, 0.07, 0.06][:len(pts)]), k=0.18, mat='shadow', part=B)
+    # venas: hilos finos que serpentean por cuello, lomo y flancos
+    for _ in range(26):
+        z0 = rng.uniform(-10.0, 5.0); a0 = rng.uniform(10, 170); pts = []
+        for k in range(9):
+            hit, d, r = on_skin(z0 + k * 0.32, a0 + 14 * np.sin(k * 0.9 + rng.uniform(0, 3)))
+            if hit is None: break
+            pts.append(hit + d * 0.008)
+        if len(pts) >= 4: g.apply(Chain(pts, [0.028] * len(pts)), k=0.025, mat='vein', part=B)
+    # nódulos y racimos de púas finas sobre el lomo y la nuca
+    for _ in range(70):
+        z = rng.uniform(-10.0, 6.0); hit, d, r = on_skin(z, rng.uniform(35, 145))
+        if hit is None: continue
+        rr = rng.uniform(0.05, 0.12)
+        g.apply(Ellipsoid(hit, (rr, rr * 0.8, rr)), k=0.05, mat='nodule', part=B)
+        if rng.random() < 0.35:
+            for _k in range(rng.integers(2, 5)):
+                t = rng.normal(0, 0.35, 3); tip = hit + d * rng.uniform(0.15, 0.32) + t * 0.12
+                g.apply(horn(hit, hit + (tip - hit) * 0.5 + t * 0.03, tip, 0.022, n=3), k=0.015, mat='horn', part=B)
+    # cicatrices: surcos claros y estrechos en el lomo
+    for _ in range(9):
+        z = rng.uniform(-6.0, 5.0); a = rng.uniform(45, 135); pts = []
+        for k in range(5):
+            hit, d, r = on_skin(z + k * 0.22, a + k * rng.uniform(4, 9))
+            if hit is not None: pts.append(hit)
+        if len(pts) >= 3: g.apply(Chain(pts, [0.035] * len(pts)), op='sub', k=0.03, carve_mat='scar')
+    # colgajos de piel mudada en la nuca y los hombros
+    for _ in range(12):
+        z = rng.uniform(-9.5, -2.0); hit, d, r = on_skin(z, rng.uniform(30, 150))
+        if hit is None: continue
+        L = rng.uniform(0.4, 0.9); tang = np.array([0, 0, 1.0]); down = np.array([0, -1.0, 0])
+        g.apply(Chain([hit, hit + d * 0.08 + tang * L * 0.4, hit + down * L * 0.4 + tang * L], [0.12, 0.09, 0.02], squash=(1.0, 0.2)), k=0.04, mat='rag', part=B)

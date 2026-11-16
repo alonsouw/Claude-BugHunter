@@ -36,7 +36,8 @@ const eyesLua = `{ EyeL = ${lua(rig.eyes.EyeL)}, EyeR = ${lua(rig.eyes.EyeR)}, b
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 // el animador es común a todas las especies: se copia desde shared/
 fs.copyFileSync(path.join(ROOT, '..', 'shared', 'DragonAnimator.lua'), path.join(ROOT, 'roblox', 'DragonAnimator.lua'));
-const sources = { __ANIMATOR__: read('roblox/DragonAnimator.lua'), __ANIMS__: animsLua, __SHOWCASE__: read('roblox/ShadowShowcase.client.lua') };
+const sources = { __ANIMATOR__: read('roblox/DragonAnimator.lua'), __ANIMS__: animsLua, __SHOWCASE__: read('roblox/ShadowShowcase.client.lua'),
+  __BRAIN__: read('roblox/ShadowBrain.lua'), __STALKER__: read('roblox/ShadowStalker.server.lua'), __CLIENT__: read('roblox/ShadowClient.client.lua') };
 for (const [k, s] of Object.entries(sources)) if (s.includes(']=======]')) throw new Error('el código de ' + k + ' contiene el cierre de cadena larga');
 let out = read('tools/InstallShadow.template.lua')
   .replace('__RIG__', () => rigLua)

@@ -87,6 +87,22 @@ def bake_maps(low, highs, prefix, extrusion=0.08, ray=0.3):
         nodes[kind].select = True; N.active = nodes[kind]
         if btype == 'DIFFUSE': bk.use_pass_direct = False; bk.use_pass_indirect = False; bk.use_pass_color = True
         bpy.ops.object.bake(type=btype)
+        if kind == 'color':   # v2: sombras de cavidad (oclusión ambiental) horneadas dentro del color
+            ao = D.images.new(f'{prefix}_ao', TEX, TEX, alpha=False); ao.colorspace_settings.name = 'Non-Color'
+            aon = N.new('ShaderNodeTexImage'); aon.image = ao
+            for n in N: n.select = False
+            aon.select = True; N.active = aon
+            sc.world.light_settings.distance = 0.45
+            vis_ = [(o, o.visible_diffuse, o.visible_shadow) for o in sc.objects if o.type == 'MESH' and o not in highs]
+            for o, _, _ in vis_: o.visible_diffuse = False; o.visible_shadow = False   # solo ocluye la escultura
+            bpy.ops.object.bake(type='AO')
+            for o, vd, vs in vis_: o.visible_diffuse = vd; o.visible_shadow = vs
+            px = np.array(imgs['color'].pixels[:], np.float32).reshape(-1, 4); a_ = np.array(ao.pixels[:], np.float32).reshape(-1, 4)[:, :1]
+            ref = np.percentile(a_[a_ > 0.02], 85) if np.any(a_ > 0.02) else 1.0
+            a_ = np.clip(a_ / max(ref, 1e-3), 0, 1)          # normalizado: la piel abierta queda a 1, solo las cavidades oscurecen
+            px[:, :3] *= 0.4 + 0.6 * a_; imgs['color'].pixels.foreach_set(px.ravel()); imgs['color'].update()
+            log('oclusión', prefix, 'referencia', round(float(ref), 3))
+            N.remove(aon); nodes['color'].select = True; N.active = nodes['color']
         imgs[kind].filepath_raw = os.path.join(OUT, f'{prefix}_{kind}.png'); imgs[kind].file_format = 'PNG'; imgs[kind].save()
         log('horneado', prefix, kind)
     L.new(nodes['color'].outputs['Color'], bsdf.inputs['Base Color'])
@@ -121,15 +137,31 @@ teeth = duplicate(body_h, 'Teeth'); keep_faces(teeth, True); decimate(teeth, 700
 tm = D.materials.new('TeethMat'); tm.use_nodes = True; tb = tm.node_tree.nodes['Principled BSDF']
 tb.inputs['Base Color'].default_value = (0.78, 0.76, 0.72, 1); tb.inputs['Roughness'].default_value = 0.3; teeth.data.materials.append(tm)
 body = duplicate(body_h, 'Body_low'); keep_faces(body, False)
-# la cabeza (dientes, babas, lengua, cuernos) recibe ~8k triángulos; el resto del cuerpo ~11k
+# v2: la cabeza va en su propia malla (Skull, ~16k triángulos y textura propia); el cuerpo ~14.5k
 pa = np.zeros(len(body.data.vertices), np.int32); body.data.attributes['part'].data.foreach_get('value', pa)
 headv = np.nonzero(np.isin(pa, [HEAD.PART['Head'], HEAD.PART['Jaw'], HEAD.PART['Tongue'], HEAD.PART['Drool']]))[0]
 vg = body.vertex_groups.new(name='headzone'); vg.add(headv.tolist(), 1.0, 'REPLACE')
 head_tris_high = int(round(ntris(body) * len(headv) / len(body.data.vertices)))
-decimate(body, head_tris_high + 11000, 'headzone', invert=True)     # reduce el cuerpo, conserva la cabeza
-decimate(body, 19000, 'headzone', invert=False)                     # ahora reduce la cabeza
-smart_uv(body)
+decimate(body, head_tris_high + 14500, 'headzone', invert=True)     # reduce el cuerpo, conserva la cabeza
+decimate(body, 30500, 'headzone', invert=False)                     # ahora reduce la cabeza
+# separar la cabeza: cada cara va con la parte mayoritaria de sus vértices (vecino más cercano en la escultura)
+_hc = np.zeros(len(body_h.data.vertices) * 3, np.float32); body_h.data.vertices.foreach_get('co', _hc)
+_hp = np.zeros(len(body_h.data.vertices), np.int32); body_h.data.attributes['part'].data.foreach_get('value', _hp)
+_lc = np.zeros(len(body.data.vertices) * 3, np.float32); body.data.vertices.foreach_get('co', _lc)
+_, _nn = cKDTree(_hc.reshape(-1, 3)).query(_lc.reshape(-1, 3))
+is_head_v = np.isin(_hp[_nn], [HEAD.PART['Head'], HEAD.PART['Jaw']])
+def keep_head(o, want_head):
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    kill = [f for f in bm.faces if (np.mean([is_head_v[v.index] for v in f.verts]) >= 0.5) != want_head]
+    bmesh.ops.delete(bm, geom=kill, context='FACES'); bm.to_mesh(o.data); bm.free(); o.data.update()
+skull = duplicate(body, 'Skull_low'); keep_head(skull, True); keep_head(body, False)
+for o in (body, skull):
+    for v in o.vertex_groups: o.vertex_groups.remove(v)
+log('cuerpo', ntris(body), 'cabeza', ntris(skull))
+assert ntris(body) <= 20000 and ntris(skull) <= 20000, 'una malla supera los 20k triángulos de Roblox'
+smart_uv(body); smart_uv(skull)
 bake_maps(body, [body_h], 'Body', extrusion=0.1, ray=0.35)
+bake_maps(skull, [body_h], 'Skull', extrusion=0.08, ray=0.3)
 wings = {}
 for side in ('L', 'R'):
     bones_h, mem_h = D.objects['WingBones' + side], D.objects['Membrane' + side]
@@ -255,11 +287,13 @@ def high_parts(o):
 hc, hpart = high_parts(body_h); tree = cKDTree(hc)
 lc = np.zeros(len(body.data.vertices) * 3, np.float32); body.data.vertices.foreach_get('co', lc)
 _, nn = tree.query(lc.reshape(-1, 3)); apply_weights(body, weights_for(body, hpart[nn]))
+sk = np.zeros(len(skull.data.vertices) * 3, np.float32); skull.data.vertices.foreach_get('co', sk)
+_, nn = tree.query(sk.reshape(-1, 3)); apply_weights(skull, weights_for(skull, hpart[nn]))
 tc = np.zeros(len(teeth.data.vertices) * 3, np.float32); teeth.data.vertices.foreach_get('co', tc)
 _, nn = tree.query(tc.reshape(-1, 3)); apply_weights(teeth, weights_for(teeth, hpart[nn]))
 for side, w in wings.items():
     n = len(w.data.vertices); apply_weights(w, weights_for(w, np.zeros(n, np.int32) + BODY.PART['Wing' + side]))
-body.name = 'Body'; wings['L'].name = 'WingL'; wings['R'].name = 'WingR'
+body.name = 'Body'; skull.name = 'Skull'; wings['L'].name = 'WingL'; wings['R'].name = 'WingR'
 log('pesos aplicados')
 
 # ---------------- 4. exportación ----------------
@@ -267,7 +301,7 @@ for o in list(sc.objects):
     if o.name in ('Body_high',): pass
 for o in (body_h, D.objects['WingBonesL'], D.objects['WingBonesR'], D.objects['MembraneL'], D.objects['MembraneR']):
     o.hide_render = True; o.hide_set(True)
-game = [rig, body, wings['L'], wings['R'], teeth]
+game = [rig, body, skull, wings['L'], wings['R'], teeth]
 select_only(game, rig)
 bpy.ops.export_scene.fbx(filepath=os.path.join(OUT, 'ShadowDragon.fbx'), use_selection=True, object_types={'ARMATURE', 'MESH'},
                          axis_forward='-Z', axis_up='Y', apply_unit_scale=True, apply_scale_options='FBX_SCALE_NONE', add_leaf_bones=False,

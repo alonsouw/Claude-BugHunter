@@ -29,10 +29,14 @@ MATERIALS = {  # id: (nombre, color sRGB, rugosidad, escamas 0-1)
     15: ('wood', (0.2, 0.14, 0.09), 0.75, 0.0),
     16: ('rot', (0.11, 0.105, 0.055), 0.35, 0.3),
     17: ('pus', (0.33, 0.31, 0.19), 0.2, 0.0),
-    18: ('shadow', (0.035, 0.033, 0.036), 0.7, 0.8),
+    18: ('shadow', (0.068, 0.062, 0.07), 0.74, 0.85),        # v2: algo más claro para que la visión nocturna saque relieve
     19: ('rag', (0.05, 0.043, 0.042), 0.85, 0.2),
     20: ('lip', (0.42, 0.09, 0.1), 0.3, 0.0),
     21: ('needle', (0.86, 0.84, 0.8), 0.25, 0.0),
+    22: ('vein', (0.13, 0.035, 0.06), 0.45, 0.0),            # venas moradas bajo la piel
+    23: ('nodule', (0.1, 0.088, 0.094), 0.55, 0.3),          # bultos y excrecencias
+    24: ('scar', (0.17, 0.13, 0.14), 0.5, 0.0),              # cicatrices claras
+    25: ('fold', (0.05, 0.045, 0.05), 0.8, 0.5),             # pliegues de piel
 }
 MAT = {v[0]: k for k, v in MATERIALS.items()}
 

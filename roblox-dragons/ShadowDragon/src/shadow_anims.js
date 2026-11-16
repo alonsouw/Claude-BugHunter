@@ -5,6 +5,7 @@
  * la mandíbula (la sonrisa) se abre con -rx. Ala izquierda: +rz baja la punta, +ry la pliega atrás; ala derecha, al revés.
  * Carácter: se mueve como una araña de zancos, despacio y a tirones; la cabeza se queda quieta mirándote
  * mientras el cuerpo se balancea, y ladea la cabeza de golpe (Idle/Roar). La mirada del jugador se suma encima (LookAt).
+ * v2: Idle con respiración, Walk irregular, Roar más abierto y animaciones nuevas Detect, Watch, Chase y Freeze1-3.
  * Rig de Bones: Hips, Spine1, Chest, Neck1-3, Head, Jaw, Tail1-8, Leg{F,B}{L,R}_{Upper,Lower,Foot}, Wing{L,R}_{Arm,Fore,Hand}.
  */
 (function (root) {
@@ -20,19 +21,26 @@ const mirror = keys => keys.map(([t, x, y, z]) => [t, x, -y, -z]);
 const tuck = { FL: [-35, 60, -30], BL: [-50, 35, -25] };
 
 const ANIMS = {
-  Idle: { dur: 6, loop: true, joints: merge(tail('y', 4, 1, 0), {
-    Hips: { o: [['py', 0.08, 2, 0]] }, Spine1: { o: [['x', 1.2, 2, 0.05]] }, Chest: { o: [['x', 1.5, 2, 0.1]] },
-    Neck1: { o: [['x', 1.5, 1, 0]] }, Neck2: { o: [['y', 2, 1, 0.1]] },
-    Head: { k: [[0, 0, 0, 0], [2.2, 0, 0, 0], [2.35, 0, 4, 22], [3.9, 0, 4, 24], [4.1, 0, 0, 0]], o: [['z', 0.8, 30, 0]] },
-    Jaw: { k: [[0, 0, 0, 0], [2.3, 0, 0, 0], [2.5, -5, 0, 0], [3.8, -5, 0, 0], [4.1, 0, 0, 0]] },
-    LegFL_Foot: { o: [['x', 3, 3, 0.2]] }, LegFR_Foot: { o: [['x', 3, 3, 0.6]] },
-    WingL_Arm: { o: [['z', 1.5, 1, 0]] }, WingR_Arm: { o: [['z', -1.5, 1, 0]] },
-    WingL_Hand: { o: [['y', 2, 1, 0.2]] }, WingR_Hand: { o: [['y', -2, 1, 0.2]] }
+  // v2: respiración lenta y profunda (pecho y joroba se hinchan) y micro-movimientos de cabeza; sin tirones
+  Idle: { dur: 10, loop: true, joints: merge(tail('y', 3, 1, 0), {
+    Hips: { o: [['py', 0.12, 2, 0]] }, Spine1: { o: [['x', 2.2, 2, 0.05]] }, Chest: { o: [['x', 2.8, 2, 0.1], ['z', 0.6, 3, 0.3]] },
+    Neck1: { o: [['x', 1.2, 2, 0.15]] }, Neck2: { o: [['y', 1.5, 1, 0.1], ['x', 0.8, 3, 0.4]] },
+    Head: { o: [['y', 2.5, 1, 0.35], ['x', 1.5, 2, 0.6], ['z', 1.8, 1, 0.8]] },
+    Jaw: { k: [[0, 0, 0, 0], [4.6, 0, 0, 0], [5.4, -3, 0, 0], [7.8, -3, 0, 0], [8.6, 0, 0, 0]] },
+    LegFL_Foot: { o: [['x', 1.5, 3, 0.2]] }, LegFR_Foot: { o: [['x', 1.5, 4, 0.6]] },
+    WingL_Arm: { o: [['z', 1.5, 2, 0]] }, WingR_Arm: { o: [['z', -1.5, 2, 0]] },
+    WingL_Hand: { o: [['y', 2, 2, 0.2]] }, WingR_Hand: { o: [['y', -2, 2, 0.2]] }
   }) },
 
-  Walk: { dur: 3.2, loop: true, joints: merge(tail('y', 10, 1, 0.1), legs(16, 22, 18, { FL: 0, BR: 0.12, FR: 0.5, BL: 0.62 }), {
-    Hips: { o: [['py', 0.25, 2, 0.1], ['z', 4, 1, 0.1], ['y', 4, 1, 0.3]] }, Spine1: { o: [['z', -2, 1, 0.15]] }, Chest: { o: [['z', -3, 1, 0.2], ['y', -3, 1, 0.3]] },
-    Neck1: { o: [['y', -2, 1, 0.3]] }, Neck2: { o: [['z', 2, 1, 0.6]] }, Head: { o: [['z', -3, 1, 0.2], ['y', 2, 1, 0.8]] }
+  // v2: zancos irregulares y articulados: fases desiguales, el lado izquierdo da pasos más largos
+  // y las articulaciones tiemblan a destiempo; la cabeza se queda casi quieta mirando
+  Walk: { dur: 3.6, loop: true, joints: merge(tail('y', 9, 1, 0.1), {
+    LegFL_Upper: { o: [['x', 19, 1, 0], ['z', 2, 7, 0.1]] }, LegFL_Lower: { o: [['x', 24, 1, 0.22], ['x', 3, 6, 0]] }, LegFL_Foot: { o: [['x', 20, 1, 0.4]] },
+    LegFR_Upper: { o: [['x', 14, 1, 0.46], ['z', -2, 5, 0.3]] }, LegFR_Lower: { o: [['x', 20, 1, 0.62], ['x', 3, 7, 0.2]] }, LegFR_Foot: { o: [['x', 16, 1, 0.82]] },
+    LegBL_Upper: { o: [['x', 17, 1, 0.71]] }, LegBL_Lower: { o: [['x', 22, 1, 0.9], ['x', 2.5, 5, 0.4]] }, LegBL_Foot: { o: [['x', 15, 1, 0.05]] },
+    LegBR_Upper: { o: [['x', 13, 1, 0.17]] }, LegBR_Lower: { o: [['x', 18, 1, 0.35], ['x', 2.5, 6, 0.7]] }, LegBR_Foot: { o: [['x', 14, 1, 0.52]] },
+    Hips: { o: [['py', 0.25, 2, 0.1], ['z', 4, 1, 0.1], ['y', 4, 1, 0.3], ['x', 1.2, 5, 0]] }, Spine1: { o: [['z', -2, 1, 0.15]] }, Chest: { o: [['z', -3, 1, 0.2], ['y', -3, 1, 0.3]] },
+    Neck1: { o: [['y', -2.5, 1, 0.3]] }, Neck2: { o: [['z', 2.5, 1, 0.6]] }, Head: { o: [['z', -3, 1, 0.2], ['y', 2, 1, 0.8], ['x', 1, 9, 0]] }
   }) },
 
   Run: { dur: 1.0, loop: true, joints: merge(tail('y', 12, 1, 0.1), tail('x', 6, 2, 0), legs(35, 30, 22, { FL: 0, FR: 0.08, BL: 0.5, BR: 0.58 }), {
@@ -91,18 +99,58 @@ const ANIMS = {
     Tail2: { k: [[0, 0, 0, 0], [0.45, 0, 15, 0], [0.7, 0, -20, 0], [1.4, 0, 0, 0]] }, Tail4: { k: [[0, 0, 0, 0], [0.5, 0, 22, 0], [0.75, 0, -28, 0], [1.4, 0, 0, 0]] }
   }, wingsK([[0, 0, 0, 0], [0.45, 0, -10, -30], [0.7, 0, 0, 10], [1.4, 0, 0, 0]], mirror([[0, 0, 0, 0], [0.45, 0, -10, -30], [0.7, 0, 0, 10], [1.4, 0, 0, 0]]))) },
 
-  Roar: { dur: 3.0, loop: false, next: 'Idle', joints: merge({
-    Hips: { p: [[0, 0, 0, 0], [0.6, 0, -0.5, 0], [2.4, 0, -0.5, 0], [3.0, 0, 0, 0]] },
-    Chest: { o: [['x', 1.2, 30, 0]] },
-    Neck1: { k: [[0, 0, 0, 0], [0.6, -10, 0, 0], [2.4, -10, 0, 0], [3.0, 0, 0, 0]] }, Neck2: { k: [[0, 0, 0, 0], [0.6, -8, 0, 0], [2.4, -8, 0, 0], [3.0, 0, 0, 0]] },
-    Neck3: { k: [[0, 0, 0, 0], [0.6, 14, 0, 0], [2.4, 14, 0, 0], [3.0, 0, 0, 0]] },
-    Head: { k: [[0, 0, 0, 0], [0.5, 6, 0, 0], [0.7, 6, 0, 28], [1.6, 6, 0, 28], [1.75, 6, 0, -24], [2.4, 6, 0, -24], [3.0, 0, 0, 0]], o: [['y', 2, 21, 0]] },
-    Jaw: { k: [[0, 0, 0, 0], [0.55, -26, 0, 0], [2.4, -24, 0, 0], [3.0, 0, 0, 0]], o: [['x', 2.5, 34, 0]] },
-    WingL_Arm: { k: [[0, 0, 0, 0], [0.6, 0, -18, -45], [2.4, 0, -18, -48], [3.0, 0, 0, 0]], o: [['z', 3, 24, 0]] },
-    WingR_Arm: { k: mirror([[0, 0, 0, 0], [0.6, 0, -18, -45], [2.4, 0, -18, -48], [3.0, 0, 0, 0]]), o: [['z', -3, 24, 0]] },
-    WingL_Hand: { k: [[0, 0, 0, 0], [0.6, 0, -10, -20], [2.4, 0, -10, -20], [3.0, 0, 0, 0]] }, WingR_Hand: { k: mirror([[0, 0, 0, 0], [0.6, 0, -10, -20], [2.4, 0, -10, -20], [3.0, 0, 0, 0]]) },
-    Tail1: { k: [[0, 0, 0, 0], [0.6, -10, 0, 0], [2.4, -10, 0, 0], [3.0, 0, 0, 0]] }, Tail6: { o: [['y', 14, 12, 0]] }
+  // v2: abre la sonrisa al máximo, estira el cuello hacia ti y la cabeza tiembla ladeada
+  Roar: { dur: 3.4, loop: false, next: 'Idle', joints: merge({
+    Hips: { p: [[0, 0, 0, 0], [0.7, 0, -0.6, 0], [2.7, 0, -0.6, 0], [3.4, 0, 0, 0]] },
+    Spine1: { k: [[0, 0, 0, 0], [0.7, -4, 0, 0], [2.7, -4, 0, 0], [3.4, 0, 0, 0]] }, Chest: { o: [['x', 1.4, 34, 0]] },
+    Neck1: { k: [[0, 0, 0, 0], [0.7, -12, 0, 0], [2.7, -12, 0, 0], [3.4, 0, 0, 0]] }, Neck2: { k: [[0, 0, 0, 0], [0.7, -8, 0, 0], [2.7, -8, 0, 0], [3.4, 0, 0, 0]] },
+    Neck3: { k: [[0, 0, 0, 0], [0.7, 16, 0, 0], [2.7, 16, 0, 0], [3.4, 0, 0, 0]] },
+    Head: { k: [[0, 0, 0, 0], [0.5, 8, 0, 0], [0.75, 8, 0, 30], [1.8, 8, 0, 32], [1.95, 8, 0, -26], [2.7, 8, 0, -26], [3.4, 0, 0, 0]], o: [['z', 2.2, 40, 0], ['y', 2, 23, 0.2]] },
+    Jaw: { k: [[0, 0, 0, 0], [0.55, -34, 0, 0], [2.7, -32, 0, 0], [3.4, 0, 0, 0]], o: [['x', 3, 38, 0]] },
+    WingL_Arm: { k: [[0, 0, 0, 0], [0.7, 0, -18, -45], [2.7, 0, -18, -48], [3.4, 0, 0, 0]], o: [['z', 3, 24, 0]] },
+    WingR_Arm: { k: mirror([[0, 0, 0, 0], [0.7, 0, -18, -45], [2.7, 0, -18, -48], [3.4, 0, 0, 0]]), o: [['z', -3, 24, 0]] },
+    WingL_Hand: { k: [[0, 0, 0, 0], [0.7, 0, -10, -20], [2.7, 0, -10, -20], [3.4, 0, 0, 0]] }, WingR_Hand: { k: mirror([[0, 0, 0, 0], [0.7, 0, -10, -20], [2.7, 0, -10, -20], [3.4, 0, 0, 0]]) },
+    Tail1: { k: [[0, 0, 0, 0], [0.7, -10, 0, 0], [2.7, -10, 0, 0], [3.4, 0, 0, 0]] }, Tail6: { o: [['y', 14, 12, 0]] }
   }) },
+
+  // v2: detección: se queda quieto y levanta la cabeza muy despacio; luego sostiene la pose (Watch)
+  Detect: { dur: 3.2, loop: false, next: 'Watch', joints: {
+    Hips: { p: [[0, 0, 0, 0], [3.2, 0, 0.7, 0]] }, Spine1: { k: [[0, 0, 0, 0], [3.2, 4, 0, 0]] },
+    Neck1: { k: [[0, 0, 0, 0], [0.6, 0, 0, 0], [3.2, 14, 0, 0]] }, Neck2: { k: [[0, 0, 0, 0], [0.9, 0, 0, 0], [3.2, 11, 0, 0]] },
+    Neck3: { k: [[0, 0, 0, 0], [1.2, 0, 0, 0], [3.2, 6, 0, 0]] }, Head: { k: [[0, 0, 0, 0], [1.5, 0, 0, 0], [3.2, -4, 0, 0]] },
+    Jaw: { k: [[0, 0, 0, 0], [2.4, 0, 0, 0], [3.2, -4, 0, 0]] }
+  } },
+  Watch: { dur: 8, loop: true, joints: {
+    Hips: { k: [[0, 0, 0, 0]], p: [[0, 0, 0.7, 0]], o: [['py', 0.1, 2, 0]] }, Spine1: { k: [[0, 4, 0, 0]] }, Chest: { o: [['x', 2.4, 2, 0.1]] },
+    Neck1: { k: [[0, 14, 0, 0]] }, Neck2: { k: [[0, 11, 0, 0]] }, Neck3: { k: [[0, 6, 0, 0]] },
+    Head: { k: [[0, -4, 0, 0]], o: [['y', 1.2, 1, 0.3]] }, Jaw: { k: [[0, -4, 0, 0]] }
+  } },
+
+  // v2: persecución: rápida, baja y agresiva, con la boca abierta (solo en ráfagas cortas)
+  Chase: { dur: 0.8, loop: true, joints: merge(tail('y', 14, 1, 0.1), tail('x', 5, 2, 0), {
+    LegFL_Upper: { o: [['x', 36, 1, 0]] }, LegFL_Lower: { o: [['x', 30, 1, 0.18]] }, LegFL_Foot: { o: [['x', 24, 1, 0.32]] },
+    LegFR_Upper: { o: [['x', 36, 1, 0.1]] }, LegFR_Lower: { o: [['x', 30, 1, 0.28]] }, LegFR_Foot: { o: [['x', 24, 1, 0.42]] },
+    LegBL_Upper: { o: [['x', 30, 1, 0.5]] }, LegBL_Lower: { o: [['x', 28, 1, 0.68]] }, LegBL_Foot: { o: [['x', 20, 1, 0.82]] },
+    LegBR_Upper: { o: [['x', 30, 1, 0.6]] }, LegBR_Lower: { o: [['x', 28, 1, 0.78]] }, LegBR_Foot: { o: [['x', 20, 1, 0.92]] },
+    Hips: { p: [[0, 0, -1.2, 0]], o: [['py', 0.5, 2, 0], ['x', 4, 1, 0]] }, Chest: { o: [['x', 5, 1, 0.5]] },
+    Neck1: { k: [[0, -14, 0, 0]] }, Neck2: { k: [[0, -6, 0, 0]] }, Head: { k: [[0, 12, 0, 0]], o: [['x', 3, 2, 0.3], ['z', 4, 1, 0]] },
+    Jaw: { k: [[0, -16, 0, 0]], o: [['x', 4, 2, 0]] },
+    WingL_Arm: { k: [[0, 0, 12, -10]] }, WingR_Arm: { k: [[0, 0, -12, 10]] }
+  }) },
+
+  // v2: posturas de inmovilidad (sin movimiento: se mantienen hasta que deje de mirarse)
+  Freeze1: { dur: 1, loop: true, joints: {   // cuello torcido y cabeza casi tumbada
+    Neck1: { k: [[0, 4, 12, 0]] }, Neck2: { k: [[0, 0, 22, 14]] }, Neck3: { k: [[0, 6, 10, 22]] }, Head: { k: [[0, 4, 0, 48]] }, Jaw: { k: [[0, -6, 0, 0]] }
+  } },
+  Freeze2: { dur: 1, loop: true, joints: {   // la cabeza gira hacia atrás y un brazo queda a medio levantar
+    Neck1: { k: [[0, 6, 28, 0]] }, Neck2: { k: [[0, 4, 38, 0]] }, Neck3: { k: [[0, 0, 30, -10]] }, Head: { k: [[0, -6, 20, -34]] },
+    LegFR_Upper: { k: [[0, 18, 0, 6]] }, LegFR_Lower: { k: [[0, -26, 0, 0]] }, LegFR_Foot: { k: [[0, -30, 0, 0]] }
+  } },
+  Freeze3: { dur: 1, loop: true, joints: {   // agazapado, mirando hacia arriba con la boca entreabierta
+    Hips: { p: [[0, 0, -1.4, 0]] }, Spine1: { k: [[0, -6, 0, 0]] }, Neck1: { k: [[0, -16, 0, 0]] }, Neck2: { k: [[0, -6, 0, 0]] },
+    Neck3: { k: [[0, 18, 0, 0]] }, Head: { k: [[0, 24, 0, -12]] }, Jaw: { k: [[0, -12, 0, 0]] },
+    LegFL_Upper: { k: [[0, -8, 0, 0]] }, LegFR_Upper: { k: [[0, -8, 0, 0]] }
+  } },
 
   Death: { dur: 3.0, loop: false, joints: {
     Hips: { k: [[0, 0, 0, 0], [0.5, 8, 0, 0], [1.4, -4, 6, -38], [3.0, -6, 8, -48]], p: [[0, 0, 0, 0], [0.5, 0, 0.4, 0], [1.4, 0, -8.0, 0], [3.0, 0, -9.4, 0]] },

@@ -5,27 +5,48 @@
 	Pasos:
 	  1. Studio > pestaña Avatar (o Home) > Import 3D > ShadowDragon.fbx.
 	     En el importador: Rig General > Rig Type = "Custom" (malla con huesos). No combines las mallas.
-	     Pulsa Import. Aparece el modelo en Workspace con las mallas Body, Teeth, WingL y WingR y sus Bones.
+	     Pulsa Import. Aparece el modelo en Workspace con las mallas Body, Skull, Teeth, WingL y WingR y sus Bones.
 	  2. Selecciona ese modelo en el Explorer.
 	  3. View > Command Bar. Pega TODO este archivo y pulsa Enter.
+
+	Versión 2 (remaster): cabeza en malla propia (Skull), dientes irregulares, ojos con luz roja controlada,
+	animaciones nuevas y comportamiento de terror psicológico en el servidor: un solo dragón para todos.
+	Si ya había un Dragón Sombrío v1 instalado, se guarda como ServerStorage.DragonAssets.ShadowDragon_v1.
 
 	Resultado:
 	  ReplicatedStorage.Dragons.ShadowDragon          (modelo con huesos, Settings, Animations)
 	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación por datos, Motor6D o Bones)
 	  ServerStorage.DragonAssets.ShadowDragon_Rig     (copia de seguridad)
 	  Workspace.DragonShowcase.Stage_Shadow           (escenario + estatua de vista previa)
-	  StarterPlayer.StarterPlayerScripts.ShadowShowcase (vitrina nocturna, botones 1-9)
+	  ReplicatedStorage.Dragons.ShadowDragon.ShadowBrain (lógica del comportamiento)
+	  ServerScriptService.ShadowStalker                  (el dragón para todos: decide dónde está y qué hace)
+	  StarterPlayer.StarterPlayerScripts.ShadowClient    (anima, fundidos, ojos, ambiente y silencios)
+	  StarterPlayer.StarterPlayerScripts.ShadowShowcase  (solo si INSTALL_SHOWCASE = true)
 ]]
 
 -- Opcional: escala final en studs por unidad del modelo (1 = unos 45 studs de largo y 19 de alto).
 local DESIRED_SCALE = 1
 -- Opcional: tras subir los PNG (Asset Manager), pega aquí sus ids para crear SurfaceAppearance PBR.
+-- La vitrina de prueba (noche, botones 1-9) choca con un juego real: actívala solo para revisar animaciones.
+local INSTALL_SHOWCASE = false
+-- Visión nocturna de prueba con la tecla N (desactívala si tu juego ya tiene la suya).
+local PROVIDE_NIGHT_VISION = true
+-- Sonidos: sube los .ogg de la carpeta sounds/ (Asset Manager) y pega aquí sus ids (rbxassetid://...).
+local SOUND_IDS = {
+	Breath = "",        -- respiración grave en bucle, sale del cuerpo del dragón
+	Creak = "",         -- crujido de articulaciones (cerca)
+	Shriek = "",        -- chillido del rugido
+	Whisper = "",       -- ambiente: susurro lejano, suena en puntos al azar alrededor del jugador
+	DistantBreath = "", -- ambiente: respiración lejana
+	Crack = "",         -- ambiente: rama que cruje
+}
 local MAPS = {
 	Body = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 	WingL = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 	WingR = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	Skull = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 }
--- Teeth no lleva texturas: es marfil liso y de noche la vitrina la pasa a Neon (la sonrisa brilla).
+-- Teeth no lleva texturas: es marfil liso y ShadowClient la pasa a Neon tenue (la sonrisa brilla en la oscuridad).
 
 local RIG = {
 	{ name = "Root", parent = nil, head = { 0, 0, 4.4 }, tail = { 0, 1.5, 4.4 } },
@@ -64,8 +85,8 @@ local RIG = {
 	{ name = "WingR_Fore", parent = "WingR_Arm", head = { 2.1, 15.7, 1.2 }, tail = { 2.6, 14.3, 5 } },
 	{ name = "WingR_Hand", parent = "WingR_Fore", head = { 2.6, 14.3, 5 }, tail = { 4, 7.9, 3.8 } },
 }
-local EYES = { EyeL = { 0.858, 8.0184, -12.9589 }, EyeR = { -0.858, 8.0184, -12.9589 }, bone = "Head" }
-local GROUND_Y = -0.156
+local EYES = { EyeL = { 0.858, 8.0075, -12.8686 }, EyeR = { -0.858, 8.0075, -12.8686 }, bone = "Head" }
+local GROUND_Y = -0.155
 local SOURCES = {
 	DragonAnimator = [=======[
 --[[
@@ -81,6 +102,12 @@ local SOURCES = {
 		animator.Finished.Event:Connect(function(name) ... end)
 		animator:SetLookTarget(player.Character.Head)   -- opcional: la cabeza sigue al objetivo
 		animator:Destroy()
+
+	Opciones (todas opcionales; sin tocarlas el comportamiento es el de siempre):
+		animator.Paused = true          -- congela la pose tal como está (no escribe nada: coste cero)
+		animator.UpdateInterval = 1/15  -- evalúa menos veces por segundo (lejos de la cámara)
+		animator.Speed = 0.5            -- velocidad de reproducción
+		animator:SetHeadTilt(35, 1.5)   -- inclina la cabeza 35° (alabeo) y llega a esa inclinación a ritmo 1.5
 
 	Formato de cada articulación (nombre = Part1 del Motor6D o nombre del Bone):
 		k = { {t, rx, ry, rz}, ... }   claves de rotación en grados
@@ -179,7 +206,21 @@ function DragonAnimator.new(model: Model, animations)
 	self.FadeElapsed = 0
 	self.Speed = 1
 	self.Finished = Instance.new("BindableEvent")
+	self.Paused = false
+	self.UpdateInterval = 0
+	self._acc = 0
 	self._conn = RunService.Stepped:Connect(function(_, dt)
+		if self.Paused then
+			return
+		end
+		local iv = self.UpdateInterval
+		if iv and iv > 0 then
+			self._acc += dt
+			if self._acc < iv then
+				return
+			end
+			dt, self._acc = self._acc, 0
+		end
 		self:Step(dt)
 	end)
 	return self
@@ -256,6 +297,7 @@ function DragonAnimator:Step(dt: number)
 			* CFrame.Angles(math.rad(v[1]), math.rad(v[2]), math.rad(v[3]))
 	end
 	self:_applyLook(dt, frames)
+	self:_applyTilt(dt, frames)
 	for jointName, m in pairs(frames) do
 		setJoint(self.Joints[jointName], m)
 	end
@@ -347,6 +389,28 @@ function DragonAnimator:_applyLook(dt: number, frames)
 	frames[headName] = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * (frames[headName] or CFrame.identity)
 end
 
+--[[
+	Inclinación de cabeza (alabeo alrededor del eje del hocico), sumada encima de la animación y
+	de la mirada. degrees = 0 la endereza; speed controla lo rápido que llega (por defecto 2).
+]]
+function DragonAnimator:SetHeadTilt(degrees: number, speed: number?, headName: string?)
+	self.TiltGoal = degrees
+	self.TiltSpeed = speed or 2
+	self.TiltHead = headName or self.TiltHead or "Head"
+	self.Tilt = self.Tilt or 0
+end
+
+function DragonAnimator:_applyTilt(dt: number, frames)
+	if self.TiltGoal == nil then
+		return
+	end
+	self.Tilt += (self.TiltGoal - self.Tilt) * math.min(1, dt * self.TiltSpeed)
+	local h = self.TiltHead
+	if self.Joints[h] then
+		frames[h] = CFrame.Angles(0, 0, math.rad(self.Tilt)) * (frames[h] or CFrame.identity)
+	end
+end
+
 function DragonAnimator:Destroy()
 	if self._conn then
 		self._conn:Disconnect()
@@ -370,229 +434,232 @@ return DragonAnimator
 ]]
 return {
 	Idle = {
-		dur = 6,
+		dur = 10,
 		loop = true,
 		joints = {
 			Tail1 = {
 				o = {
-					{ "y", 1.44, 1, 0.06 },
+					{ "y", 1.08, 1, 0.06 },
 				},
 			},
 			Tail2 = {
 				o = {
-					{ "y", 1.88, 1, 0.12 },
+					{ "y", 1.41, 1, 0.12 },
 				},
 			},
 			Tail3 = {
 				o = {
-					{ "y", 2.32, 1, 0.18 },
+					{ "y", 1.74, 1, 0.18 },
 				},
 			},
 			Tail4 = {
 				o = {
-					{ "y", 2.76, 1, 0.24 },
+					{ "y", 2.07, 1, 0.24 },
 				},
 			},
 			Tail5 = {
 				o = {
-					{ "y", 3.2, 1, 0.3 },
+					{ "y", 2.4, 1, 0.3 },
 				},
 			},
 			Tail6 = {
 				o = {
-					{ "y", 3.64, 1, 0.36 },
+					{ "y", 2.73, 1, 0.36 },
 				},
 			},
 			Tail7 = {
 				o = {
-					{ "y", 4.08, 1, 0.42 },
+					{ "y", 3.06, 1, 0.42 },
 				},
 			},
 			Tail8 = {
 				o = {
-					{ "y", 4.52, 1, 0.48 },
+					{ "y", 3.39, 1, 0.48 },
 				},
 			},
 			Hips = {
 				o = {
-					{ "py", 0.08, 2, 0 },
+					{ "py", 0.12, 2, 0 },
 				},
 			},
 			Spine1 = {
 				o = {
-					{ "x", 1.2, 2, 0.05 },
+					{ "x", 2.2, 2, 0.05 },
 				},
 			},
 			Chest = {
 				o = {
-					{ "x", 1.5, 2, 0.1 },
+					{ "x", 2.8, 2, 0.1 },
+					{ "z", 0.6, 3, 0.3 },
 				},
 			},
 			Neck1 = {
 				o = {
-					{ "x", 1.5, 1, 0 },
+					{ "x", 1.2, 2, 0.15 },
 				},
 			},
 			Neck2 = {
 				o = {
-					{ "y", 2, 1, 0.1 },
+					{ "y", 1.5, 1, 0.1 },
+					{ "x", 0.8, 3, 0.4 },
 				},
 			},
 			Head = {
-				k = {
-					{ 0, 0, 0, 0 },
-					{ 2.2, 0, 0, 0 },
-					{ 2.35, 0, 4, 22 },
-					{ 3.9, 0, 4, 24 },
-					{ 4.1, 0, 0, 0 },
-				},
 				o = {
-					{ "z", 0.8, 30, 0 },
+					{ "y", 2.5, 1, 0.35 },
+					{ "x", 1.5, 2, 0.6 },
+					{ "z", 1.8, 1, 0.8 },
 				},
 			},
 			Jaw = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 2.3, 0, 0, 0 },
-					{ 2.5, -5, 0, 0 },
-					{ 3.8, -5, 0, 0 },
-					{ 4.1, 0, 0, 0 },
+					{ 4.6, 0, 0, 0 },
+					{ 5.4, -3, 0, 0 },
+					{ 7.8, -3, 0, 0 },
+					{ 8.6, 0, 0, 0 },
 				},
 			},
 			LegFL_Foot = {
 				o = {
-					{ "x", 3, 3, 0.2 },
+					{ "x", 1.5, 3, 0.2 },
 				},
 			},
 			LegFR_Foot = {
 				o = {
-					{ "x", 3, 3, 0.6 },
+					{ "x", 1.5, 4, 0.6 },
 				},
 			},
 			WingL_Arm = {
 				o = {
-					{ "z", 1.5, 1, 0 },
+					{ "z", 1.5, 2, 0 },
 				},
 			},
 			WingR_Arm = {
 				o = {
-					{ "z", -1.5, 1, 0 },
+					{ "z", -1.5, 2, 0 },
 				},
 			},
 			WingL_Hand = {
 				o = {
-					{ "y", 2, 1, 0.2 },
+					{ "y", 2, 2, 0.2 },
 				},
 			},
 			WingR_Hand = {
 				o = {
-					{ "y", -2, 1, 0.2 },
+					{ "y", -2, 2, 0.2 },
 				},
 			},
 		},
 	},
 	Walk = {
-		dur = 3.2,
+		dur = 3.6,
 		loop = true,
 		joints = {
 			Tail1 = {
 				o = {
-					{ "y", 3.6, 1, 0.16 },
+					{ "y", 3.24, 1, 0.16 },
 				},
 			},
 			Tail2 = {
 				o = {
-					{ "y", 4.7, 1, 0.22 },
+					{ "y", 4.23, 1, 0.22 },
 				},
 			},
 			Tail3 = {
 				o = {
-					{ "y", 5.8, 1, 0.28 },
+					{ "y", 5.22, 1, 0.28 },
 				},
 			},
 			Tail4 = {
 				o = {
-					{ "y", 6.9, 1, 0.34 },
+					{ "y", 6.21, 1, 0.34 },
 				},
 			},
 			Tail5 = {
 				o = {
-					{ "y", 8, 1, 0.4 },
+					{ "y", 7.2, 1, 0.4 },
 				},
 			},
 			Tail6 = {
 				o = {
-					{ "y", 9.1, 1, 0.46 },
+					{ "y", 8.19, 1, 0.46 },
 				},
 			},
 			Tail7 = {
 				o = {
-					{ "y", 10.2, 1, 0.52 },
+					{ "y", 9.18, 1, 0.52 },
 				},
 			},
 			Tail8 = {
 				o = {
-					{ "y", 11.3, 1, 0.58 },
+					{ "y", 10.17, 1, 0.58 },
 				},
 			},
 			LegFL_Upper = {
 				o = {
-					{ "x", 16, 1, 0 },
+					{ "x", 19, 1, 0 },
+					{ "z", 2, 7, 0.1 },
 				},
 			},
 			LegFL_Lower = {
 				o = {
-					{ "x", 22, 1, 0.2 },
+					{ "x", 24, 1, 0.22 },
+					{ "x", 3, 6, 0 },
 				},
 			},
 			LegFL_Foot = {
 				o = {
-					{ "x", 18, 1, 0.35 },
+					{ "x", 20, 1, 0.4 },
 				},
 			},
 			LegFR_Upper = {
 				o = {
-					{ "x", 16, 1, 0.5 },
+					{ "x", 14, 1, 0.46 },
+					{ "z", -2, 5, 0.3 },
 				},
 			},
 			LegFR_Lower = {
 				o = {
-					{ "x", 22, 1, 0.7 },
+					{ "x", 20, 1, 0.62 },
+					{ "x", 3, 7, 0.2 },
 				},
 			},
 			LegFR_Foot = {
 				o = {
-					{ "x", 18, 1, 0.85 },
+					{ "x", 16, 1, 0.82 },
 				},
 			},
 			LegBL_Upper = {
 				o = {
-					{ "x", 16, 1, 0.62 },
+					{ "x", 17, 1, 0.71 },
 				},
 			},
 			LegBL_Lower = {
 				o = {
-					{ "x", 22, 1, 0.82 },
+					{ "x", 22, 1, 0.9 },
+					{ "x", 2.5, 5, 0.4 },
 				},
 			},
 			LegBL_Foot = {
 				o = {
-					{ "x", 18, 1, 0.97 },
+					{ "x", 15, 1, 0.05 },
 				},
 			},
 			LegBR_Upper = {
 				o = {
-					{ "x", 16, 1, 0.12 },
+					{ "x", 13, 1, 0.17 },
 				},
 			},
 			LegBR_Lower = {
 				o = {
-					{ "x", 22, 1, 0.32 },
+					{ "x", 18, 1, 0.35 },
+					{ "x", 2.5, 6, 0.7 },
 				},
 			},
 			LegBR_Foot = {
 				o = {
-					{ "x", 18, 1, 0.47 },
+					{ "x", 14, 1, 0.52 },
 				},
 			},
 			Hips = {
@@ -600,6 +667,7 @@ return {
 					{ "py", 0.25, 2, 0.1 },
 					{ "z", 4, 1, 0.1 },
 					{ "y", 4, 1, 0.3 },
+					{ "x", 1.2, 5, 0 },
 				},
 			},
 			Spine1 = {
@@ -615,18 +683,19 @@ return {
 			},
 			Neck1 = {
 				o = {
-					{ "y", -2, 1, 0.3 },
+					{ "y", -2.5, 1, 0.3 },
 				},
 			},
 			Neck2 = {
 				o = {
-					{ "z", 2, 1, 0.6 },
+					{ "z", 2.5, 1, 0.6 },
 				},
 			},
 			Head = {
 				o = {
 					{ "z", -3, 1, 0.2 },
 					{ "y", 2, 1, 0.8 },
+					{ "x", 1, 9, 0 },
 				},
 			},
 		},
@@ -1428,78 +1497,87 @@ return {
 		},
 	},
 	Roar = {
-		dur = 3,
+		dur = 3.4,
 		loop = false,
 		next = "Idle",
 		joints = {
 			Hips = {
 				p = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, 0, -0.5, 0 },
-					{ 2.4, 0, -0.5, 0 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, 0, -0.6, 0 },
+					{ 2.7, 0, -0.6, 0 },
+					{ 3.4, 0, 0, 0 },
+				},
+			},
+			Spine1 = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 0.7, -4, 0, 0 },
+					{ 2.7, -4, 0, 0 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			Chest = {
 				o = {
-					{ "x", 1.2, 30, 0 },
+					{ "x", 1.4, 34, 0 },
 				},
 			},
 			Neck1 = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, -10, 0, 0 },
-					{ 2.4, -10, 0, 0 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, -12, 0, 0 },
+					{ 2.7, -12, 0, 0 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			Neck2 = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, -8, 0, 0 },
-					{ 2.4, -8, 0, 0 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, -8, 0, 0 },
+					{ 2.7, -8, 0, 0 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			Neck3 = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, 14, 0, 0 },
-					{ 2.4, 14, 0, 0 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, 16, 0, 0 },
+					{ 2.7, 16, 0, 0 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			Head = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.5, 6, 0, 0 },
-					{ 0.7, 6, 0, 28 },
-					{ 1.6, 6, 0, 28 },
-					{ 1.75, 6, 0, -24 },
-					{ 2.4, 6, 0, -24 },
-					{ 3, 0, 0, 0 },
+					{ 0.5, 8, 0, 0 },
+					{ 0.75, 8, 0, 30 },
+					{ 1.8, 8, 0, 32 },
+					{ 1.95, 8, 0, -26 },
+					{ 2.7, 8, 0, -26 },
+					{ 3.4, 0, 0, 0 },
 				},
 				o = {
-					{ "y", 2, 21, 0 },
+					{ "z", 2.2, 40, 0 },
+					{ "y", 2, 23, 0.2 },
 				},
 			},
 			Jaw = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.55, -26, 0, 0 },
-					{ 2.4, -24, 0, 0 },
-					{ 3, 0, 0, 0 },
+					{ 0.55, -34, 0, 0 },
+					{ 2.7, -32, 0, 0 },
+					{ 3.4, 0, 0, 0 },
 				},
 				o = {
-					{ "x", 2.5, 34, 0 },
+					{ "x", 3, 38, 0 },
 				},
 			},
 			WingL_Arm = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, 0, -18, -45 },
-					{ 2.4, 0, -18, -48 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, 0, -18, -45 },
+					{ 2.7, 0, -18, -48 },
+					{ 3.4, 0, 0, 0 },
 				},
 				o = {
 					{ "z", 3, 24, 0 },
@@ -1508,9 +1586,9 @@ return {
 			WingR_Arm = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, 0, 18, 45 },
-					{ 2.4, 0, 18, 48 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, 0, 18, 45 },
+					{ 2.7, 0, 18, 48 },
+					{ 3.4, 0, 0, 0 },
 				},
 				o = {
 					{ "z", -3, 24, 0 },
@@ -1519,30 +1597,427 @@ return {
 			WingL_Hand = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, 0, -10, -20 },
-					{ 2.4, 0, -10, -20 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, 0, -10, -20 },
+					{ 2.7, 0, -10, -20 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			WingR_Hand = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, 0, 10, 20 },
-					{ 2.4, 0, 10, 20 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, 0, 10, 20 },
+					{ 2.7, 0, 10, 20 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			Tail1 = {
 				k = {
 					{ 0, 0, 0, 0 },
-					{ 0.6, -10, 0, 0 },
-					{ 2.4, -10, 0, 0 },
-					{ 3, 0, 0, 0 },
+					{ 0.7, -10, 0, 0 },
+					{ 2.7, -10, 0, 0 },
+					{ 3.4, 0, 0, 0 },
 				},
 			},
 			Tail6 = {
 				o = {
 					{ "y", 14, 12, 0 },
+				},
+			},
+		},
+	},
+	Detect = {
+		dur = 3.2,
+		loop = false,
+		next = "Watch",
+		joints = {
+			Hips = {
+				p = {
+					{ 0, 0, 0, 0 },
+					{ 3.2, 0, 0.7, 0 },
+				},
+			},
+			Spine1 = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 3.2, 4, 0, 0 },
+				},
+			},
+			Neck1 = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 0.6, 0, 0, 0 },
+					{ 3.2, 14, 0, 0 },
+				},
+			},
+			Neck2 = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 0.9, 0, 0, 0 },
+					{ 3.2, 11, 0, 0 },
+				},
+			},
+			Neck3 = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 1.2, 0, 0, 0 },
+					{ 3.2, 6, 0, 0 },
+				},
+			},
+			Head = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 1.5, 0, 0, 0 },
+					{ 3.2, -4, 0, 0 },
+				},
+			},
+			Jaw = {
+				k = {
+					{ 0, 0, 0, 0 },
+					{ 2.4, 0, 0, 0 },
+					{ 3.2, -4, 0, 0 },
+				},
+			},
+		},
+	},
+	Watch = {
+		dur = 8,
+		loop = true,
+		joints = {
+			Hips = {
+				k = {
+					{ 0, 0, 0, 0 },
+				},
+				p = {
+					{ 0, 0, 0.7, 0 },
+				},
+				o = {
+					{ "py", 0.1, 2, 0 },
+				},
+			},
+			Spine1 = {
+				k = {
+					{ 0, 4, 0, 0 },
+				},
+			},
+			Chest = {
+				o = {
+					{ "x", 2.4, 2, 0.1 },
+				},
+			},
+			Neck1 = {
+				k = {
+					{ 0, 14, 0, 0 },
+				},
+			},
+			Neck2 = {
+				k = {
+					{ 0, 11, 0, 0 },
+				},
+			},
+			Neck3 = {
+				k = {
+					{ 0, 6, 0, 0 },
+				},
+			},
+			Head = {
+				k = {
+					{ 0, -4, 0, 0 },
+				},
+				o = {
+					{ "y", 1.2, 1, 0.3 },
+				},
+			},
+			Jaw = {
+				k = {
+					{ 0, -4, 0, 0 },
+				},
+			},
+		},
+	},
+	Chase = {
+		dur = 0.8,
+		loop = true,
+		joints = {
+			Tail1 = {
+				o = {
+					{ "y", 5.04, 1, 0.16 },
+					{ "x", 1.8, 2, 0.06 },
+				},
+			},
+			Tail2 = {
+				o = {
+					{ "y", 6.58, 1, 0.22 },
+					{ "x", 2.35, 2, 0.12 },
+				},
+			},
+			Tail3 = {
+				o = {
+					{ "y", 8.12, 1, 0.28 },
+					{ "x", 2.9, 2, 0.18 },
+				},
+			},
+			Tail4 = {
+				o = {
+					{ "y", 9.66, 1, 0.34 },
+					{ "x", 3.45, 2, 0.24 },
+				},
+			},
+			Tail5 = {
+				o = {
+					{ "y", 11.2, 1, 0.4 },
+					{ "x", 4, 2, 0.3 },
+				},
+			},
+			Tail6 = {
+				o = {
+					{ "y", 12.74, 1, 0.46 },
+					{ "x", 4.55, 2, 0.36 },
+				},
+			},
+			Tail7 = {
+				o = {
+					{ "y", 14.28, 1, 0.52 },
+					{ "x", 5.1, 2, 0.42 },
+				},
+			},
+			Tail8 = {
+				o = {
+					{ "y", 15.82, 1, 0.58 },
+					{ "x", 5.65, 2, 0.48 },
+				},
+			},
+			LegFL_Upper = {
+				o = {
+					{ "x", 36, 1, 0 },
+				},
+			},
+			LegFL_Lower = {
+				o = {
+					{ "x", 30, 1, 0.18 },
+				},
+			},
+			LegFL_Foot = {
+				o = {
+					{ "x", 24, 1, 0.32 },
+				},
+			},
+			LegFR_Upper = {
+				o = {
+					{ "x", 36, 1, 0.1 },
+				},
+			},
+			LegFR_Lower = {
+				o = {
+					{ "x", 30, 1, 0.28 },
+				},
+			},
+			LegFR_Foot = {
+				o = {
+					{ "x", 24, 1, 0.42 },
+				},
+			},
+			LegBL_Upper = {
+				o = {
+					{ "x", 30, 1, 0.5 },
+				},
+			},
+			LegBL_Lower = {
+				o = {
+					{ "x", 28, 1, 0.68 },
+				},
+			},
+			LegBL_Foot = {
+				o = {
+					{ "x", 20, 1, 0.82 },
+				},
+			},
+			LegBR_Upper = {
+				o = {
+					{ "x", 30, 1, 0.6 },
+				},
+			},
+			LegBR_Lower = {
+				o = {
+					{ "x", 28, 1, 0.78 },
+				},
+			},
+			LegBR_Foot = {
+				o = {
+					{ "x", 20, 1, 0.92 },
+				},
+			},
+			Hips = {
+				p = {
+					{ 0, 0, -1.2, 0 },
+				},
+				o = {
+					{ "py", 0.5, 2, 0 },
+					{ "x", 4, 1, 0 },
+				},
+			},
+			Chest = {
+				o = {
+					{ "x", 5, 1, 0.5 },
+				},
+			},
+			Neck1 = {
+				k = {
+					{ 0, -14, 0, 0 },
+				},
+			},
+			Neck2 = {
+				k = {
+					{ 0, -6, 0, 0 },
+				},
+			},
+			Head = {
+				k = {
+					{ 0, 12, 0, 0 },
+				},
+				o = {
+					{ "x", 3, 2, 0.3 },
+					{ "z", 4, 1, 0 },
+				},
+			},
+			Jaw = {
+				k = {
+					{ 0, -16, 0, 0 },
+				},
+				o = {
+					{ "x", 4, 2, 0 },
+				},
+			},
+			WingL_Arm = {
+				k = {
+					{ 0, 0, 12, -10 },
+				},
+			},
+			WingR_Arm = {
+				k = {
+					{ 0, 0, -12, 10 },
+				},
+			},
+		},
+	},
+	Freeze1 = {
+		dur = 1,
+		loop = true,
+		joints = {
+			Neck1 = {
+				k = {
+					{ 0, 4, 12, 0 },
+				},
+			},
+			Neck2 = {
+				k = {
+					{ 0, 0, 22, 14 },
+				},
+			},
+			Neck3 = {
+				k = {
+					{ 0, 6, 10, 22 },
+				},
+			},
+			Head = {
+				k = {
+					{ 0, 4, 0, 48 },
+				},
+			},
+			Jaw = {
+				k = {
+					{ 0, -6, 0, 0 },
+				},
+			},
+		},
+	},
+	Freeze2 = {
+		dur = 1,
+		loop = true,
+		joints = {
+			Neck1 = {
+				k = {
+					{ 0, 6, 28, 0 },
+				},
+			},
+			Neck2 = {
+				k = {
+					{ 0, 4, 38, 0 },
+				},
+			},
+			Neck3 = {
+				k = {
+					{ 0, 0, 30, -10 },
+				},
+			},
+			Head = {
+				k = {
+					{ 0, -6, 20, -34 },
+				},
+			},
+			LegFR_Upper = {
+				k = {
+					{ 0, 18, 0, 6 },
+				},
+			},
+			LegFR_Lower = {
+				k = {
+					{ 0, -26, 0, 0 },
+				},
+			},
+			LegFR_Foot = {
+				k = {
+					{ 0, -30, 0, 0 },
+				},
+			},
+		},
+	},
+	Freeze3 = {
+		dur = 1,
+		loop = true,
+		joints = {
+			Hips = {
+				p = {
+					{ 0, 0, -1.4, 0 },
+				},
+			},
+			Spine1 = {
+				k = {
+					{ 0, -6, 0, 0 },
+				},
+			},
+			Neck1 = {
+				k = {
+					{ 0, -16, 0, 0 },
+				},
+			},
+			Neck2 = {
+				k = {
+					{ 0, -6, 0, 0 },
+				},
+			},
+			Neck3 = {
+				k = {
+					{ 0, 18, 0, 0 },
+				},
+			},
+			Head = {
+				k = {
+					{ 0, 24, 0, -12 },
+				},
+			},
+			Jaw = {
+				k = {
+					{ 0, -12, 0, 0 },
+				},
+			},
+			LegFL_Upper = {
+				k = {
+					{ 0, -8, 0, 0 },
+				},
+			},
+			LegFR_Upper = {
+				k = {
+					{ 0, -8, 0, 0 },
 				},
 			},
 		},
@@ -1960,6 +2435,1040 @@ end)
 setNight(true)
 spawnDragon()
 ]=======],
+	Brain = [=======[
+--[[
+	ShadowBrain (ModuleScript) · ReplicatedStorage.Dragons.ShadowDragon.ShadowBrain
+
+	Lógica pura del comportamiento del Dragón Sombrío (sin Instances: se puede probar fuera de Roblox).
+	El servidor le pasa cada tick lo que "percibe" y aplica las órdenes que devuelve.
+
+	Estados:
+	  Absent   no está. Espera un tiempo aleatorio largo antes de volver a aparecer.
+	  Observe  quieto y lejos, mirando al objetivo. Ladea la cabeza de vez en cuando.
+	  Frozen   alguien lo mira directamente: se queda inmóvil. Si dejan de mirarlo puede cambiar de
+	           postura, acercarse de golpe, desaparecer o seguir observando.
+	  Stalk    se acerca despacio solo mientras el objetivo no mira en su dirección.
+	  Detect   levanta la cabeza muy despacio (te ha visto). Puede seguir un rugido o, rara vez, una persecución.
+	  Roar     abre la sonrisa al máximo.
+	  Chase    ráfaga corta y rápida hacia el objetivo; termina desvaneciéndose. Con enfriamiento largo.
+	  Vanish   se desvanece poco a poco (por ejemplo, si te acercas demasiado).
+
+	Percepción (tabla P) que entrega el servidor en cada Update:
+	  hasTarget     hay un jugador objetivo válido
+	  dist          distancia del dragón al objetivo (studs)
+	  targetAngle   ángulo (grados) entre la mirada de la cámara del objetivo y el dragón
+	  targetSees    el objetivo lo mira directamente y sin obstáculos
+	  anySees       algún jugador lo mira directamente y sin obstáculos
+
+	Órdenes devueltas (lista de tablas {cmd, ...}):
+	  {"place", "far" | "closer"}   el servidor busca un sitio (lejos y en la periferia, o más cerca y fuera de la vista)
+	  {"appear", segundos}          aparecer gradualmente
+	  {"vanish", segundos}          desaparecer gradualmente
+	  {"anim", nombre, fundido}     animación (la reproducen los clientes)
+	  {"freeze", true|false}        congelar la pose tal como está / soltarla
+	  {"pose", nombre}              cambiar a una postura extraña (mientras nadie mira)
+	  {"move", velocidad}           avanzar hacia el objetivo (0 = parar)
+	  {"tilt", grados}              inclinación de cabeza
+	  {"silence", segundos}         silencio repentino del ambiente
+	  {"sound", nombre}             sonido puntual en el dragón ("Creak", "Shriek")
+	  {"newTarget"}                 elegir otro jugador objetivo
+]]
+
+local Brain = {}
+Brain.__index = Brain
+
+Brain.Defaults = {
+	FirstAbsent = { 20, 45 },      -- primera aparición tras entrar
+	Absent = { 45, 120 },          -- ausencia normal entre apariciones
+	AbsentAfterVanish = { 35, 100 },
+	Observe = { 18, 50 },          -- cuánto observa antes de irse o cambiar de sitio
+	Presence = { 30, 70 },         -- tiempo total visible por aparición; luego se va (aunque lo mires)
+	StareVanish = { 7, 16 },       -- si lo miras fijamente tanto tiempo, se disuelve delante de ti
+	LookAngle = 16,                -- ángulo de "mirar directamente" (lo calcula el servidor)
+	PeripheralAngle = 55,          -- más allá de esto, el objetivo no está mirando hacia él
+	VanishDistance = 38,           -- si el objetivo se acerca tanto, se desvanece
+	VanishFade = 2.6,
+	AppearFade = 3.5,
+	StalkSpeed = 5,
+	StalkStop = { 32, 48 },
+	StalkMaxTime = 14,
+	StalkChance = 0.45,
+	DetectChancePerSec = 0.1,
+	ChaseChance = 0.22,
+	ChaseCooldown = 240,
+	ChaseSpeed = 34,
+	ChaseTime = { 2.5, 4.0 },
+	ChaseEnd = 12,
+	RoarChance = 0.3,
+	SilenceCooldown = 90,
+	SilenceChancePerSec = 0.006,
+}
+
+function Brain.new(config, rng)
+	local self = setmetatable({}, Brain)
+	self.cfg = setmetatable(config or {}, { __index = Brain.Defaults })
+	self.rng = rng or Random.new()
+	self.state = "Absent"
+	self.timer = self:range(self.cfg.FirstAbsent)
+	self.t = 0
+	self.lastChase = -1e9
+	self.lastSilence = -1e9
+	self.history = {}
+	self.out = {}
+	return self
+end
+
+function Brain:range(r)
+	return r[1] + (r[2] - r[1]) * self.rng:NextNumber()
+end
+
+function Brain:chance(p)
+	return self.rng:NextNumber() < p
+end
+
+-- Elige una opción con pesos, penalizando la que se usó la última vez (para no repetir patrones).
+function Brain:pick(options)
+	local total = 0
+	for _, o in ipairs(options) do
+		local w = o[2]
+		if self.history[#self.history] == o[1] then
+			w *= 0.35
+		end
+		o.w = w
+		total += w
+	end
+	local x = self.rng:NextNumber() * total
+	for _, o in ipairs(options) do
+		x -= o.w
+		if x <= 0 then
+			table.insert(self.history, o[1])
+			if #self.history > 6 then
+				table.remove(self.history, 1)
+			end
+			return o[1]
+		end
+	end
+	return options[#options][1]
+end
+
+function Brain:emit(...)
+	table.insert(self.out, { ... })
+end
+
+function Brain:enter(state, timer)
+	self.state = state
+	self.timer = timer or 0
+	self.stateTime = 0
+end
+
+-- Llamado por el servidor si no encontró un sitio para "place": vuelve a la ausencia un rato corto.
+function Brain:PlaceFailed()
+	self:emit("vanish", 0)
+	self:enter("Absent", self:range({ 6, 14 }))
+end
+
+function Brain:toObserve()
+	self:emit("move", 0)
+	self:emit("freeze", false)
+	self:emit("anim", self:chance(0.5) and "Watch" or "Idle", 1.2)
+	self.unseen = 0
+	self.nextTilt = self:range({ 3, 8 })
+	self:enter("Observe", self:range(self.cfg.Observe))
+end
+
+function Brain:toVanish(fade)
+	fade = fade or self.cfg.VanishFade
+	self:emit("move", 0)
+	self:emit("vanish", fade)
+	self:emit("tilt", 0)
+	if self:chance(0.3) and self.t - self.lastSilence > self.cfg.SilenceCooldown then
+		self.lastSilence = self.t
+		self:emit("silence", self:range({ 3, 7 }))
+	end
+	self:enter("Vanish", fade)
+end
+
+function Brain:toFrozen()
+	self:emit("move", 0)
+	self:emit("freeze", true)
+	self.unseen = 0
+	self.posed = false
+	self.thaw = self:range({ 0.8, 3.0 })
+	self.stare = 0
+	self.stareLimit = self:range(self.cfg.StareVanish)
+	self:enter("Frozen", 0)
+end
+
+function Brain:Update(dt, P)
+	self.out = {}
+	local c = self.cfg
+	self.t += dt
+	self.timer -= dt
+	self.stateTime = (self.stateTime or 0) + dt
+	local s = self.state
+
+	if s == "Absent" then
+		if self.t - self.lastSilence > c.SilenceCooldown and self:chance(c.SilenceChancePerSec * dt) then
+			self.lastSilence = self.t
+			self:emit("silence", self:range({ 3, 6 }))
+		end
+		if self.timer <= 0 then
+			if not P.hasTarget then
+				self.timer = 5
+			else
+				self:emit("newTarget")
+				self:emit("place", "far")
+				self:emit("tilt", 0)
+				self:emit("appear", c.AppearFade)
+				self.presence = self:range(c.Presence)
+				self:toObserve()
+			end
+		end
+		return self.out
+	end
+
+	-- límite de presencia: no se queda demasiado; se va despacio si lo miran, de golpe si no
+	if s ~= "Vanish" and s ~= "Chase" and s ~= "Roar" then
+		self.presence = (self.presence or 60) - dt
+		if self.presence <= 0 then
+			self:toVanish(P.anySees and 4.5 or 1.2)
+			return self.out
+		end
+	end
+
+	if not P.hasTarget then
+		if s ~= "Vanish" then
+			self:toVanish(1.5)
+		end
+	elseif s == "Observe" then
+		if P.anySees then
+			self:toFrozen()
+		elseif P.dist < c.VanishDistance then
+			self:toVanish()
+		else
+			self.unseen = (P.targetAngle > c.PeripheralAngle) and (self.unseen + dt) or 0
+			self.nextTilt -= dt
+			if self.nextTilt <= 0 then
+				self.nextTilt = self:range({ 4, 11 })
+				self:emit("tilt", self:chance(0.35) and 0 or (self:chance(0.5) and 1 or -1) * self:range({ 18, 48 }))
+			end
+			if P.targetAngle > c.LookAngle and P.targetAngle < 45 and self:chance(c.DetectChancePerSec * dt) then
+				self:emit("tilt", 0)
+				self:emit("anim", "Detect", 0.6)
+				self:enter("Detect", 3.2 + self:range({ 0.8, 2.5 }))
+			elseif self.unseen > 3 and P.dist > c.StalkStop[2] and self:chance(c.StalkChance * dt / 3) then
+				self:emit("tilt", 0)
+				self:emit("anim", "Walk", 0.5)
+				self:emit("move", c.StalkSpeed)
+				self.stalkStop = self:range(c.StalkStop)
+				self:enter("Stalk", c.StalkMaxTime)
+			elseif self.timer <= 0 then
+				if P.targetAngle > c.PeripheralAngle and self:chance(0.4) then
+					self:emit("vanish", 0)        -- se va mientras no lo miras...
+					self:emit("place", "far")     -- ...y reaparece en otro sitio
+					self:emit("appear", c.AppearFade)
+					self:toObserve()
+				else
+					self:toVanish()
+				end
+			end
+		end
+	elseif s == "Frozen" then
+		if P.dist < c.VanishDistance then
+			self:toVanish()                       -- se disuelve delante de ti
+		elseif P.anySees then
+			self.unseen = 0
+			self.stare = (self.stare or 0) + dt
+			if self.stare > self.stareLimit then
+				self:toVanish(4.5)                -- se disuelve mientras lo miras
+			end
+		else
+			self.unseen += dt
+			if not self.posed and self.unseen > 0.6 and self:chance(0.35) then
+				self.posed = true                 -- al volver a mirar, está en otra postura
+				local poses = { "Freeze1", "Freeze2", "Freeze3" }
+				self:emit("pose", poses[self.rng:NextInteger(1, 3)])
+			end
+			if self.unseen > self.thaw then
+				local choice = self:pick({ { "observe", 40 }, { "closer", 25 }, { "stalk", 20 }, { "gone", 15 } })
+				if choice == "closer" and P.dist > c.VanishDistance + 25 then
+					self:emit("place", "closer")
+					self.unseen = 0
+					self.thaw = self:range({ 1.0, 3.0 })
+				elseif choice == "stalk" and P.dist > c.StalkStop[2] then
+					self:emit("freeze", false)
+					self:emit("anim", "Walk", 0.4)
+					self:emit("move", c.StalkSpeed)
+					self.stalkStop = self:range(c.StalkStop)
+					self:enter("Stalk", c.StalkMaxTime)
+				elseif choice == "gone" then
+					self:toVanish(0.4)
+				else
+					self:toObserve()
+				end
+			end
+		end
+	elseif s == "Stalk" then
+		if P.anySees then
+			self:toFrozen()
+		elseif P.dist < self.stalkStop or self.timer <= 0 then
+			self:toObserve()
+		elseif self.stateTime > 1 and self:chance(0.08 * dt) then
+			self:emit("sound", "Creak")
+		end
+	elseif s == "Detect" then
+		if P.dist < c.VanishDistance then
+			self:toVanish()
+		elseif P.anySees and self.stateTime > 0.3 then
+			self:toFrozen()
+		elseif self.timer <= 0 then
+			local canChase = self.t - self.lastChase > c.ChaseCooldown and P.dist > c.ChaseEnd * 2
+			if canChase and self:chance(c.ChaseChance) then
+				self:emit("anim", "Roar", 0.3)
+				self:emit("sound", "Shriek")
+				self.thenChase = true
+				self:enter("Roar", 3.0)
+			elseif self:chance(c.RoarChance) then
+				self:emit("anim", "Roar", 0.3)
+				self:emit("sound", "Shriek")
+				self.thenChase = false
+				self:enter("Roar", 3.4)
+			else
+				self:toObserve()
+			end
+		end
+	elseif s == "Roar" then
+		if self.timer <= 0 then
+			if self.thenChase then
+				self.lastChase = self.t
+				self:emit("anim", "Chase", 0.25)
+				self:emit("move", c.ChaseSpeed)
+				self:enter("Chase", self:range(c.ChaseTime))
+			else
+				self:toObserve()
+			end
+		end
+	elseif s == "Chase" then
+		if P.dist < c.ChaseEnd or self.timer <= 0 then
+			self:toVanish(0.5)
+			self.lastSilence = self.t
+			self:emit("silence", self:range({ 4, 8 }))
+		end
+	elseif s == "Vanish" then
+		if self.timer <= 0 then
+			self:emit("freeze", false)
+			self:emit("anim", "Idle", 0)
+			self:enter("Absent", self:range(c.AbsentAfterVanish) * (self:chance(0.3) and 3 or 1))
+		end
+	end
+	return self.out
+end
+
+--[[ Geometría auxiliar (también pura) ]]
+
+-- Ángulo en grados entre la dirección de una cámara y un punto.
+function Brain.AngleTo(camPos: Vector3, camLook: Vector3, point: Vector3): number
+	local d = point - camPos
+	if d.Magnitude < 1e-3 then
+		return 0
+	end
+	local cos = math.clamp(camLook.Unit:Dot(d.Unit), -1, 1)
+	return math.deg(math.acos(cos))
+end
+
+-- Puntuación de un sitio candidato para aparecer: lejos, en la visión periférica del objetivo
+-- (ni delante ni detrás), fuera de la vista directa de todos, y mejor si hay algo cerca (árboles).
+function Brain.ScoreSpot(kind: string, dist: number, angle: number, inAnyView: boolean, cover: number, cfg)
+	cfg = cfg or Brain.Defaults
+	if inAnyView then
+		return -1
+	end
+	local score = 0
+	if kind == "far" then
+		if dist < 60 or dist > 170 then
+			return -1
+		end
+		score += 1 - math.abs(dist - 100) / 70
+		score += 1.5 * (1 - math.abs(angle - 70) / 70)    -- periferia: unos 70°
+	else -- "closer"
+		if dist < cfg.VanishDistance + 8 or dist > 90 then
+			return -1
+		end
+		if angle < cfg.PeripheralAngle then
+			return -1
+		end
+		score += 1 - math.abs(dist - (cfg.VanishDistance + 20)) / 40
+	end
+	return score + 0.6 * math.min(cover, 3) / 3
+end
+
+return Brain
+]=======],
+	Stalker = [=======[
+--[[
+	ShadowStalker (Script) · ServerScriptService.ShadowStalker
+
+	Un solo Dragón Sombrío para todos los jugadores. El servidor decide (ShadowBrain) dónde está y qué hace;
+	los clientes animan los huesos y suavizan el movimiento (ShadowClient), porque Roblox no replica
+	Bone.Transform desde el servidor.
+
+	Lo que el servidor publica en el modelo Workspace.ShadowDragonLive (atributos):
+	  Root (CFrame)                pivote del dragón sobre el suelo, mirando a -Z
+	  Visible, FadeTime, FadeStamp aparecer / desaparecer gradualmente
+	  Anim, AnimFade, AnimStamp    animación actual
+	  Frozen, Pose, PoseStamp      inmovilidad y postura extraña
+	  Tilt                         inclinación de cabeza (grados)
+	  SilenceUntil                 hora del servidor hasta la que el ambiente queda en silencio
+	  State, TargetUserId          estado y objetivo (para depurar)
+
+	Cada cliente envía 5 veces por segundo el CFrame de su cámara (ShadowGaze) para saber si lo está mirando.
+	Sitios para aparecer: partes con la etiqueta "ShadowPerch" o dentro de Workspace.ShadowPerches (junto a
+	árboles, rocas, zonas oscuras). Si no hay, busca sitios en el terreno alrededor del jugador, mejor si hay
+	objetos cerca que lo tapen.
+]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
+
+local folder = ReplicatedStorage:WaitForChild("Dragons"):WaitForChild("ShadowDragon")
+local Brain = require(folder:WaitForChild("ShadowBrain"))
+local settings = folder:WaitForChild("Settings")
+local template = folder:WaitForChild("ShadowDragon") :: Model
+local gazeRemote = folder:WaitForChild("ShadowGaze")
+
+if settings:GetAttribute("StalkerEnabled") == false then
+	return
+end
+local DEBUG = settings:GetAttribute("Debug") == true
+local MAX_SIGHT = settings:GetAttribute("MaxSightDistance") or 320
+
+-- configuración: los atributos de Settings que coinciden con un valor numérico de Brain.Defaults lo sustituyen
+local config = {}
+for k, v in pairs(settings:GetAttributes()) do
+	if type(Brain.Defaults[k]) == "number" and type(v) == "number" then
+		config[k] = v
+	end
+end
+local brain = Brain.new(config, Random.new())
+
+-- el dragón vivo: oculto hasta que el cerebro decide aparecer
+local live = template:Clone()
+live.Name = "ShadowDragonLive"
+local scale = live:GetAttribute("RigScale") or 1
+local HEAD_OFFSET = live:GetAttribute("HeadOffset") or Vector3.new(0, 7 * scale, -14 * scale)
+local BODY_OFFSET = live:GetAttribute("BodyOffset") or Vector3.new(0, 13 * scale, 0)
+for _, d in ipairs(live:GetDescendants()) do
+	if d:IsA("BasePart") then
+		d.CanCollide = false
+		d.CanTouch = false
+		d.CanQuery = false
+	end
+end
+local root = CFrame.new(0, -500, 0)
+live:SetAttribute("Root", root)
+live:SetAttribute("Visible", false)
+live:SetAttribute("FadeTime", 0)
+live:SetAttribute("FadeStamp", 0)
+live:SetAttribute("Anim", "Idle")
+live:SetAttribute("AnimFade", 0)
+live:SetAttribute("AnimStamp", 0)
+live:SetAttribute("Frozen", false)
+live:SetAttribute("Pose", "")
+live:SetAttribute("PoseStamp", 0)
+live:SetAttribute("Tilt", 0)
+live:SetAttribute("SilenceUntil", 0)
+live.Parent = workspace
+
+local sounds = {}
+local body = live:FindFirstChild("Body", true)
+if body then
+	for _, s in ipairs(body:GetChildren()) do
+		if s:IsA("Sound") and s.SoundId ~= "" then
+			sounds[s.Name] = s
+		end
+	end
+end
+
+-- miradas de los jugadores (CFrame de cámara reciente)
+local gaze = {}
+gazeRemote.OnServerEvent:Connect(function(player, cf)
+	if typeof(cf) == "CFrame" then
+		gaze[player] = { cf = cf, t = os.clock() }
+	end
+end)
+Players.PlayerRemoving:Connect(function(p)
+	gaze[p] = nil
+end)
+
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+rayParams.IgnoreWater = false
+local function refreshFilter()
+	local list = { live }
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Character then
+			table.insert(list, p.Character)
+		end
+	end
+	rayParams.FilterDescendantsInstances = list
+end
+
+local function hrpOf(p)
+	local c = p.Character
+	local h = c and c:FindFirstChild("HumanoidRootPart")
+	local hum = c and c:FindFirstChildOfClass("Humanoid")
+	if h and hum and hum.Health > 0 then
+		return h
+	end
+	return nil
+end
+
+local function cameraOf(p)
+	local g = gaze[p]
+	if g and os.clock() - g.t < 1.5 then
+		return g.cf.Position, g.cf.LookVector
+	end
+	local h = hrpOf(p)
+	if h then
+		return h.Position + Vector3.new(0, 1.5, 0), h.CFrame.LookVector
+	end
+	return nil
+end
+
+-- ¿ve el jugador p el punto (cabeza o cuerpo) directamente y sin obstáculos?
+local function sees(p, points, visible)
+	if not visible then
+		return false, 180
+	end
+	local pos, look = cameraOf(p)
+	if not pos then
+		return false, 180
+	end
+	local best = 180
+	for _, pt in ipairs(points) do
+		local dist = (pt - pos).Magnitude
+		local ang = Brain.AngleTo(pos, look, pt)
+		best = math.min(best, ang)
+		-- de cerca el dragón ocupa más pantalla: el cono crece con su tamaño aparente
+		local cone = math.max(brain.cfg.LookAngle, math.deg(math.atan2(6 * scale, dist)))
+		if dist < MAX_SIGHT and ang < cone then
+			local hit = workspace:Raycast(pos, pt - pos, rayParams)
+			if not hit or (hit.Position - pt).Magnitude < 2 then
+				return true, best
+			end
+		end
+	end
+	return false, best
+end
+
+local function groundAt(x, z, fromY)
+	local hit = workspace:Raycast(Vector3.new(x, fromY + 60, z), Vector3.new(0, -260, 0), rayParams)
+	if hit and hit.Normal.Y > 0.6 and hit.Material ~= Enum.Material.Water then
+		return hit.Position
+	end
+	return nil
+end
+
+local function coverAt(pos)
+	local op = OverlapParams.new()
+	op.FilterType = Enum.RaycastFilterType.Exclude
+	op.FilterDescendantsInstances = rayParams.FilterDescendantsInstances
+	local n = 0
+	for _, part in ipairs(workspace:GetPartBoundsInRadius(pos, 12 * scale, op)) do
+		if part ~= workspace.Terrain and part.Size.Y > 4 then
+			n += 1
+		end
+	end
+	return n
+end
+
+local target: Player? = nil
+local lastTargeted = {}
+local function pickTarget()
+	local best, bestScore = nil, -math.huge
+	for _, p in ipairs(Players:GetPlayers()) do
+		if hrpOf(p) then
+			local score = math.random() + (os.clock() - (lastTargeted[p] or -1e6)) / 600
+			if score > bestScore then
+				best, bestScore = p, score
+			end
+		end
+	end
+	target = best
+	if best then
+		lastTargeted[best] = os.clock()
+	end
+	live:SetAttribute("TargetUserId", best and best.UserId or 0)
+end
+
+local visible = false
+local function headPoint(cf)
+	return cf:PointToWorldSpace(HEAD_OFFSET), cf:PointToWorldSpace(BODY_OFFSET)
+end
+
+local function place(kind: string): boolean
+	if not target then
+		return false
+	end
+	local h = hrpOf(target)
+	if not h then
+		return false
+	end
+	local tpos = h.Position
+	local camPos, camLook = cameraOf(target)
+	local candidates = {}
+	local perches = CollectionService:GetTagged("ShadowPerch")
+	local pf = workspace:FindFirstChild("ShadowPerches")
+	if pf then
+		for _, d in ipairs(pf:GetDescendants()) do
+			if d:IsA("BasePart") then
+				table.insert(perches, d)
+			end
+		end
+	end
+	for _, part in ipairs(perches) do
+		local g = groundAt(part.Position.X, part.Position.Z, part.Position.Y)
+		if g then
+			table.insert(candidates, { pos = g, cover = 3 })
+		end
+	end
+	local here = root.Position
+	for _ = 1, 28 do
+		local a = math.random() * math.pi * 2
+		local d = kind == "far" and (60 + math.random() * 110) or (brain.cfg.VanishDistance + 8 + math.random() * 40)
+		local c = tpos + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+		if kind == "closer" then -- más cerca, pero desde el lado donde ya estaba
+			local dir = (here - tpos) * Vector3.new(1, 0, 1)
+			if dir.Magnitude > 1 then
+				c = tpos + (dir.Unit:Lerp(Vector3.new(math.cos(a), 0, math.sin(a)), 0.35)).Unit * d
+			end
+		end
+		local g = groundAt(c.X, c.Z, tpos.Y)
+		if g then
+			table.insert(candidates, { pos = g })
+		end
+	end
+	local best, bestScore = nil, 0
+	for _, c in ipairs(candidates) do
+		local cf = CFrame.lookAt(c.pos, Vector3.new(tpos.X, c.pos.Y, tpos.Z))
+		local hp, bp = headPoint(cf)
+		local inView = false
+		for _, p in ipairs(Players:GetPlayers()) do
+			if sees(p, { hp, bp }, true) then
+				inView = true
+				break
+			end
+		end
+		local dist = (c.pos - tpos).Magnitude
+		local ang = camPos and Brain.AngleTo(camPos, camLook, hp) or 90
+		local s = Brain.ScoreSpot(kind, dist, ang, inView, c.cover or coverAt(c.pos), brain.cfg)
+		if s > bestScore then
+			best, bestScore = cf, s
+		end
+	end
+	if not best then
+		return false
+	end
+	root = best
+	live:SetAttribute("Root", root)
+	return true
+end
+
+local stamp = 0
+local moveSpeed = 0
+local function apply(cmds)
+	for _, c in ipairs(cmds) do
+		local k = c[1]
+		stamp += 1
+		if DEBUG then
+			print("[ShadowStalker]", brain.state, k, tostring(c[2]), tostring(c[3]))
+		end
+		if k == "newTarget" then
+			pickTarget()
+		elseif k == "place" then
+			if not place(c[2]) then
+				brain:PlaceFailed()
+				visible = false
+				live:SetAttribute("Visible", false)
+				return
+			end
+		elseif k == "appear" or k == "vanish" then
+			visible = k == "appear"
+			live:SetAttribute("FadeTime", c[2])
+			live:SetAttribute("Visible", visible)
+			live:SetAttribute("FadeStamp", stamp)
+			if sounds.Breath then
+				sounds.Breath.Playing = visible
+			end
+		elseif k == "anim" then
+			live:SetAttribute("Anim", c[2])
+			live:SetAttribute("AnimFade", c[3] or 0.3)
+			live:SetAttribute("AnimStamp", stamp)
+		elseif k == "freeze" then
+			live:SetAttribute("Frozen", c[2])
+		elseif k == "pose" then
+			live:SetAttribute("Pose", c[2])
+			live:SetAttribute("PoseStamp", stamp)
+		elseif k == "move" then
+			moveSpeed = c[2] * scale
+		elseif k == "tilt" then
+			live:SetAttribute("Tilt", c[2])
+		elseif k == "silence" then
+			live:SetAttribute("SilenceUntil", workspace:GetServerTimeNow() + c[2])
+			if sounds.Breath then
+				sounds.Breath.Playing = false
+				task.delay(c[2], function()
+					sounds.Breath.Playing = visible
+				end)
+			end
+		elseif k == "sound" then
+			local s = sounds[c[2]]
+			if s then
+				s.PlaybackSpeed = 0.9 + math.random() * 0.2
+				s:Play()
+			end
+		end
+	end
+end
+
+-- movimiento: hacia el objetivo, girando con un límite y pegado al suelo
+local groundTimer = 0
+RunService.Heartbeat:Connect(function(dt)
+	if moveSpeed <= 0 or not target then
+		return
+	end
+	local h = hrpOf(target)
+	if not h then
+		return
+	end
+	local pos = root.Position
+	local flat = (h.Position - pos) * Vector3.new(1, 0, 1)
+	if flat.Magnitude < 1 then
+		return
+	end
+	local cur = root.LookVector * Vector3.new(1, 0, 1)
+	local maxTurn = math.rad(moveSpeed > 15 * scale and 220 or 70) * dt
+	local ang = math.atan2(cur:Cross(flat.Unit).Y, cur:Dot(flat.Unit))
+	local yaw = math.clamp(ang, -maxTurn, maxTurn)
+	local dir = (CFrame.Angles(0, yaw, 0) * cur).Unit
+	pos += dir * moveSpeed * dt
+	groundTimer -= dt
+	if groundTimer <= 0 then
+		groundTimer = 0.2
+		local g = groundAt(pos.X, pos.Z, pos.Y)
+		if g then
+			pos = Vector3.new(pos.X, g.Y, pos.Z)
+		end
+	end
+	root = CFrame.lookAt(pos, pos + dir)
+end)
+
+-- publicar la posición 10 veces por segundo (solo si cambió) y pensar
+local TICK = 0.1
+local acc, lastPublished = 0, root
+RunService.Heartbeat:Connect(function(dt)
+	acc += dt
+	if acc < TICK then
+		return
+	end
+	local step = acc
+	acc = 0
+	if root ~= lastPublished then
+		lastPublished = root
+		live:SetAttribute("Root", root)
+	end
+	refreshFilter()
+	if target and (not target.Parent or not hrpOf(target)) then
+		target = nil
+	end
+	local P = { hasTarget = target ~= nil, dist = math.huge, targetAngle = 180, targetSees = false, anySees = false }
+	local hp, bp = headPoint(root)
+	if target then
+		P.dist = (hrpOf(target).Position - root.Position).Magnitude
+	end
+	for _, p in ipairs(Players:GetPlayers()) do
+		local s, ang = sees(p, { hp, bp }, visible)
+		if s then
+			P.anySees = true
+		end
+		if p == target then
+			P.targetSees, P.targetAngle = s, ang
+		end
+	end
+	if not target and brain.state == "Absent" then
+		P.hasTarget = #Players:GetPlayers() > 0 -- en ausencia basta con que haya alguien; newTarget lo elige
+	end
+	apply(brain:Update(step, P))
+	live:SetAttribute("State", brain.state)
+end)
+]=======],
+	Client = [=======[
+--[[
+	ShadowClient (LocalScript) · StarterPlayer.StarterPlayerScripts.ShadowClient
+
+	Parte visual y sonora del Dragón Sombrío en cada jugador. El servidor (ShadowStalker) decide;
+	aquí se anima el rig, se suaviza el movimiento, se hacen los fundidos y suena el ambiente.
+
+	  · envía el CFrame de la cámara 5 veces por segundo (para saber si lo miras)
+	  · reproduce la animación que indica el servidor; si está "Frozen", congela la pose tal como está
+	  · la cabeza te sigue despacio (cada jugador siente que lo mira a él) y se ladea según "Tilt"
+	  · aparición / desaparición gradual: los ojos se encienden antes que el cuerpo y se apagan después
+	  · rendimiento: invisible = animador en pausa; lejos = menos actualizaciones por segundo
+	  · sonido: crujidos cerca, ambiente difícil de localizar y silencios repentinos
+	  · visión nocturna de prueba con la tecla N (solo si Settings.ProvideNightVision = true)
+]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+
+local Dragons = ReplicatedStorage:WaitForChild("Dragons")
+local DragonAnimator = require(Dragons:WaitForChild("DragonAnimator"))
+local folder = Dragons:WaitForChild("ShadowDragon")
+local animations = require(folder:WaitForChild("Animations"))
+local settings = folder:WaitForChild("Settings")
+local gazeRemote = folder:WaitForChild("ShadowGaze")
+local ambientFolder = folder:FindFirstChild("AmbientSounds")
+local player = Players.LocalPlayer
+
+local LOOK = { Head = "Head", Neck = "Neck2", NeckShare = 0.45, MaxYaw = 85, MaxPitch = 35, RestPitch = -5, Speed = 1.1 }
+
+-- mirada de la cámara al servidor (UnreliableRemoteEvent: barato y sin cola)
+task.spawn(function()
+	while true do
+		local cam = workspace.CurrentCamera
+		if cam then
+			gazeRemote:FireServer(cam.CFrame)
+		end
+		task.wait(0.2)
+	end
+end)
+
+local live = workspace:WaitForChild("ShadowDragonLive") :: Model
+local scale = live:GetAttribute("RigScale") or 1
+local animator = DragonAnimator.new(live, animations)
+animator:Play(live:GetAttribute("Anim") or "Idle", 0)
+animator:SetLookTarget(function()
+	local cam = workspace.CurrentCamera
+	return cam and cam.CFrame.Position
+end, LOOK)
+animator:SetHeadTilt(0, 1.2)
+
+-- piezas: mallas (fundido), puntos de ojos (siguen al hueso Head) y dientes
+local meshes, eyes, follow = {}, {}, {}
+for _, d in ipairs(live:GetDescendants()) do
+	if d:IsA("MeshPart") then
+		table.insert(meshes, d)
+	end
+end
+for _, p in ipairs(live:GetChildren()) do
+	if p:IsA("BasePart") and p:GetAttribute("Offset") then
+		local bone = live:FindFirstChild(p:GetAttribute("Bone"), true)
+		if bone then
+			table.insert(follow, { p, bone, p:GetAttribute("Offset") })
+		end
+		if p:GetAttribute("Kind") == "eye" then
+			table.insert(eyes, p)
+		end
+	end
+end
+
+-- la sonrisa brilla en la oscuridad (Neon tenue); el color controla la intensidad
+local teeth = live:FindFirstChild("Teeth", true)
+if teeth and teeth:IsA("BasePart") and settings:GetAttribute("TeethGlow") ~= false then
+	teeth.Material = Enum.Material.Neon
+	teeth.Color = settings:GetAttribute("TeethGlowColor") or Color3.fromRGB(128, 124, 116)
+end
+
+-- visibilidad: 0 = invisible, 1 = visible
+local vis, visGoal, fadeTime = 0, 0, 1
+local function applyVisibility()
+	for _, m in ipairs(meshes) do
+		m.LocalTransparencyModifier = 1 - vis
+	end
+	local eyeVis = math.clamp(vis * 1.6, 0, 1) -- los ojos llegan antes y se van después
+	for _, e in ipairs(eyes) do
+		e.LocalTransparencyModifier = 1 - eyeVis
+		local light = e:FindFirstChildOfClass("PointLight")
+		if light then
+			light.Enabled = eyeVis > 0.02
+			light.Brightness = (e:GetAttribute("LightBrightness") or 1.2) * eyeVis
+		end
+	end
+end
+local function onVisible()
+	visGoal = live:GetAttribute("Visible") and 1 or 0
+	fadeTime = math.max(live:GetAttribute("FadeTime") or 1, 0.01)
+	if fadeTime <= 0.011 then
+		vis = visGoal
+	end
+end
+live:GetAttributeChangedSignal("FadeStamp"):Connect(onVisible)
+live:GetAttributeChangedSignal("Visible"):Connect(onVisible)
+onVisible()
+vis = visGoal
+applyVisibility()
+
+-- animación, inmovilidad y posturas
+local posing = false
+local function refreshPause()
+	animator.Paused = vis <= 0.001 or (live:GetAttribute("Frozen") and not posing)
+end
+live:GetAttributeChangedSignal("AnimStamp"):Connect(function()
+	animator:Play(live:GetAttribute("Anim") or "Idle", live:GetAttribute("AnimFade") or 0.3)
+end)
+live:GetAttributeChangedSignal("PoseStamp"):Connect(function()
+	local pose = live:GetAttribute("Pose")
+	if pose and pose ~= "" then
+		posing = true
+		animator:Play(pose, 0.3)
+		task.delay(0.4, function()
+			posing = false
+		end)
+	end
+end)
+live:GetAttributeChangedSignal("Tilt"):Connect(function()
+	animator:SetHeadTilt(live:GetAttribute("Tilt") or 0, 1.2)
+end)
+
+-- movimiento suave hacia el Root que publica el servidor
+local current = live:GetAttribute("Root") or live:GetPivot()
+live:PivotTo(current)
+
+-- sonidos
+local closeCreak = live:FindFirstChild("Creak", true)
+local ambient = {}
+if ambientFolder then
+	for _, s in ipairs(ambientFolder:GetChildren()) do
+		if s:IsA("Sound") and s.SoundId ~= "" then
+			table.insert(ambient, s)
+		end
+	end
+end
+local emitter = Instance.new("Part")
+emitter.Name = "ShadowAmbientEmitter"
+emitter.Anchored = true
+emitter.CanCollide = false
+emitter.CanQuery = false
+emitter.CanTouch = false
+emitter.Transparency = 1
+emitter.Size = Vector3.one
+emitter.Parent = workspace
+
+local silenced = false
+local savedVolumes = {}
+local function setSilence(on: boolean)
+	if on == silenced then
+		return
+	end
+	silenced = on
+	local groupName = settings:GetAttribute("AmbientGroupName") or "Ambient"
+	local groups = {}
+	for _, g in ipairs(SoundService:GetDescendants()) do
+		if g:IsA("SoundGroup") and g.Name == groupName then
+			table.insert(groups, g)
+		end
+	end
+	for _, g in ipairs(groups) do
+		if on then
+			savedVolumes[g] = g.Volume
+			TweenService:Create(g, TweenInfo.new(0.12), { Volume = 0 }):Play()
+		elseif savedVolumes[g] then
+			TweenService:Create(g, TweenInfo.new(2.5), { Volume = savedVolumes[g] }):Play()
+		end
+	end
+	for _, s in ipairs(emitter:GetChildren()) do
+		if s:IsA("Sound") then
+			s:Stop()
+		end
+	end
+end
+
+local nextAmbient = os.clock() + 20 + math.random() * 40
+local nextCreak = os.clock() + 5
+local function ambientTick(now, myPos, dragonDist)
+	if silenced or #ambient == 0 or not myPos then
+		return
+	end
+	if now >= nextAmbient then
+		-- más frecuente cuando el dragón está presente; siempre en un punto distinto alrededor
+		nextAmbient = now + (vis > 0.5 and (12 + math.random() * 25) or (35 + math.random() * 60))
+		local a = math.random() * math.pi * 2
+		local d = 25 + math.random() * 40
+		emitter.Position = myPos + Vector3.new(math.cos(a) * d, math.random() * 8 - 2, math.sin(a) * d)
+		local s = ambient[math.random(#ambient)]:Clone()
+		s.PlaybackSpeed = 0.85 + math.random() * 0.25
+		s.Parent = emitter
+		s:Play()
+		s.Ended:Once(function()
+			s:Destroy()
+		end)
+	end
+	if closeCreak and vis > 0.5 and dragonDist < 55 * scale and now >= nextCreak then
+		nextCreak = now + 4 + math.random() * 9
+		closeCreak.PlaybackSpeed = 0.8 + math.random() * 0.3
+		closeCreak:Play()
+	end
+end
+
+-- visión nocturna de prueba (el juego final puede usar la suya)
+if settings:GetAttribute("ProvideNightVision") then
+	local cc = Instance.new("ColorCorrectionEffect")
+	cc.Name = "ShadowNightVision"
+	cc.Enabled = false
+	cc.TintColor = Color3.fromRGB(150, 255, 160)
+	cc.Brightness = 0.18
+	cc.Contrast = 0.15
+	cc.Saturation = -0.6
+	cc.Parent = Lighting
+	local savedExposure = Lighting.ExposureCompensation
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.KeyCode == Enum.KeyCode.N then
+			cc.Enabled = not cc.Enabled
+			Lighting.ExposureCompensation = cc.Enabled and savedExposure + 2.2 or savedExposure
+		end
+	end)
+end
+
+RunService.RenderStepped:Connect(function(dt)
+	-- fundido
+	if vis ~= visGoal then
+		local stepV = dt / fadeTime
+		vis = visGoal > vis and math.min(visGoal, vis + stepV) or math.max(visGoal, vis - stepV)
+		applyVisibility()
+	end
+	-- posición
+	local goal = live:GetAttribute("Root") or current
+	if (goal.Position - current.Position).Magnitude > 25 * scale or vis <= 0.001 then
+		current = goal -- teletransporte o invisible: salto directo
+	else
+		current = current:Lerp(goal, 1 - math.exp(-dt * 8))
+	end
+	if vis > 0.001 then
+		live:PivotTo(current)
+		for _, e in ipairs(follow) do
+			e[1].CFrame = e[2].TransformedWorldCFrame * e[3]
+		end
+	end
+	-- rendimiento: menos actualizaciones lejos de la cámara
+	local cam = workspace.CurrentCamera
+	local camDist = cam and (cam.CFrame.Position - current.Position).Magnitude or 0
+	animator.UpdateInterval = camDist < 90 * scale and 0 or (camDist < 220 * scale and 1 / 20 or 1 / 10)
+	refreshPause()
+	-- sonido
+	local now = os.clock()
+	setSilence(workspace:GetServerTimeNow() < (live:GetAttribute("SilenceUntil") or 0))
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	ambientTick(now, hrp and hrp.Position, hrp and (hrp.Position - current.Position).Magnitude or math.huge)
+end)
+]=======],
 }
 
 local Selection = game:GetService("Selection")
@@ -2009,7 +3518,7 @@ for _, b in ipairs(RIG) do
 		table.insert(missing, b.name)
 	end
 end
-for _, name in ipairs({ "Body", "Teeth", "WingL", "WingR" }) do
+for _, name in ipairs({ "Body", "Skull", "Teeth", "WingL", "WingR" }) do
 	local m = source:FindFirstChild(name, true)
 	if m and m:IsA("MeshPart") then
 		meshes[name] = m
@@ -2097,7 +3606,7 @@ for _, name in ipairs({ "EyeL", "EyeR" }) do
 	local dot = Instance.new("Part")
 	dot.Name = name .. "Point"
 	dot.Shape = Enum.PartType.Ball
-	dot.Size = Vector3.one * 0.11 * scale
+	dot.Size = Vector3.one * 0.1 * scale
 	dot.Material = Enum.Material.Neon
 	dot.Color = Color3.fromRGB(255, 20, 12)
 	dot.Transparency = 0.4
@@ -2110,6 +3619,14 @@ for _, name in ipairs({ "EyeL", "EyeR" }) do
 	dot:SetAttribute("Bone", EYES.bone)
 	dot:SetAttribute("Kind", "eye")
 	dot:SetAttribute("Offset", head.WorldCFrame:ToObjectSpace(dot.CFrame))
+	dot:SetAttribute("LightBrightness", 1.4)
+	-- brillo rojo intenso pero controlado: luz diminuta que solo tiñe la cuenca y el ceño
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 30, 20)
+	light.Range = 2.4 * scale
+	light.Brightness = 1.4
+	light.Shadows = false
+	light.Parent = dot
 	dot.Parent = model
 end
 
@@ -2123,6 +3640,22 @@ if math.abs(DESIRED_SCALE / scale - 1) > 1e-3 then
 	end
 end
 model:SetAttribute("RigScale", DESIRED_SCALE)
+model:SetAttribute("Version", 2)
+-- puntos de referencia para el servidor (en el espacio del pivote): cabeza y joroba
+model:SetAttribute("HeadOffset", model.WorldPivot:PointToObjectSpace(bones.Head.WorldPosition))
+model:SetAttribute("BodyOffset", model.WorldPivot:PointToObjectSpace(bones.Chest.WorldPosition))
+-- sonidos que salen del cuerpo
+for _, name in ipairs({ "Breath", "Creak", "Shriek" }) do
+	local snd = Instance.new("Sound")
+	snd.Name = name
+	snd.SoundId = SOUND_IDS[name]
+	snd.Looped = name == "Breath"
+	snd.Volume = name == "Breath" and 0.5 or (name == "Shriek" and 0.9 or 0.6)
+	snd.RollOffMode = Enum.RollOffMode.InverseTapered
+	snd.RollOffMinDistance = 6 * DESIRED_SCALE
+	snd.RollOffMaxDistance = (name == "Shriek" and 260 or 120) * DESIRED_SCALE
+	snd.Parent = meshes.Body
+end
 model:SetAttribute("Species", "Umbrafex ridens")
 
 -- 4. Organización del proyecto
@@ -2154,7 +3687,13 @@ end
 local folder = dragons.ShadowDragon
 local prev = folder:FindFirstChild("ShadowDragon")
 if prev then
-	prev:Destroy()
+	local assetsFolder = ensure(ServerStorage, "DragonAssets")
+	if (prev:GetAttribute("Version") or 1) < 2 and not assetsFolder:FindFirstChild("ShadowDragon_v1") then
+		prev.Name = "ShadowDragon_v1" -- copia de seguridad de la versión original
+		prev.Parent = assetsFolder
+	else
+		prev:Destroy()
+	end
 end
 model.Parent = folder
 local settings = ensure(folder, "Settings", "Configuration")
@@ -2162,12 +3701,40 @@ for k, v in pairs({
 	DisplayName = "Dragón Sombrío", Species = "Umbrafex ridens", Epithet = "La Sonrisa en la Oscuridad",
 	WalkSpeed = 8, RunSpeed = 34, FlySpeed = 36, FlyHeight = 7, MaxHealth = 2200, AttackDamage = 70,
 	AttackRange = 16, EyePointColor = Color3.fromRGB(255, 20, 12), GrinGlows = true,
+	StalkerEnabled = true, Debug = false, ProvideNightVision = PROVIDE_NIGHT_VISION, TeethGlow = true,
+	AmbientGroupName = "Ambient", MaxSightDistance = 320,
+	-- ajustes del comportamiento (ver ShadowBrain.Defaults): distancias en studs, probabilidades por segundo
+	VanishDistance = 38, StalkSpeed = 5, ChaseSpeed = 34, ChaseChance = 0.22, ChaseCooldown = 240,
 }) do
 	settings:SetAttribute(k, v)
 end
 putScript(dragons, "DragonAnimator", "ModuleScript", SOURCES.DragonAnimator)
 putScript(folder, "Animations", "ModuleScript", SOURCES.Animations)
-putScript(ensure(StarterPlayer, "StarterPlayerScripts", "StarterPlayerScripts"), "ShadowShowcase", "LocalScript", SOURCES.Showcase)
+putScript(folder, "ShadowBrain", "ModuleScript", SOURCES.Brain)
+local sps = ensure(StarterPlayer, "StarterPlayerScripts", "StarterPlayerScripts")
+putScript(sps, "ShadowClient", "LocalScript", SOURCES.Client)
+putScript(game:GetService("ServerScriptService"), "ShadowStalker", "Script", SOURCES.Stalker)
+if INSTALL_SHOWCASE then
+	putScript(sps, "ShadowShowcase", "LocalScript", SOURCES.Showcase)
+elseif sps:FindFirstChild("ShadowShowcase") then
+	sps.ShadowShowcase:Destroy()
+end
+if not folder:FindFirstChild("ShadowGaze") then
+	local gaze = Instance.new("UnreliableRemoteEvent")
+	gaze.Name = "ShadowGaze"
+	gaze.Parent = folder
+end
+local amb = ensure(folder, "AmbientSounds")
+for _, name in ipairs({ "Whisper", "DistantBreath", "Crack" }) do
+	local snd = amb:FindFirstChild(name) or Instance.new("Sound")
+	snd.Name = name
+	snd.SoundId = SOUND_IDS[name]
+	snd.Volume = 0.35
+	snd.RollOffMode = Enum.RollOffMode.InverseTapered
+	snd.RollOffMinDistance = 10
+	snd.RollOffMaxDistance = 140
+	snd.Parent = amb
+end
 
 local assets = ensure(ServerStorage, "DragonAssets")
 local bak = assets:FindFirstChild("ShadowDragon_Rig")
@@ -2178,32 +3745,35 @@ local backup = model:Clone()
 backup.Name = "ShadowDragon_Rig"
 backup.Parent = assets
 
-local showcase = ensure(workspace, "DragonShowcase")
-local stage = showcase:FindFirstChild("Stage_Shadow")
-if not stage then
-	stage = Instance.new("Part")
-	stage.Name = "Stage_Shadow"
-	stage.Anchored = true
-	stage.Size = Vector3.new(100, 1, 100)
-	stage.CFrame = CFrame.new(0, 0.5, -300)
-	stage.Material = Enum.Material.Slate
-	stage.Color = Color3.fromRGB(22, 21, 24)
-	stage.Parent = showcase
+local statue
+if INSTALL_SHOWCASE then
+	local showcase = ensure(workspace, "DragonShowcase")
+	local stage = showcase:FindFirstChild("Stage_Shadow")
+	if not stage then
+		stage = Instance.new("Part")
+		stage.Name = "Stage_Shadow"
+		stage.Anchored = true
+		stage.Size = Vector3.new(100, 1, 100)
+		stage.CFrame = CFrame.new(0, 0.5, -300)
+		stage.Material = Enum.Material.Slate
+		stage.Color = Color3.fromRGB(22, 21, 24)
+		stage.Parent = showcase
+	end
+	statue = showcase:FindFirstChild("ShadowDragon_Preview")
+	if statue then
+		statue:Destroy()
+	end
+	statue = model:Clone()
+	statue.Name = "ShadowDragon_Preview"
+	statue:PivotTo(stage.CFrame * CFrame.new(0, stage.Size.Y / 2, 0) * CFrame.Angles(0, math.rad(180), 0))
+	statue.Parent = showcase
 end
-local statue = showcase:FindFirstChild("ShadowDragon_Preview")
-if statue then
-	statue:Destroy()
-end
-statue = model:Clone()
-statue.Name = "ShadowDragon_Preview"
-statue:PivotTo(stage.CFrame * CFrame.new(0, stage.Size.Y / 2, 0) * CFrame.Angles(0, math.rad(180), 0))
-statue.Parent = showcase
 
 if source.Parent and #source:GetChildren() == 0 then
 	source:Destroy()
 end
-Selection:Set({ statue })
+Selection:Set({ statue or folder })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Dragón Sombrío instalado")
 end)
-print("[Shadow] Listo: " .. #RIG .. " huesos, 4 mallas. Pulsa Play: noche cerrada, solo dos puntos rojos y una sonrisa de agujas te observan. Botones 1-9 y L para la luz.")
+print("[Shadow] Listo (v2): " .. #RIG .. " huesos, 5 mallas. Al pulsar Play el dragón aparecerá tras un rato, lejos y en la periferia; si lo miras se queda inmóvil." .. (PROVIDE_NIGHT_VISION and " Tecla N: visión nocturna de prueba." or ""))

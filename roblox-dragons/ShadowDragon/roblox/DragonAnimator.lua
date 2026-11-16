@@ -12,6 +12,12 @@
 		animator:SetLookTarget(player.Character.Head)   -- opcional: la cabeza sigue al objetivo
 		animator:Destroy()
 
+	Opciones (todas opcionales; sin tocarlas el comportamiento es el de siempre):
+		animator.Paused = true          -- congela la pose tal como está (no escribe nada: coste cero)
+		animator.UpdateInterval = 1/15  -- evalúa menos veces por segundo (lejos de la cámara)
+		animator.Speed = 0.5            -- velocidad de reproducción
+		animator:SetHeadTilt(35, 1.5)   -- inclina la cabeza 35° (alabeo) y llega a esa inclinación a ritmo 1.5
+
 	Formato de cada articulación (nombre = Part1 del Motor6D o nombre del Bone):
 		k = { {t, rx, ry, rz}, ... }   claves de rotación en grados
 		p = { {t, x, y, z}, ... }      claves de traslación en studs del modelo original (se multiplican por RigScale)
@@ -109,7 +115,21 @@ function DragonAnimator.new(model: Model, animations)
 	self.FadeElapsed = 0
 	self.Speed = 1
 	self.Finished = Instance.new("BindableEvent")
+	self.Paused = false
+	self.UpdateInterval = 0
+	self._acc = 0
 	self._conn = RunService.Stepped:Connect(function(_, dt)
+		if self.Paused then
+			return
+		end
+		local iv = self.UpdateInterval
+		if iv and iv > 0 then
+			self._acc += dt
+			if self._acc < iv then
+				return
+			end
+			dt, self._acc = self._acc, 0
+		end
 		self:Step(dt)
 	end)
 	return self
@@ -186,6 +206,7 @@ function DragonAnimator:Step(dt: number)
 			* CFrame.Angles(math.rad(v[1]), math.rad(v[2]), math.rad(v[3]))
 	end
 	self:_applyLook(dt, frames)
+	self:_applyTilt(dt, frames)
 	for jointName, m in pairs(frames) do
 		setJoint(self.Joints[jointName], m)
 	end
@@ -275,6 +296,28 @@ function DragonAnimator:_applyLook(dt: number, frames)
 	local share = o.NeckShare or 0.35
 	frames[neckName] = CFrame.Angles(0, self.LookYaw * share, 0) * CFrame.Angles(self.LookPitch * share, 0, 0) * (frames[neckName] or CFrame.identity)
 	frames[headName] = CFrame.Angles(0, self.LookYaw * (1 - share), 0) * CFrame.Angles(self.LookPitch * (1 - share), 0, 0) * (frames[headName] or CFrame.identity)
+end
+
+--[[
+	Inclinación de cabeza (alabeo alrededor del eje del hocico), sumada encima de la animación y
+	de la mirada. degrees = 0 la endereza; speed controla lo rápido que llega (por defecto 2).
+]]
+function DragonAnimator:SetHeadTilt(degrees: number, speed: number?, headName: string?)
+	self.TiltGoal = degrees
+	self.TiltSpeed = speed or 2
+	self.TiltHead = headName or self.TiltHead or "Head"
+	self.Tilt = self.Tilt or 0
+end
+
+function DragonAnimator:_applyTilt(dt: number, frames)
+	if self.TiltGoal == nil then
+		return
+	end
+	self.Tilt += (self.TiltGoal - self.Tilt) * math.min(1, dt * self.TiltSpeed)
+	local h = self.TiltHead
+	if self.Joints[h] then
+		frames[h] = CFrame.Angles(0, 0, math.rad(self.Tilt)) * (frames[h] or CFrame.identity)
+	end
 end
 
 function DragonAnimator:Destroy()

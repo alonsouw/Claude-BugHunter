@@ -57,7 +57,17 @@ def creature_material(name='Creature'):
     L.new(vor.outputs['Distance'], e1.inputs['Value'])
     e2 = N.new('ShaderNodeMapRange'); e2.inputs['From Max'].default_value = 0.1
     L.new(vor2.outputs['Distance'], e2.inputs['Value'])
-    mul = N.new('ShaderNodeMath'); mul.operation = 'MULTIPLY'; L.new(e1.outputs[0], mul.inputs[0]); L.new(e2.outputs[0], mul.inputs[1])
+    mul0 = N.new('ShaderNodeMath'); mul0.operation = 'MULTIPLY'; L.new(e1.outputs[0], mul0.inputs[0]); L.new(e2.outputs[0], mul0.inputs[1])
+    # v2: grietas finas de piel seca y arrugas alargadas encima de las escamas
+    vor3 = N.new('ShaderNodeTexVoronoi'); vor3.feature = 'DISTANCE_TO_EDGE'; vor3.inputs['Scale'].default_value = 60.0; vor3.inputs['Randomness'].default_value = 0.9
+    L.new(tc.outputs['Object'], vor3.inputs['Vector'])
+    e3 = N.new('ShaderNodeMapRange'); e3.inputs['From Max'].default_value = 0.05; e3.inputs['To Min'].default_value = 0.55
+    L.new(vor3.outputs['Distance'], e3.inputs['Value'])
+    wr = N.new('ShaderNodeMapping'); wr.inputs['Scale'].default_value = (1.0, 1.0, 9.0); L.new(tc.outputs['Object'], wr.inputs['Vector'])
+    wn = N.new('ShaderNodeTexNoise'); wn.inputs['Scale'].default_value = 7.0; wn.inputs['Detail'].default_value = 4; L.new(wr.outputs['Vector'], wn.inputs['Vector'])
+    e4 = N.new('ShaderNodeMapRange'); e4.inputs['To Min'].default_value = 0.8; L.new(wn.outputs['Fac'], e4.inputs['Value'])
+    mul1 = N.new('ShaderNodeMath'); mul1.operation = 'MULTIPLY'; L.new(mul0.outputs[0], mul1.inputs[0]); L.new(e3.outputs[0], mul1.inputs[1])
+    mul = N.new('ShaderNodeMath'); mul.operation = 'MULTIPLY'; L.new(mul1.outputs[0], mul.inputs[0]); L.new(e4.outputs[0], mul.inputs[1])
     scale_mask = N.new('ShaderNodeMath'); scale_mask.operation = 'MULTIPLY'; L.new(mul.outputs[0], scale_mask.inputs[0]); L.new(scaly.outputs['Fac'], scale_mask.inputs[1])
     inv = N.new('ShaderNodeMath'); inv.operation = 'SUBTRACT'; inv.inputs[0].default_value = 1.0; L.new(scaly.outputs['Fac'], inv.inputs[1])
     height = N.new('ShaderNodeMath'); height.operation = 'ADD'; L.new(scale_mask.outputs[0], height.inputs[0]); L.new(inv.outputs[0], height.inputs[1])
@@ -67,7 +77,7 @@ def creature_material(name='Creature'):
     ramp = N.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].color = (0.35, 0.33, 0.33, 1); ramp.color_ramp.elements[1].color = (1.15, 1.1, 1.1, 1)
     L.new(height.outputs[0], ramp.inputs['Fac']); L.new(ramp.outputs['Color'], dark.inputs[7]); dark.inputs['Factor'].default_value = 1.0
     tint = N.new('ShaderNodeMix'); tint.data_type = 'RGBA'; tint.blend_type = 'MIX'
-    L.new(dark.outputs[2], tint.inputs[6]); tint.inputs[7].default_value = (0.09, 0.012, 0.016, 1)
+    L.new(dark.outputs[2], tint.inputs[6]); tint.inputs[7].default_value = (0.075, 0.03, 0.065, 1)   # v2: moratón morado
     nr = N.new('ShaderNodeMapRange'); nr.inputs['From Min'].default_value = 0.55; nr.inputs['From Max'].default_value = 0.8; nr.inputs['To Max'].default_value = 0.6
     L.new(noise.outputs['Fac'], nr.inputs['Value'])
     nmask = N.new('ShaderNodeMath'); nmask.operation = 'MULTIPLY'; L.new(nr.outputs[0], nmask.inputs[0]); L.new(scaly.outputs['Fac'], nmask.inputs[1])

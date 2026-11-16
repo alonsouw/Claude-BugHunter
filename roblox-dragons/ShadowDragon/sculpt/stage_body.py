@@ -27,7 +27,7 @@ import json
 head_pts = HEAD.build(g, BODY.HEAD_XF, np.random.default_rng(7))
 json.dump(head_pts, open(os.path.join(out, 'head_points.json'), 'w'))
 print('gore aplicado', round(time.time() - t0, 1), 's')
-g.noise(0.025, 1.8, mask_mats=('needle', 'lip', 'horn', 'claw', 'socket', 'rag'))
+g.noise(0.025, 1.8, mask_mats=('needle', 'lip', 'horn', 'claw', 'socket', 'rag', 'vein', 'scar'))
 bv, bf, bmat, bpart = g.mesh()
 print('cuerpo', len(bf), 'triángulos', round(time.time() - t0, 1), 's'); del g
 from sdf import open_edges

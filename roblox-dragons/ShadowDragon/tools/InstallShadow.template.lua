@@ -5,27 +5,48 @@
 	Pasos:
 	  1. Studio > pestaña Avatar (o Home) > Import 3D > ShadowDragon.fbx.
 	     En el importador: Rig General > Rig Type = "Custom" (malla con huesos). No combines las mallas.
-	     Pulsa Import. Aparece el modelo en Workspace con las mallas Body, Teeth, WingL y WingR y sus Bones.
+	     Pulsa Import. Aparece el modelo en Workspace con las mallas Body, Skull, Teeth, WingL y WingR y sus Bones.
 	  2. Selecciona ese modelo en el Explorer.
 	  3. View > Command Bar. Pega TODO este archivo y pulsa Enter.
+
+	Versión 2 (remaster): cabeza en malla propia (Skull), dientes irregulares, ojos con luz roja controlada,
+	animaciones nuevas y comportamiento de terror psicológico en el servidor: un solo dragón para todos.
+	Si ya había un Dragón Sombrío v1 instalado, se guarda como ServerStorage.DragonAssets.ShadowDragon_v1.
 
 	Resultado:
 	  ReplicatedStorage.Dragons.ShadowDragon          (modelo con huesos, Settings, Animations)
 	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación por datos, Motor6D o Bones)
 	  ServerStorage.DragonAssets.ShadowDragon_Rig     (copia de seguridad)
 	  Workspace.DragonShowcase.Stage_Shadow           (escenario + estatua de vista previa)
-	  StarterPlayer.StarterPlayerScripts.ShadowShowcase (vitrina nocturna, botones 1-9)
+	  ReplicatedStorage.Dragons.ShadowDragon.ShadowBrain (lógica del comportamiento)
+	  ServerScriptService.ShadowStalker                  (el dragón para todos: decide dónde está y qué hace)
+	  StarterPlayer.StarterPlayerScripts.ShadowClient    (anima, fundidos, ojos, ambiente y silencios)
+	  StarterPlayer.StarterPlayerScripts.ShadowShowcase  (solo si INSTALL_SHOWCASE = true)
 ]]
 
 -- Opcional: escala final en studs por unidad del modelo (1 = unos 45 studs de largo y 19 de alto).
 local DESIRED_SCALE = 1
 -- Opcional: tras subir los PNG (Asset Manager), pega aquí sus ids para crear SurfaceAppearance PBR.
+-- La vitrina de prueba (noche, botones 1-9) choca con un juego real: actívala solo para revisar animaciones.
+local INSTALL_SHOWCASE = false
+-- Visión nocturna de prueba con la tecla N (desactívala si tu juego ya tiene la suya).
+local PROVIDE_NIGHT_VISION = true
+-- Sonidos: sube los .ogg de la carpeta sounds/ (Asset Manager) y pega aquí sus ids (rbxassetid://...).
+local SOUND_IDS = {
+	Breath = "",        -- respiración grave en bucle, sale del cuerpo del dragón
+	Creak = "",         -- crujido de articulaciones (cerca)
+	Shriek = "",        -- chillido del rugido
+	Whisper = "",       -- ambiente: susurro lejano, suena en puntos al azar alrededor del jugador
+	DistantBreath = "", -- ambiente: respiración lejana
+	Crack = "",         -- ambiente: rama que cruje
+}
 local MAPS = {
 	Body = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 	WingL = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 	WingR = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	Skull = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 }
--- Teeth no lleva texturas: es marfil liso y de noche la vitrina la pasa a Neon (la sonrisa brilla).
+-- Teeth no lleva texturas: es marfil liso y ShadowClient la pasa a Neon tenue (la sonrisa brilla en la oscuridad).
 
 local RIG = __RIG__
 local EYES = __EYES__
@@ -34,6 +55,9 @@ local SOURCES = {
 	DragonAnimator = [=======[__ANIMATOR__]=======],
 	Animations = [=======[__ANIMS__]=======],
 	Showcase = [=======[__SHOWCASE__]=======],
+	Brain = [=======[__BRAIN__]=======],
+	Stalker = [=======[__STALKER__]=======],
+	Client = [=======[__CLIENT__]=======],
 }
 
 local Selection = game:GetService("Selection")
@@ -83,7 +107,7 @@ for _, b in ipairs(RIG) do
 		table.insert(missing, b.name)
 	end
 end
-for _, name in ipairs({ "Body", "Teeth", "WingL", "WingR" }) do
+for _, name in ipairs({ "Body", "Skull", "Teeth", "WingL", "WingR" }) do
 	local m = source:FindFirstChild(name, true)
 	if m and m:IsA("MeshPart") then
 		meshes[name] = m
@@ -171,7 +195,7 @@ for _, name in ipairs({ "EyeL", "EyeR" }) do
 	local dot = Instance.new("Part")
 	dot.Name = name .. "Point"
 	dot.Shape = Enum.PartType.Ball
-	dot.Size = Vector3.one * 0.11 * scale
+	dot.Size = Vector3.one * 0.1 * scale
 	dot.Material = Enum.Material.Neon
 	dot.Color = Color3.fromRGB(255, 20, 12)
 	dot.Transparency = 0.4
@@ -184,6 +208,14 @@ for _, name in ipairs({ "EyeL", "EyeR" }) do
 	dot:SetAttribute("Bone", EYES.bone)
 	dot:SetAttribute("Kind", "eye")
 	dot:SetAttribute("Offset", head.WorldCFrame:ToObjectSpace(dot.CFrame))
+	dot:SetAttribute("LightBrightness", 1.4)
+	-- brillo rojo intenso pero controlado: luz diminuta que solo tiñe la cuenca y el ceño
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 30, 20)
+	light.Range = 2.4 * scale
+	light.Brightness = 1.4
+	light.Shadows = false
+	light.Parent = dot
 	dot.Parent = model
 end
 
@@ -197,6 +229,22 @@ if math.abs(DESIRED_SCALE / scale - 1) > 1e-3 then
 	end
 end
 model:SetAttribute("RigScale", DESIRED_SCALE)
+model:SetAttribute("Version", 2)
+-- puntos de referencia para el servidor (en el espacio del pivote): cabeza y joroba
+model:SetAttribute("HeadOffset", model.WorldPivot:PointToObjectSpace(bones.Head.WorldPosition))
+model:SetAttribute("BodyOffset", model.WorldPivot:PointToObjectSpace(bones.Chest.WorldPosition))
+-- sonidos que salen del cuerpo
+for _, name in ipairs({ "Breath", "Creak", "Shriek" }) do
+	local snd = Instance.new("Sound")
+	snd.Name = name
+	snd.SoundId = SOUND_IDS[name]
+	snd.Looped = name == "Breath"
+	snd.Volume = name == "Breath" and 0.5 or (name == "Shriek" and 0.9 or 0.6)
+	snd.RollOffMode = Enum.RollOffMode.InverseTapered
+	snd.RollOffMinDistance = 6 * DESIRED_SCALE
+	snd.RollOffMaxDistance = (name == "Shriek" and 260 or 120) * DESIRED_SCALE
+	snd.Parent = meshes.Body
+end
 model:SetAttribute("Species", "Umbrafex ridens")
 
 -- 4. Organización del proyecto
@@ -228,7 +276,13 @@ end
 local folder = dragons.ShadowDragon
 local prev = folder:FindFirstChild("ShadowDragon")
 if prev then
-	prev:Destroy()
+	local assetsFolder = ensure(ServerStorage, "DragonAssets")
+	if (prev:GetAttribute("Version") or 1) < 2 and not assetsFolder:FindFirstChild("ShadowDragon_v1") then
+		prev.Name = "ShadowDragon_v1" -- copia de seguridad de la versión original
+		prev.Parent = assetsFolder
+	else
+		prev:Destroy()
+	end
 end
 model.Parent = folder
 local settings = ensure(folder, "Settings", "Configuration")
@@ -236,12 +290,40 @@ for k, v in pairs({
 	DisplayName = "Dragón Sombrío", Species = "Umbrafex ridens", Epithet = "La Sonrisa en la Oscuridad",
 	WalkSpeed = 8, RunSpeed = 34, FlySpeed = 36, FlyHeight = 7, MaxHealth = 2200, AttackDamage = 70,
 	AttackRange = 16, EyePointColor = Color3.fromRGB(255, 20, 12), GrinGlows = true,
+	StalkerEnabled = true, Debug = false, ProvideNightVision = PROVIDE_NIGHT_VISION, TeethGlow = true,
+	AmbientGroupName = "Ambient", MaxSightDistance = 320,
+	-- ajustes del comportamiento (ver ShadowBrain.Defaults): distancias en studs, probabilidades por segundo
+	VanishDistance = 38, StalkSpeed = 5, ChaseSpeed = 34, ChaseChance = 0.22, ChaseCooldown = 240,
 }) do
 	settings:SetAttribute(k, v)
 end
 putScript(dragons, "DragonAnimator", "ModuleScript", SOURCES.DragonAnimator)
 putScript(folder, "Animations", "ModuleScript", SOURCES.Animations)
-putScript(ensure(StarterPlayer, "StarterPlayerScripts", "StarterPlayerScripts"), "ShadowShowcase", "LocalScript", SOURCES.Showcase)
+putScript(folder, "ShadowBrain", "ModuleScript", SOURCES.Brain)
+local sps = ensure(StarterPlayer, "StarterPlayerScripts", "StarterPlayerScripts")
+putScript(sps, "ShadowClient", "LocalScript", SOURCES.Client)
+putScript(game:GetService("ServerScriptService"), "ShadowStalker", "Script", SOURCES.Stalker)
+if INSTALL_SHOWCASE then
+	putScript(sps, "ShadowShowcase", "LocalScript", SOURCES.Showcase)
+elseif sps:FindFirstChild("ShadowShowcase") then
+	sps.ShadowShowcase:Destroy()
+end
+if not folder:FindFirstChild("ShadowGaze") then
+	local gaze = Instance.new("UnreliableRemoteEvent")
+	gaze.Name = "ShadowGaze"
+	gaze.Parent = folder
+end
+local amb = ensure(folder, "AmbientSounds")
+for _, name in ipairs({ "Whisper", "DistantBreath", "Crack" }) do
+	local snd = amb:FindFirstChild(name) or Instance.new("Sound")
+	snd.Name = name
+	snd.SoundId = SOUND_IDS[name]
+	snd.Volume = 0.35
+	snd.RollOffMode = Enum.RollOffMode.InverseTapered
+	snd.RollOffMinDistance = 10
+	snd.RollOffMaxDistance = 140
+	snd.Parent = amb
+end
 
 local assets = ensure(ServerStorage, "DragonAssets")
 local bak = assets:FindFirstChild("ShadowDragon_Rig")
@@ -252,32 +334,35 @@ local backup = model:Clone()
 backup.Name = "ShadowDragon_Rig"
 backup.Parent = assets
 
-local showcase = ensure(workspace, "DragonShowcase")
-local stage = showcase:FindFirstChild("Stage_Shadow")
-if not stage then
-	stage = Instance.new("Part")
-	stage.Name = "Stage_Shadow"
-	stage.Anchored = true
-	stage.Size = Vector3.new(100, 1, 100)
-	stage.CFrame = CFrame.new(0, 0.5, -300)
-	stage.Material = Enum.Material.Slate
-	stage.Color = Color3.fromRGB(22, 21, 24)
-	stage.Parent = showcase
+local statue
+if INSTALL_SHOWCASE then
+	local showcase = ensure(workspace, "DragonShowcase")
+	local stage = showcase:FindFirstChild("Stage_Shadow")
+	if not stage then
+		stage = Instance.new("Part")
+		stage.Name = "Stage_Shadow"
+		stage.Anchored = true
+		stage.Size = Vector3.new(100, 1, 100)
+		stage.CFrame = CFrame.new(0, 0.5, -300)
+		stage.Material = Enum.Material.Slate
+		stage.Color = Color3.fromRGB(22, 21, 24)
+		stage.Parent = showcase
+	end
+	statue = showcase:FindFirstChild("ShadowDragon_Preview")
+	if statue then
+		statue:Destroy()
+	end
+	statue = model:Clone()
+	statue.Name = "ShadowDragon_Preview"
+	statue:PivotTo(stage.CFrame * CFrame.new(0, stage.Size.Y / 2, 0) * CFrame.Angles(0, math.rad(180), 0))
+	statue.Parent = showcase
 end
-local statue = showcase:FindFirstChild("ShadowDragon_Preview")
-if statue then
-	statue:Destroy()
-end
-statue = model:Clone()
-statue.Name = "ShadowDragon_Preview"
-statue:PivotTo(stage.CFrame * CFrame.new(0, stage.Size.Y / 2, 0) * CFrame.Angles(0, math.rad(180), 0))
-statue.Parent = showcase
 
 if source.Parent and #source:GetChildren() == 0 then
 	source:Destroy()
 end
-Selection:Set({ statue })
+Selection:Set({ statue or folder })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Dragón Sombrío instalado")
 end)
-print("[Shadow] Listo: " .. #RIG .. " huesos, 4 mallas. Pulsa Play: noche cerrada, solo dos puntos rojos y una sonrisa de agujas te observan. Botones 1-9 y L para la luz.")
+print("[Shadow] Listo (v2): " .. #RIG .. " huesos, 5 mallas. Al pulsar Play el dragón aparecerá tras un rato, lejos y en la periferia; si lo miras se queda inmóvil." .. (PROVIDE_NIGHT_VISION and " Tecla N: visión nocturna de prueba." or ""))
