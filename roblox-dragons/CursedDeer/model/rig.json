@@ -6,7 +6,7 @@
   "DeerBody": 18500,
   "HorrorBody": 19495,
   "Antlers": 3998,
-  "Tentacles": 6997
+  "Tentacles": 13954
  },
  "bones": [
   {
@@ -884,7 +884,7 @@
    -2.94
   ],
   "max": [
-   0.714,
+   0.713,
    5.015,
    2.847
   ]
