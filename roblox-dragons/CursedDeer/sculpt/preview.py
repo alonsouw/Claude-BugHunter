@@ -138,16 +138,16 @@ def fur_material(name='Fur'):
     rough = N.new('ShaderNodeAttribute'); rough.attribute_name = 'rough'
     tc = N.new('ShaderNodeTexCoord')
     mp = N.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.0, 1.0, 14.0); L.new(tc.outputs['Object'], mp.inputs['Vector'])
-    hair = N.new('ShaderNodeTexNoise'); hair.inputs['Scale'].default_value = 60.0; hair.inputs['Detail'].default_value = 6; L.new(mp.outputs['Vector'], hair.inputs['Vector'])
+    hair = N.new('ShaderNodeTexNoise'); hair.inputs['Scale'].default_value = 90.0; hair.inputs['Detail'].default_value = 9; hair.inputs['Roughness'].default_value = 0.7; L.new(mp.outputs['Vector'], hair.inputs['Vector'])
     big = N.new('ShaderNodeTexNoise'); big.inputs['Scale'].default_value = 2.5; big.inputs['Detail'].default_value = 4; L.new(tc.outputs['Object'], big.inputs['Vector'])
-    var = N.new('ShaderNodeMapRange'); var.inputs['To Min'].default_value = 0.82; var.inputs['To Max'].default_value = 1.15; L.new(big.outputs['Fac'], var.inputs['Value'])
-    hv = N.new('ShaderNodeMapRange'); hv.inputs['To Min'].default_value = 0.88; hv.inputs['To Max'].default_value = 1.08; L.new(hair.outputs['Fac'], hv.inputs['Value'])
+    var = N.new('ShaderNodeMapRange'); var.inputs['To Min'].default_value = 0.78; var.inputs['To Max'].default_value = 1.18; L.new(big.outputs['Fac'], var.inputs['Value'])
+    hv = N.new('ShaderNodeMapRange'); hv.inputs['To Min'].default_value = 0.72; hv.inputs['To Max'].default_value = 1.12;   # puntas de pelo más oscuras L.new(hair.outputs['Fac'], hv.inputs['Value'])
     m1 = N.new('ShaderNodeMix'); m1.data_type = 'RGBA'; m1.blend_type = 'MULTIPLY'; m1.inputs['Factor'].default_value = 1.0
     L.new(col.outputs['Color'], m1.inputs[6]); L.new(var.outputs[0], m1.inputs[7])
     m2 = N.new('ShaderNodeMix'); m2.data_type = 'RGBA'; m2.blend_type = 'MULTIPLY'; m2.inputs['Factor'].default_value = 1.0
     L.new(m1.outputs[2], m2.inputs[6]); L.new(hv.outputs[0], m2.inputs[7]); L.new(m2.outputs[2], bsdf.inputs['Base Color'])
     L.new(rough.outputs['Fac'], bsdf.inputs['Roughness'])
-    bump = N.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.3; bump.inputs['Distance'].default_value = 0.005
+    bump = N.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.6; bump.inputs['Distance'].default_value = 0.008
     L.new(hair.outputs['Fac'], bump.inputs['Height']); L.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
     bsdf.inputs['Specular IOR Level'].default_value = 0.3
     return m

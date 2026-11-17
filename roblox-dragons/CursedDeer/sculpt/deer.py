@@ -179,7 +179,7 @@ def deer_colors(v, mat, MAT, MATERIALS):
     col += (white - col) * blob((0, -0.24, -0.93), (0.1, 0.06, 0.14))[:, None]                # barbilla
     for ex, ey, ez in EYE_L:
         d = np.sqrt(((L - np.array([ex * 1.05, ey, ez])) ** 2 / np.array([1.0, 1.0, 1.0])).sum(1))
-        col += (white - col) * (_ss(0.115, 0.095, d) * _ss(0.07, 0.085, d) * head * 0.7)[:, None]   # anillo fino alrededor del ojo
+        col += (white - col) * (_ss(0.11, 0.095, d) * _ss(0.072, 0.085, d) * head * 0.35)[:, None]   # anillo fino alrededor del ojo
     W = HEAD_XF.apply((0, -0.32, -0.15))                                                   # mancha de la garganta
     d = np.sqrt(((v - W) ** 2 / np.array([0.13, 0.15, 0.17]) ** 2).sum(1)); col += (white - col) * (_ss(1.0, 0.7, d) * 0.9)[:, None]
     under_tail = _ss(2.15, 2.3, z) * _ss(3.0, 2.85, y + (z - 2.2) * 0.3) * _ss(0.3, 0.15, np.abs(x)); col += (white - col) * under_tail[:, None]
@@ -278,6 +278,13 @@ def build_creature(g, rng):
         g.apply(horn(base, base + ax * L * 0.6 + rdir * 0.03, base + ax * L + rdir * 0.05, 0.022, n=4, r_tip=0.004), k=0.008, mat='needle', part=B)
     # cráneo más huesudo
     g.apply(Ellipsoid((0, 0.1, -0.3), (0.24, 0.23, 0.26)), xf=HEAD_XF, k=0.08, mat='pale', part=PART['Head'])
+    # placas rectangulares a lo largo del lomo (como las de los tentáculos)
+    for t in np.linspace(0.04, 0.96, 13):
+        seg = t * 3; i = min(int(seg), 2); f = seg - i; p = path[i] * (1 - f) + path[i + 1] * f
+        hit = surface(g, p + np.array([0, 1.0, 0]), p)
+        if hit is None: continue
+        tan = path[i + 1] - path[i]; size = 0.07 + 0.05 * np.sin(np.pi * t)
+        plate(g, hit + np.array([0, 0.025, 0]), tan, (size, 0.025, size * 0.8), 0.01, twist=rng.uniform(-0.15, 0.15), k=0.02, mat='plate', part=B)
     pts['chest_eyes'] = eye_pts
     return pts
 
@@ -319,18 +326,42 @@ def tentacle_curves(rng):
     return out
 
 
+def plate(g, center, tangent, half, rr, twist=0.0, **kw):
+    """Placa rectangular redondeada orientada a lo largo de la tangente (eje local Z), girada 'twist' sobre ella."""
+    t = np.asarray(tangent, float); t /= np.linalg.norm(t)
+    up = np.array([0, 1.0, 0]) if abs(t[1]) < 0.9 else np.array([1.0, 0, 0])
+    side = np.cross(up, t); side /= np.linalg.norm(side); up = np.cross(t, side)
+    c, s_ = np.cos(twist), np.sin(twist)
+    side, up = side * c + up * s_, -side * s_ + up * c
+    Rm = np.stack([side, up, t], 1)
+    g.apply(Box((0, 0, 0), half, round_=rr), xf=Xf(Rm, center, 1.0), **kw)
+
+
 def build_tentacles(g, rng):
+    """Tentáculos de placas: un núcleo de carne roja y, encima, placas rectangulares encadenadas que dejan
+    ver la carne entre ellas (como vértebras o escamas cuadradas), cada vez más pequeñas hacia la punta."""
     curves = tentacle_curves(rng)
     for n, (inner, curve) in enumerate(curves):
-        m = len(curve); radii = 0.016 + 0.08 * np.linspace(1, 0, m) ** 1.3
-        # parte por segmentos (1 = dentro del cráneo, 2-4 = tercios de la curva)
-        g.apply(RoundCone(inner, curve[0], 0.06, 0.075), k=0.02, mat='tendril', part=TENT_PART0 + 10 * n + 1)
-        for k in range(m - 1):
-            seg = 2 + min(2, int(3 * k / (m - 1)))
-            g.apply(RoundCone(curve[k], curve[k + 1], radii[k], radii[k + 1]), k=0.02, mat='tendril', part=TENT_PART0 + 10 * n + seg)
-        # ramitas laterales (como astas de carne)
+        m = len(curve); radii = 0.014 + 0.075 * np.linspace(1, 0, m) ** 1.3
+        part = lambda k: TENT_PART0 + 10 * n + 2 + min(2, int(3 * k / (m - 1)))
+        g.apply(RoundCone(inner, curve[0], 0.055, 0.07), k=0.02, mat='tendril', part=TENT_PART0 + 10 * n + 1)
+        for k in range(m - 1):   # núcleo de carne, más fino que las placas
+            g.apply(RoundCone(curve[k], curve[k + 1], radii[k] * 0.62, radii[k + 1] * 0.62), k=0.015, mat='tendril', part=part(k))
+        # placas a lo largo de la curva
+        L = np.r_[0, np.cumsum(np.linalg.norm(np.diff(curve, axis=0), axis=1))]
+        u, tw = 0.03, rng.uniform(0, np.pi)
+        while u < L[-1] - 0.04:
+            i = max(0, min(np.searchsorted(L, u) - 1, m - 2)); f = (u - L[i]) / (L[i + 1] - L[i])
+            c = curve[i] * (1 - f) + curve[i + 1] * f; t = curve[i + 1] - curve[i]
+            r = radii[i] * (1 - f) + radii[i + 1] * f
+            step = max(0.05, r * 1.5)
+            tw += rng.uniform(0.15, 0.45)                     # las placas giran poco a poco: aspecto retorcido
+            plate(g, c, t, (r * 1.05, r * 0.9, step * 0.36), min(r * 0.25, 0.012), twist=tw, k=0.006, mat='plate', part=part(i))
+            u += step
+        # ramitas laterales, también con placas
         for k in (m // 3, 2 * m // 3):
-            p = curve[k]; d = rng.normal(0, 1, 3); d /= np.linalg.norm(d)
-            seg = 2 + min(2, int(3 * k / (m - 1)))
-            g.apply(horn(p, p + d * 0.2, p + d * 0.35 + np.array([0, 0.15, 0]), 0.03, n=4, r_tip=0.006), k=0.015, mat='tendril', part=TENT_PART0 + 10 * n + seg)
+            p = curve[k]; d = rng.normal(0, 1, 3); d /= np.linalg.norm(d); d[1] = abs(d[1]) + 0.3; d /= np.linalg.norm(d)
+            g.apply(horn(p, p + d * 0.2, p + d * 0.35, 0.022, n=4, r_tip=0.006), k=0.012, mat='tendril', part=part(k))
+            for j, a in enumerate((0.08, 0.17, 0.26)):
+                plate(g, p + d * a, d, (0.028 - j * 0.006, 0.024 - j * 0.005, 0.03), 0.006, twist=j * 0.4, k=0.004, mat='plate', part=part(k))
     return curves

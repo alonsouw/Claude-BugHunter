@@ -48,11 +48,12 @@ MATERIALS = {  # id: (nombre, color sRGB, rugosidad, escamas 0-1)
     33: ('antler', (0.45, 0.37, 0.27), 0.6, 0.0),
     34: ('earin', (0.55, 0.4, 0.36), 0.7, 0.0),              # interior de la oreja
     # --- criatura ---
-    35: ('pale', (0.5, 0.5, 0.53), 0.65, 0.0),               # piel gris pálida y arrugada
-    36: ('sinew', (0.36, 0.06, 0.07), 0.4, 0.0),             # columna de carne roja del cuello
+    35: ('pale', (0.5, 0.5, 0.53), 0.65, 0.35),               # piel gris pálida y arrugada
+    36: ('sinew', (0.36, 0.06, 0.07), 0.4, 0.15),             # columna de carne roja del cuello
     37: ('sinewpale', (0.62, 0.44, 0.43), 0.45, 0.0),         # vetas claras de la carne
     38: ('gullet', (0.07, 0.05, 0.13), 0.3, 0.0),            # interior de la boca, morado oscuro
-    39: ('tendril', (0.16, 0.025, 0.035), 0.4, 0.0),            # tentáculos rojo oscuro
+    40: ('plate', (0.13, 0.05, 0.05), 0.32, 0.25),            # placas rectangulares de los tentáculos y el lomo
+    39: ('tendril', (0.3, 0.05, 0.06), 0.4, 0.1),            # tentáculos rojo oscuro
 }
 MAT = {v[0]: k for k, v in MATERIALS.items()}
 
