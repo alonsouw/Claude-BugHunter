@@ -10,7 +10,7 @@ Un ciervo de cola blanca en 3D. **Uno de cada siete ciervos del mapa está maldi
 | `DeerBody` | 18,5k | Ciervo: pelaje pardo con degradados (lomo más oscuro, vientre crema, garganta, anillo del ojo, banda del hocico y bajo la cola blancos), trufa negra, orejas grandes y pezuñas hendidas |
 | `Antlers` | 4k | Cuernas (comunes a las dos formas; con `AntlerChance` la mitad son hembras sin cuernas) |
 | `HorrorBody` | 19,5k | Criatura: piel gris pálida, costillas y vértebras marcadas, flancos hundidos, 5 ojos abiertos en el pecho y los hombros, cuello de cordones de carne roja, collar de dientes y cabeza que se parte por debajo con agujas e interior morado |
-| `Tentacles` | 7k | 7 tentáculos rojo oscuro que brotan del cráneo, cada uno con 4 huesos |
+| `Tentacles` | 14k | 7 tentáculos que brotan del cráneo: un núcleo de carne roja cubierto de placas rectangulares encadenadas (y placas iguales a lo largo del lomo), cada uno con 4 huesos |
 
 Las dos formas comparten **56 huesos**. La criatura no es otro modelo: es la misma anatomía, un poco más gruesa, que aparece por encima del ciervo durante la transformación. Después:
 - el cuello y las patas se estiran moviendo los huesos a lo largo de su eje;

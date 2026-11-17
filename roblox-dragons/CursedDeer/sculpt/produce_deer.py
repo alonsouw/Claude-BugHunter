@@ -128,7 +128,7 @@ for name, target, zone_ids, zone_share in (('DeerBody', 18500, [P['Head'], P['Ja
     decimate(lo, target, 'zone', invert=False)                                       # luego la cabeza/cuello
     for v in lo.vertex_groups: lo.vertex_groups.remove(v)
     lows[name] = lo
-for name, target in (('Antlers', 4000), ('Tentacles', 7000)):
+for name, target in (('Antlers', 4000), ('Tentacles', 14000)):
     lows[name] = duplicate(highs[name], name + '_low'); decimate(lows[name], target)
 for name, lo in lows.items():
     assert ntris(lo) <= 20000, name + ' supera 20k triángulos'
