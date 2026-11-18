@@ -121,13 +121,13 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
   <section>
     <h2>La transformación</h2>
     <p style="margin-bottom:14px">El mismo modelo y el mismo esqueleto, capturados del visor de esta página con la animación que usa Roblox:
-    se queda rígido, convulsiona, el cuello y las patas se estiran a tirones, brotan los tentáculos y la cabeza se parte por debajo.</p>
+    se queda rígido, convulsiona, la columna y las patas se estiran a tirones (el cuello desaparece y queda la columna vertebral al aire), brotan los tentáculos y la cabeza se parte por debajo.</p>
     <div class="strip5" id="strip">
       <figure><img src="design/renders/transform_0.jpg" alt="Ciervo normal mirando al jugador"><figcaption>0,0 s · un ciervo</figcaption></figure>
       <figure><img src="design/renders/transform_1.jpg" alt="El ciervo convulsiona con la cabeza torcida" loading="lazy"><figcaption>0,8 s · convulsiones</figcaption></figure>
-      <figure><img src="design/renders/transform_2.jpg" alt="La piel se vuelve gris, el cuello y las patas se estiran" loading="lazy"><figcaption>2,0 s · se estira</figcaption></figure>
+      <figure><img src="design/renders/transform_2.jpg" alt="La piel se vuelve gris, la columna y las patas se estiran" loading="lazy"><figcaption>2,0 s · se estira</figcaption></figure>
       <figure><img src="design/renders/transform_3.jpg" alt="La cabeza se parte y aparecen las hileras de agujas" loading="lazy"><figcaption>3,0 s · se abre</figcaption></figure>
-      <figure><img src="design/renders/transform_4.jpg" alt="La criatura completa: cuello de carne, tentáculos y patas de zancos" loading="lazy"><figcaption>4,6 s · la criatura</figcaption></figure>
+      <figure><img src="design/renders/transform_4.jpg" alt="La criatura completa: columna vertebral al aire, tentáculos y patas de zancos" loading="lazy"><figcaption>4,6 s · la criatura</figcaption></figure>
     </div>
   </section>
 
@@ -139,7 +139,7 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
     </div>
     <div class="pair">
       <figure><img src="design/reference_creature.jpg" alt="Referencia: criatura de cuello largo de carne roja, cuerpo gris con ojos y patas largas" loading="lazy"><figcaption><span class="tag ref">Referencia</span> · la criatura</figcaption></figure>
-      <figure><img src="design/renders/creature_full.jpg" alt="Modelo: la criatura con el cuello estirado, tentáculos y ojos en el pecho" loading="lazy"><figcaption><span class="tag ours">Modelo</span> · la criatura</figcaption></figure>
+      <figure><img src="design/renders/creature_full.jpg" alt="Modelo: la criatura sin cuello, con la columna vertebral al aire, tentáculos y ojos en el pecho" loading="lazy"><figcaption><span class="tag ours">Modelo</span> · la criatura</figcaption></figure>
     </div>
     <div class="pair">
       <figure><img src="design/renders/tentacles.jpg" alt="Tentáculos hechos de placas rectangulares encadenadas sobre un núcleo de carne roja, y placas a lo largo del lomo" loading="lazy"><figcaption><span class="tag ours">Modelo</span> · tentáculos de placas</figcaption></figure>
@@ -208,7 +208,7 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
       <h2>Lo que conviene revisar</h2>
       <ul class="list todo">
         <li>No se ha probado dentro de Roblox Studio: el skinning de cuatro mallas sobre un esqueleto, el instalador y la red con varios jugadores. La lógica de la manada sí, en simulación.</li>
-        <li>El cuello y las patas de la criatura se estiran moviendo huesos: la malla se alarga entre articulaciones. Es intencionado (aspecto antinatural), pero conviene verlo en Studio.</li>
+        <li>La columna del cuello y las patas de la criatura se estiran moviendo huesos: la malla se alarga entre articulaciones. Es intencionado (aspecto antinatural), pero conviene verlo en Studio.</li>
         <li>Sin pathfinding: se mueven en línea recta sobre el terreno; si algo les bloquea, se paran (huyendo, giran).</li>
       </ul>
     </div>

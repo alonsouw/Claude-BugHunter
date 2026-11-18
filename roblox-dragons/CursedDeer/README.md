@@ -9,11 +9,11 @@ Un ciervo de cola blanca en 3D. **Uno de cada siete ciervos del mapa está maldi
 |---|---|---|
 | `DeerBody` | 18,5k | Ciervo: pelaje pardo con degradados (lomo más oscuro, vientre crema, garganta, anillo del ojo, banda del hocico y bajo la cola blancos), trufa negra, orejas grandes y pezuñas hendidas |
 | `Antlers` | 4k | Cuernas (comunes a las dos formas; con `AntlerChance` la mitad son hembras sin cuernas) |
-| `HorrorBody` | 19,5k | Criatura: piel gris pálida, costillas y vértebras marcadas, flancos hundidos, 5 ojos abiertos en el pecho y los hombros, cuello de cordones de carne roja, collar de dientes y cabeza que se parte por debajo con agujas e interior morado |
+| `HorrorBody` | 19,5k | Criatura: piel gris pálida, costillas y vértebras marcadas, flancos hundidos, 5 ojos abiertos en el pecho y los hombros, **sin cuello**: la cabeza cuelga de la columna vertebral al aire (vértebras con apófisis, discos de carne, tendones y manchas de sangre) que sale de un hueco desgarrado en el pecho rodeado por un collar de dientes, con piel rota también bajo el cráneo; cabeza que se parte por debajo con agujas e interior morado |
 | `Tentacles` | 14k | 7 tentáculos que brotan del cráneo: un núcleo de carne roja cubierto de placas rectangulares encadenadas (y placas iguales a lo largo del lomo), cada uno con 4 huesos |
 
 Las dos formas comparten **56 huesos**. La criatura no es otro modelo: es la misma anatomía, un poco más gruesa, que aparece por encima del ciervo durante la transformación. Después:
-- el cuello y las patas se estiran moviendo los huesos a lo largo de su eje;
+- la columna del cuello y las patas se estiran moviendo los huesos a lo largo de su eje; cada vértebra va casi rígida con su hueso, así que al estirarse la columna se separa y se ven los tendones;
 - los tentáculos crecen desde dentro del cráneo.
 
 ## Animaciones (`src/deer_anims.js`)
@@ -22,7 +22,7 @@ Las dos formas comparten **56 huesos**. La criatura no es otro modelo: es la mis
   1. Se queda rígido.
   2. Convulsiona.
   3. A los 1,15 s aparece la piel de la criatura.
-  4. El cuello y las patas se estiran a tirones, con crujidos.
+  4. La columna y las patas se estiran a tirones, con crujidos.
   5. Brotan los tentáculos.
   6. La mandíbula cae hasta unos 135° y la cabeza mira al cielo.
 - **Criatura**: CreatureIdle, CreatureWalk, CreatureRun y Shriek.
