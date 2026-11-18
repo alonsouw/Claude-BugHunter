@@ -203,7 +203,8 @@ def weights_for(obj, parts, soft):
             e = 'EarL' if pid == P['EarL'] else 'EarR'
             for k, w in chain_weights(Q, [('Head', np.array(BONE['Head'][2]), np.array(BONE[e][2])), seg(e)], 0.3).items(): add(k, idx, w)
         elif pid == P['Neck']:
-            for k, w in chain_weights(Q, neck_chain, 0.5 if soft else 0.3).items(): add(k, idx, w)
+            # la criatura: cada vértebra va casi rígida con su hueso; al estirarse, la columna se separa y se ven los tendones
+            for k, w in chain_weights(Q, neck_chain, 0.18 if soft else 0.3).items(): add(k, idx, w)
         elif pid == P['Tail']:
             for k, w in chain_weights(Q, [seg('Hips'), seg('Tail')], 0.3).items(): add(k, idx, w)
         elif pid in (P['LegFL'], P['LegFR'], P['LegBL'], P['LegBR']):

@@ -5,8 +5,8 @@ Espacio Roblox: Y arriba, mira a -Z, izquierda = -X, studs. Suelo en y = 0. Cruz
   build_deer(g)      ciervo normal (pelaje pardo, vientre crema, garganta blanca, trufa negra)
   build_creature(g)  la misma anatomía convertida en la criatura de las referencias:
                        · piel gris pálida, costillas y vértebras marcadas, ojos abiertos en el pecho
-                       · cuello hecho de cordones de carne roja con vetas claras
-                       · collar de dientes donde el cuello entra en el cuerpo
+                       · sin cuello: solo la columna vertebral al aire, con manchas de sangre y tendones
+                       · bordes desgarrados en el pecho y bajo el cráneo; collar de dientes alrededor del hueco
                        · la cabeza se parte por debajo: mandíbula con hileras de agujas e interior morado
   build_antlers(g)   cuernas (malla aparte, comunes a las dos formas)
   build_tentacles(g) tentáculos rojo oscuro que brotan del cráneo (malla aparte, crecen al transformarse)
@@ -84,8 +84,9 @@ def build_base(g, skin, rng, creature=False):
         A(Ellipsoid((s * 0.3, 2.75, -0.72), (0.2, 0.5, 0.32)), k=0.28, part=B)    # escápula
         A(Ellipsoid((s * 0.31, 2.62, 1.38), (0.24, 0.58, 0.5)), k=0.28, part=B)   # anca
     # cuello (más estrecho de lado) y papada
-    A(Chain([N1, N2, N3, ATLAS], [0.4, 0.31, 0.25, 0.21], squash=(0.72, 1.0)), k=0.32, part=PART['Neck'])
-    A(Ellipsoid((0, 3.45, -1.6), (0.12, 0.3, 0.12)), k=0.25, part=PART['Neck'])
+    if not creature:   # la criatura no tiene cuello: solo la columna al aire (build_creature)
+        A(Chain([N1, N2, N3, ATLAS], [0.4, 0.31, 0.25, 0.21], squash=(0.72, 1.0)), k=0.32, part=PART['Neck'])
+        A(Ellipsoid((0, 3.45, -1.6), (0.12, 0.3, 0.12)), k=0.25, part=PART['Neck'])
     # cola corta y plana
     A(Chain([TAIL_BASE, (0, 3.02, 2.5), TAIL_TIP], [0.13, 0.13, 0.07], squash=(1.4, 0.55)), k=0.12, part=PART['Tail'])
     # patas finas con articulaciones marcadas y pezuña hendida
@@ -254,26 +255,71 @@ def build_creature(g, rng):
         g.apply(Ellipsoid(hit + d * 0.02, (0.105, 0.105, 0.105)), k=0.008, mat='white', part=B)   # globo
         g.apply(Ellipsoid(hit + d * 0.075, (0.065, 0.065, 0.065)), k=0.006, mat='eye', part=B)    # iris negro
         eye_pts.append(list(map(float, hit + d * 0.13)))
-    # cuello de cordones de carne retorcidos
+    # sin cuello: la columna vertebral al aire, desgarrada, con manchas de sangre
     neck = [np.array(p, float) for p in (N1, N2, N3, ATLAS)]
-    g.apply(Chain(neck, [0.44, 0.34, 0.28, 0.24], squash=(0.76, 1.02)), op='paint', mat='sinew')
-    for j in range(16):
-        ph = j / 16 * 2 * np.pi + rng.uniform(-0.2, 0.2); strand = []; rr = []; twist = rng.uniform(1.6, 3.2)
-        for t in np.linspace(0, 1, 9):
-            seg = t * 3; i = min(int(seg), 2); f = seg - i
-            c = neck[i] * (1 - f) + neck[i + 1] * f
-            r = [0.4, 0.31, 0.25, 0.21][i] * (1 - f) + [0.31, 0.25, 0.21, 0.18][i] * f
-            ax = neck[min(i + 1, 3)] - neck[i]; ax /= np.linalg.norm(ax)
-            side = np.cross([0, 1, 0], ax); side /= np.linalg.norm(side); up = np.cross(ax, side)
-            a = ph + t * twist + 0.25 * np.sin(t * 9 + j)
-            strand.append(c + (side * np.cos(a) * 0.74 + up * np.sin(a)) * r * 1.1); rr.append((0.08 + 0.06 * rng.random()) * (1.0 - 0.3 * t))
-        g.apply(Chain(strand, rr), k=0.025, mat='sinewpale' if j % 5 == 0 else ('tendril' if j % 2 else 'sinew'), part=PART['Neck'])
-    # collar de dientes donde el cuello entra en el cuerpo
-    c0 = np.array(N1) + np.array([0, 0.14, -0.1]); ax = np.array(N2) - np.array(N1); ax /= np.linalg.norm(ax)
+    NK = PART['Neck']
+    Ls = np.r_[0, np.cumsum([np.linalg.norm(neck[i + 1] - neck[i]) for i in range(3)])]
+    def at(u):
+        i = max(0, min(np.searchsorted(Ls, u) - 1, 2)); f = (u - Ls[i]) / (Ls[i + 1] - Ls[i])
+        ax = neck[i + 1] - neck[i]; ax /= np.linalg.norm(ax)
+        side = np.cross([0, 1, 0], ax); side /= np.linalg.norm(side); dors = np.cross(ax, side)
+        if dors[2] < 0: dors = -dors                                    # lado dorsal: hacia atrás y arriba
+        return neck[i] * (1 - f) + neck[i + 1] * f, ax, side, dors
+    nv = 8
+    us = np.linspace(0.06, Ls[-1] - 0.05, nv)
+    prev = None
+    for k, u in enumerate(us):
+        c, ax, side, dors = at(u); r = 0.1 - 0.035 * k / (nv - 1)
+        # cuerpo vertebral, apófisis espinosa y transversas
+        g.apply(RoundCone(c - ax * 0.07, c + ax * 0.07, r, r * 0.92), k=0.02, mat='bone', part=NK)
+        g.apply(Ellipsoid(c - ax * 0.075, (r * 1.15, r * 1.15, r * 1.15)), k=0.015, mat='bone', part=NK)
+        g.apply(horn(c + dors * r * 0.6, c + dors * (r + 0.1) + ax * 0.03, c + dors * (r + 0.2) - ax * 0.05, 0.035, n=4, r_tip=0.008), k=0.015, mat='bone', part=NK)
+        for sgn in (-1, 1):
+            plate(g, c + side * sgn * (r + 0.05) + dors * 0.02, ax, (0.05, 0.016, 0.035), 0.01, k=0.012, mat='bone', part=NK)
+        # disco y tendones entre vértebras (carne roja estirada)
+        if prev is not None:
+            g.apply(RoundCone(prev, c, r * 0.7, r * 0.7), k=0.02, mat='muscle', part=NK)
+        prev = c
+        # manchas de sangre sobre el hueso
+        for _ in range(3):
+            d = rng.normal(0, 1, 3); d /= np.linalg.norm(d)
+            g.apply(Ellipsoid(c + d * r * 0.9, np.full(3, 0.035 + 0.03 * rng.random())), op='paint', mat='blood')
+    for sgn in (-1, 1):   # tendones colgando a los lados, desgarrados en tiras
+        tpts = []
+        for u in np.linspace(0.05, Ls[-1] - 0.05, 7):
+            c, ax, side, dors = at(u); tpts.append(c + side * sgn * 0.11 - dors * 0.04 + rng.normal(0, 0.012, 3))
+        g.apply(Chain(tpts, [0.024] * len(tpts)), k=0.02, mat='muscle', part=NK)
+    for _ in range(5):    # jirones de carne que cuelgan de la columna
+        u = rng.uniform(0.2, Ls[-1] - 0.2); c, ax, side, dors = at(u)
+        L = rng.uniform(0.15, 0.35); s_ = rng.choice([-1, 1])
+        p0 = c + side * s_ * 0.09 - dors * 0.06
+        g.apply(Chain([p0, p0 + np.array([0, -L * 0.5, 0]) + side * s_ * 0.03, p0 + np.array([0, -L, 0]) + side * s_ * 0.05], [0.03, 0.025, 0.008], squash=(1.0, 0.4)), k=0.015, mat='wound', part=NK)
+
+    def torn_rim(center, ax, radius, part, flaps, flap_len):
+        """Borde desgarrado: carne viva en el hueco, colgajos de piel rota alrededor y sangre."""
+        side = np.cross([0, 1, 0], ax); side /= np.linalg.norm(side); up = np.cross(ax, side)
+        g.apply(Ellipsoid(center, np.full(3, radius * 0.85)), op='sub', k=0.06, carve_mat='muscle')
+        g.apply(Ellipsoid(center, np.full(3, radius * 1.25)), op='paint', mat='wound')
+        g.apply(Ellipsoid(center - ax * radius * 0.4, np.full(3, radius * 0.7)), op='paint', mat='muscle')
+        for a in np.linspace(0, 2 * np.pi, flaps, endpoint=False) + rng.uniform(0, 0.4):
+            rd = side * np.cos(a) + up * np.sin(a); base = center + rd * radius * 0.95
+            L = flap_len * rng.uniform(0.5, 1.2)
+            tip = base + ax * L * 0.6 + rd * L * 0.4 + np.array([0, -L * 0.5, 0])
+            g.apply(Chain([base, (base + tip) / 2 + rd * 0.03, tip], [0.05, 0.04, 0.01], squash=(1.0, 0.3)), k=0.02,
+                    mat='pale' if rng.random() < 0.6 else 'wound', part=part)
+        for _ in range(6):
+            d = rng.normal(0, 1, 3); d /= np.linalg.norm(d)
+            g.apply(Ellipsoid(center + d * radius * 1.1, np.full(3, 0.05 + 0.05 * rng.random())), op='paint', mat='blood')
+    ax0 = neck[1] - neck[0]; ax0 /= np.linalg.norm(ax0)
+    ax3 = neck[3] - neck[2]; ax3 /= np.linalg.norm(ax3)
+    torn_rim(neck[0] + ax0 * 0.08, ax0, 0.33, B, 16, 0.22)               # donde estaba el cuello, en el pecho
+    torn_rim(neck[3] - ax3 * 0.04, -ax3, 0.17, PART['Head'], 11, 0.14)  # bajo el cráneo
+    # collar de dientes alrededor del hueco del pecho, del que sale la columna
+    c0 = neck[0] + ax0 * 0.06; ax = ax0
     side = np.cross([0, 1, 0], ax); side /= np.linalg.norm(side); up = np.cross(ax, side)
-    g.apply(Chain([c0 + (side * np.cos(a) * 0.82 + up * np.sin(a)) * 0.46 for a in np.linspace(0, 2 * np.pi, 25)], [0.05] * 25), k=0.05, mat='gullet', part=B)
+    g.apply(Chain([c0 + (side * np.cos(a) + up * np.sin(a)) * 0.38 for a in np.linspace(0, 2 * np.pi, 25)], [0.045] * 25), k=0.05, mat='gullet', part=B)
     for a in np.linspace(0, 2 * np.pi, 30, endpoint=False):
-        rdir = side * np.cos(a) * 0.82 + up * np.sin(a); base = c0 + rdir * 0.46
+        rdir = side * np.cos(a) + up * np.sin(a); base = c0 + rdir * 0.38
         L = 0.12 + 0.08 * rng.random()
         g.apply(horn(base, base + ax * L * 0.6 + rdir * 0.03, base + ax * L + rdir * 0.05, 0.022, n=4, r_tip=0.004), k=0.008, mat='needle', part=B)
     # cráneo más huesudo
