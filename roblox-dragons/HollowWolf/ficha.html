@@ -1,0 +1,361 @@
+<title>Lobos huecos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de bestiario. La manada en la oscuridad abre la página; después la comparación con la referencia, el visor 3D del modelo de juego, el proceso, el rig y el paquete para Studio. Tema oscuro único, elegido a propósito. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #a3262e;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+.strip5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip5 figure img { aspect-ratio: 4 / 5; object-fit: cover; }
+@media (max-width: 760px) { .strip5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.anims h4 { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-data); font-weight: 500; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#bTransform { grid-column: 1 / -1; border-color: var(--blood); color: #fff; background: #2a1215; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Bestiario Umbral · Fauna del bosque nocturno · Manada</div>
+      <h1>Lobos huecos</h1>
+      <div class="latin">Canis inanis · salen al anochecer, cazan en grupo y no cruzan la luz</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">Lobo</span><span class="done">Alfa</span><span class="done">Huesos</span><span class="done">Animaciones</span><span class="done">Manada</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section class="pair">
+    <figure><img src="design/renders/pack_night.jpg" alt="La manada de noche: solo se ven los ojos amarillos y las siluetas"><figcaption>De noche, con los ojos encendidos</figcaption></figure>
+    <figure><img src="design/renders/wolf_head.jpg" alt="Cabeza del lobo: hocico largo gruñendo con colmillos, ojos amarillos hundidos y gorguera de mechones" loading="lazy"><figcaption>La cabeza</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>En vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D del lobo hueco"></canvas>
+        <div class="status" id="status"><b>●</b> Idle</div>
+        <div class="loading" id="loading">Cargando el modelo con huesos…</div>
+      </div>
+      <div class="controls">
+        <div><h3>Animación</h3><div class="anims" id="anims"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tDark" aria-pressed="false">Noche</button>
+          <button type="button" id="tAlpha" aria-pressed="false">Alfa</button>
+          <button type="button" id="tLook" aria-pressed="true">Te mira</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
+        <p class="note">Es el archivo exportado para Roblox: una malla de 19,5 mil triángulos con skinning y 30 huesos. Las animaciones son los mismos datos que usa el script de Studio.</p>
+      </div>
+    </div>
+    <div class="dims" id="dims" style="margin-top:14px"></div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Cómo es</h2>
+      <ul class="list">
+        <li><b>Hambre</b>: cintura de galgo, costillas, vértebras y caderas que se marcan bajo el pelo.</li>
+        <li><b>Sarna</b>: calvas con la piel rosácea al aire, cicatrices y una oreja mordida.</li>
+        <li><b>Pelaje</b>: gris pardo con la montura oscura en el lomo; gorguera de mechones, crin erizada y cola rala.</li>
+        <li><b>Hocico</b>: largo y siempre gruñendo, con los labios recogidos, encías al aire, colmillos y carniceras.</li>
+        <li><b>Ojos</b>: amarillos y hundidos bajo el ceño; en el juego son puntos Neon con una luz diminuta, así que de noche la manada se ve por los ojos antes que por el cuerpo.</li>
+        <li><b>El alfa</b>: el mismo lobo un 35 % más grande, con más vida y mordisco más fuerte, ojos más brillantes y voz más grave.</li>
+      </ul>
+    </div>
+    <figure><img src="design/renders/wolf_34.jpg" alt="Lobo hueco en tres cuartos" loading="lazy"><figcaption>Lobo hueco</figcaption></figure>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>La manada en el juego</h2>
+      <ul class="list">
+        <li><b>Para todos</b>: el servidor crea las manadas (2 de 4 lobos por defecto, un alfa en cada una) y todos los jugadores las ven igual.</li>
+        <li><b>De noche</b>: salen al anochecer, lejos de los jugadores, y al amanecer se retiran corriendo y desaparecen.</li>
+        <li><b>Caza</b>: deambulan siguiendo al alfa. Cuando un jugador se acerca a 70 studs, el alfa aúlla y toda la manada se pone a cazar.</li>
+        <li><b>Cerco</b>: lo rodean gruñendo, cada lobo por un flanco, girando a su alrededor. Se lanzan a morder por turnos (como mucho 2 a la vez) y vuelven al cerco.</li>
+        <li><b>Daño</b>: 8 por mordisco (15 el alfa). Vida: 60 (150 el alfa). Con poca vida huyen. Tus armas pueden herirlos con <code>DamageWolf</code> o bajando su atributo <code>Health</code>.</li>
+        <li><b>La luz</b>: ningún lobo entra en una zona <code>SafeLight</code> y no muerden a quien está dentro: rodean el borde de la luz. Si la luz los alcanza, huyen. Es el gancho para la hoguera.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Sonido</h2>
+      <div class="sounds">
+        <div><b>Howl</b><span class="note">El alfa al descubrirte (se oye lejos).</span><audio controls preload="none" src="sounds/Howl.ogg"></audio></div>
+        <div><b>Growl</b><span class="note">Gruñido en el cerco.</span><audio controls preload="none" src="sounds/Growl.ogg"></audio></div>
+        <div><b>Snarl</b><span class="note">Al lanzarse a morder.</span><audio controls preload="none" src="sounds/Snarl.ogg"></audio></div>
+        <div><b>Bite</b><span class="note">Mordisco que acierta.</span><audio controls preload="none" src="sounds/Bite.ogg"></audio></div>
+        <div><b>Yelp</b><span class="note">Herido o muerto.</span><audio controls preload="none" src="sounds/Yelp.ogg"></audio></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <ol class="steps">
+        <li><code>Import 3D</code> → <code>model/HollowWolf.fbx</code> → <code>Rig Type: Custom</code>.</li>
+        <li>Opcional: sube <code>sounds/*.ogg</code> y las texturas y pega sus ids en <code>SOUND_IDS</code> y <code>MAPS</code> del instalador.</li>
+        <li>Selecciona el modelo importado y pega <code>roblox/InstallWolves.lua</code> en la Command Bar.</li>
+        <li>Opcional: partes con la etiqueta <code>WolfSpawn</code> (por dónde salen) y <code>SafeLight</code> con un atributo <code>Radius</code> (zonas seguras).</li>
+        <li>Play de noche (Lighting.ClockTime ≥ 18,5), o pon <code>NIGHT_ONLY = false</code> para probar de día.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Lo que conviene revisar</h2>
+      <ul class="list todo">
+        <li>No se ha probado dentro de Roblox Studio: el skinning, el instalador y el combate con varios jugadores. La lógica de la manada sí, en simulación.</li>
+        <li>Sin pathfinding: se mueven en línea recta sobre el terreno y pueden atravesar obstáculos finos mientras rodean.</li>
+        <li>Para herirlos hace falta un arma de tu juego que llame a <code>DamageWolf</code>.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="src/wolf_anims.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, ANIMS = WOLF_ANIMS;
+const ORDER = ['Idle', 'Sniff', 'Walk', 'Trot', 'Run', 'Howl', 'Growl', 'Attack', 'Hurt', 'Death'];
+const LABEL = { Idle: 'Reposo', Sniff: 'Olfatear', Walk: 'Caminar', Trot: 'Trote', Run: 'Galope', Howl: 'Aullar', Growl: 'Gruñir', Attack: 'Morder', Hurt: 'Herido', Death: 'Morir' };
+const LOOK = { NeckShare: 0.45, MaxYaw: 75 * D2R, MaxPitch: 30 * D2R, RestPitch: -10 * D2R, Speed: 5 };
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); const BG = { day: new THREE.Color('#4d5249'), night: new THREE.Color('#04060a') };
+scene.background = BG.day.clone(); scene.fog = new THREE.Fog('#4d5249', 30, 90);
+const camera = new THREE.PerspectiveCamera(34, 1.6, 0.1, 300);
+const hemi = new THREE.HemisphereLight('#dfe6ee', '#3a3326', 1.0); scene.add(hemi);
+const key = new THREE.DirectionalLight('#fff1e2', 1.8); key.position.set(-8, 12, -7); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -8, right: 8, top: 8, bottom: -4, near: 1, far: 40 }); key.shadow.bias = -0.0008; scene.add(key);
+const rim = new THREE.DirectionalLight('#b4c4ff', 1.0); rim.position.set(7, 5, 9); scene.add(rim);
+const LIGHTS = [[hemi, 1.0, 0.06], [key, 1.8, 0.05], [rim, 1.0, 0.18]];
+const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), new THREE.MeshStandardMaterial({ color: '#23251e', roughness: 0.95 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+let model = null, bones = {}, rest = {}, dots = [], rig = null;
+const A = { cur: 'Idle', t: 0, fade: 0, fadeT: 0.25, from: {}, values: {}, yaw: 0, pitch: 0 };
+
+/* Carga del modelo sin URLs data: ni blob: (la página publicada las bloquea):
+   el glTF se convierte en memoria a GLB y las texturas se decodifican con createImageBitmap. */
+const b64bytes = s => { const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+async function loadModel(url) {
+  const js = await (await fetch(url)).json();
+  const buf = b64bytes(js.buffers[0].uri.split(',')[1]);
+  const imgs = (js.images || []).map(im => {
+    if (im.uri) return { bytes: b64bytes(im.uri.split(',')[1]), mime: im.uri.slice(5, im.uri.indexOf(';')) };
+    const bv = js.bufferViews[im.bufferView], o = bv.byteOffset || 0;   // imagen dentro del buffer
+    return { bytes: buf.slice(o, o + bv.byteLength), mime: im.mimeType };
+  });
+  const texImg = i => js.textures[i].source;
+  const maps = {};   // por material: índice de imagen de color, normal y rugosidad
+  for (const m of js.materials || []) {
+    const pbr = m.pbrMetallicRoughness || {}, e = {};
+    if (pbr.baseColorTexture) { e.map = texImg(pbr.baseColorTexture.index); delete pbr.baseColorTexture; }
+    if (pbr.metallicRoughnessTexture) { e.roughnessMap = texImg(pbr.metallicRoughnessTexture.index); delete pbr.metallicRoughnessTexture; }
+    if (m.normalTexture) { e.normalMap = texImg(m.normalTexture.index); delete m.normalTexture; }
+    maps[m.name] = e;
+  }
+  delete js.images; delete js.textures; delete js.samplers;
+  js.buffers = [{ byteLength: buf.length }];
+  const enc = new TextEncoder().encode(JSON.stringify(js)), jl = (enc.length + 3) & ~3, bl = (buf.length + 3) & ~3;
+  const glb = new Uint8Array(12 + 8 + jl + 8 + bl), dv = new DataView(glb.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, glb.length, true);
+  dv.setUint32(12, jl, true); dv.setUint32(16, 0x4E4F534A, true); glb.fill(0x20, 20, 20 + jl); glb.set(enc, 20);
+  dv.setUint32(20 + jl, bl, true); dv.setUint32(24 + jl, 0x004E4942, true); glb.set(buf, 28 + jl);
+  const gltf = await new Promise((res, rej) => new THREE.GLTFLoader().parse(glb.buffer, '', res, rej));
+  const bitmaps = await Promise.all(imgs.map(im => createImageBitmap(new Blob([im.bytes], { type: im.mime }))));
+  gltf.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const e = maps[o.material.name]; if (!e) return;
+    for (const [slot, idx] of Object.entries(e)) {
+      const t = new THREE.Texture(bitmaps[idx]); t.flipY = false; t.needsUpdate = true;
+      if (slot === 'map') t.encoding = THREE.sRGBEncoding;
+      o.material[slot] = t;
+    }
+    o.material.needsUpdate = true;
+  });
+  return gltf;
+}
+const glOK = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
+(glOK ? Promise.all([fetch('model/rig.json').then(r => r.json()), loadModel('model/HollowWolf.gltf.json')]) : Promise.reject(new Error('este navegador no tiene WebGL'))).then(([rj, gltf]) => {
+  rig = rj; model = gltf.scene; scene.add(model);
+  model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } if (o.isBone) bones[o.name] = o; });
+  model.updateMatrixWorld(true);
+  for (const [n, b] of Object.entries(bones)) { const w = b.getWorldQuaternion(new THREE.Quaternion()); rest[n] = { q0: b.quaternion.clone(), p0: b.position.clone(), w, wInv: w.clone().invert() }; }
+  // ojos: puntos que brillan, pegados al hueso de la cabeza (como en Roblox)
+  const head = bones.Head, inv = new THREE.Matrix4().copy(head.matrixWorld).invert();
+  const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,215,110,1)'); r.addColorStop(0.3, 'rgba(255,190,70,.35)'); r.addColorStop(1, 'rgba(255,170,40,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+  for (const e of rig.eyes) {
+    const p = new THREE.Vector3(...e).applyMatrix4(inv);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffcf5a' }));
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+    glow.scale.setScalar(0.45); dot.position.copy(p); glow.position.copy(p); head.add(dot); head.add(glow); dots.push(glow);
+  }
+  const b = rig.bounds, f = n => n.toFixed(1).replace('.', ',');
+  document.getElementById('dims').innerHTML = [['Longitud', b.max[2] - b.min[2]], ['Altura', b.max[1] - b.min[1]]].map(([k, v]) => `<div><div class="v">${f(v)}</div><div class="k">${k} (studs, lobo normal)</div></div>`).join('') +
+    `<div><div class="v">${Object.values(rig.meshes).reduce((a, x) => a + x, 0).toLocaleString('es')}</div><div class="k">Triángulos</div></div><div><div class="v">${rig.bones.length}</div><div class="k">Huesos</div></div><div><div class="v">×1,35</div><div class="k">Tamaño del alfa</div></div>`;
+  document.getElementById('loading').hidden = true; updateUI(); requestAnimationFrame(frame); window.__wolfReady = true;
+}).catch(e => { const l = document.getElementById('loading'); l.innerHTML = '<div>No se pudo cargar el visor 3D (' + e.message + ').</div>'; l.style.background = '#060608 url(design/renders/wolf_34.jpg) center/cover'; });
+
+const qa = new THREE.Quaternion(), va = new THREE.Vector3(), E = new THREE.Euler();
+function setBone(n, q, t) { const r = rest[n], b = bones[n]; qa.copy(r.wInv).multiply(q).multiply(r.w); b.quaternion.copy(r.q0).multiply(qa); va.copy(t).applyQuaternion(r.wInv).applyQuaternion(r.q0); b.position.copy(r.p0).add(va); }
+function play(name, fadeT = 0.25) { A.from = JSON.parse(JSON.stringify(A.values)); A.cur = name; A.t = 0; A.fade = 0; A.fadeT = fadeT; updateUI(); }
+function step(dt) {
+  const anim = ANIMS[A.cur]; A.t += dt; A.fade += dt;
+  if (!anim.loop && A.t >= anim.dur) { if (anim.next) { play(anim.next, 0.2); return step(0); } A.t = anim.dur; }
+  const t = anim.loop ? A.t % anim.dur : A.t, w = A.fadeT > 0 ? Math.min(A.fade / A.fadeT, 1) : 1, ws = w * w * (3 - 2 * w);
+  const frames = {};
+  for (const n in bones) {
+    if (!rest[n]) continue;
+    const j = anim.joints[n]; let v = [0, 0, 0, 0, 0, 0];
+    if (j) { const { r, p } = AnimEval.evalJoint(j, t, anim.dur, anim.loop); v = [...r, ...p]; }
+    const f = A.from[n]; if (f && ws < 1) v = v.map((x, i) => f[i] + (x - f[i]) * ws);
+    A.values[n] = v;
+    frames[n] = { q: new THREE.Quaternion().setFromEuler(E.set(v[0] * D2R, v[1] * D2R, v[2] * D2R, 'XYZ')), t: new THREE.Vector3(v[3], v[4], v[5]) };
+  }
+  let gy = 0, gp = 0;
+  if (lookOn && ['Trot', 'Growl', 'Attack', 'Howl', 'Hurt', 'Idle'].includes(A.cur)) {
+    const neck = bones.Neck2, head = bones.Head; neck.parent.updateMatrixWorld(true);
+    const base = neck.parent.getWorldQuaternion(new THREE.Quaternion()).multiply(rest.Neck2.q0).multiply(rest.Neck2.wInv);
+    head.updateMatrixWorld(true); const hp = head.getWorldPosition(new THREE.Vector3());
+    const p = camera.position.clone().sub(hp).applyQuaternion(base.invert());
+    gy = Math.max(-LOOK.MaxYaw, Math.min(LOOK.MaxYaw, Math.atan2(-p.x, -p.z)));
+    gp = Math.max(-LOOK.MaxPitch, Math.min(LOOK.MaxPitch, Math.atan2(p.y, Math.hypot(p.x, p.z)) - LOOK.RestPitch));
+  }
+  const k = Math.min(1, dt * LOOK.Speed); A.yaw += (gy - A.yaw) * k; A.pitch += (gp - A.pitch) * k;
+  for (const [n, share] of [['Neck2', LOOK.NeckShare], ['Head', 1 - LOOK.NeckShare]]) {
+    const look = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), A.yaw * share).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), A.pitch * share));
+    frames[n].q.premultiply(look); frames[n].t.applyQuaternion(look);
+  }
+  for (const n in frames) setBone(n, frames[n].q, frames[n].t);
+}
+let dark = false;
+function setDark(on) { dark = on; for (const [l, day, night] of LIGHTS) l.intensity = on ? night : day; scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(on ? BG.night : BG.day); dots.forEach(g => g.material.opacity = on ? 0.9 : 0); }
+const animBox = document.getElementById('anims');
+animBox.innerHTML = ORDER.map(n => `<button type="button" data-a="${n}" aria-pressed="false">${LABEL[n]}</button>`).join('');
+animBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b && model) play(b.dataset.a); });
+function updateUI() { animBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === A.cur)); document.getElementById('status').innerHTML = `<b>●</b> ${A.cur} · ${LABEL[A.cur]}`; }
+let spin = !reduce, lookOn = true, alpha = false;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tLook', () => lookOn, v => lookOn = v);
+tg('tDark', () => dark, v => setDark(v));
+tg('tAlpha', () => alpha, v => { alpha = v; if (model) model.scale.setScalar(v ? 1.35 : 1); });
+let yaw = -2.3, pitch = 0.12, dist = 11, drag = null;
+const target = new THREE.Vector3(0, 1.7, 0);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.05, Math.min(1.25, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(3, Math.min(30, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+window.__wolf = { play, step, setDark, setCam: (y, p, d, ty) => { yaw = y; pitch = p; dist = d; target.y = ty; spin = false; }, render: () => renderFrame(0) };
+let last = performance.now();
+function renderFrame(dt) {
+  if (spin) yaw += dt * 0.15;
+  const s = alpha ? 1.35 : 1, tgt = target.clone().multiplyScalar(s);
+  camera.position.set(tgt.x + Math.sin(yaw) * Math.cos(pitch) * dist * s, tgt.y + Math.sin(pitch) * dist * s, tgt.z + Math.cos(yaw) * Math.cos(pitch) * dist * s);
+  camera.lookAt(tgt); renderer.render(scene, camera);
+}
+function frame(now) { const dt = Math.min((now - last) / 1000, 0.05); last = now; if (!window.__wolfPaused) step(reduce && A.cur === 'Idle' ? 0 : dt); renderFrame(dt); requestAnimationFrame(frame); }
+})();
+</script>

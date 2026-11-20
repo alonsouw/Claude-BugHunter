@@ -1,0 +1,454 @@
+{
+ "name": "HollowWolf",
+ "units": "studs",
+ "forward": "-Z",
+ "meshes": {
+  "WolfBody": 19474
+ },
+ "bones": [
+  {
+   "name": "Root",
+   "parent": null,
+   "head": [
+    0.0,
+    0.0,
+    1.2
+   ],
+   "tail": [
+    0.0,
+    1.0,
+    1.2
+   ]
+  },
+  {
+   "name": "Hips",
+   "parent": "Root",
+   "head": [
+    0.0,
+    2.45,
+    1.2
+   ],
+   "tail": [
+    0.0,
+    2.38,
+    0.25
+   ]
+  },
+  {
+   "name": "Spine",
+   "parent": "Hips",
+   "head": [
+    0.0,
+    2.38,
+    0.25
+   ],
+   "tail": [
+    0.0,
+    2.56,
+    -0.62
+   ]
+  },
+  {
+   "name": "Chest",
+   "parent": "Spine",
+   "head": [
+    0.0,
+    2.56,
+    -0.62
+   ],
+   "tail": [
+    0.0,
+    2.3,
+    -0.98
+   ]
+  },
+  {
+   "name": "Neck1",
+   "parent": "Chest",
+   "head": [
+    0.0,
+    2.3,
+    -0.98
+   ],
+   "tail": [
+    0.0,
+    2.7,
+    -1.32
+   ]
+  },
+  {
+   "name": "Neck2",
+   "parent": "Neck1",
+   "head": [
+    0.0,
+    2.7,
+    -1.32
+   ],
+   "tail": [
+    0.0,
+    2.98,
+    -1.6
+   ]
+  },
+  {
+   "name": "Head",
+   "parent": "Neck2",
+   "head": [
+    0.0,
+    2.98,
+    -1.6
+   ],
+   "tail": [
+    0.0,
+    2.7042,
+    -2.604
+   ]
+  },
+  {
+   "name": "Jaw",
+   "parent": "Head",
+   "head": [
+    0.0,
+    2.83,
+    -1.8124
+   ],
+   "tail": [
+    0.0,
+    2.6133,
+    -2.4607
+   ]
+  },
+  {
+   "name": "EarL",
+   "parent": "Head",
+   "head": [
+    -0.13,
+    3.1241,
+    -1.7347
+   ],
+   "tail": [
+    -0.21,
+    3.4723,
+    -1.6896
+   ]
+  },
+  {
+   "name": "EarR",
+   "parent": "Head",
+   "head": [
+    0.13,
+    3.1241,
+    -1.7347
+   ],
+   "tail": [
+    0.21,
+    3.4723,
+    -1.6896
+   ]
+  },
+  {
+   "name": "Tail1",
+   "parent": "Hips",
+   "head": [
+    0.0,
+    2.42,
+    1.62
+   ],
+   "tail": [
+    0.0,
+    2.22,
+    2.02
+   ]
+  },
+  {
+   "name": "Tail2",
+   "parent": "Tail1",
+   "head": [
+    0.0,
+    2.22,
+    2.02
+   ],
+   "tail": [
+    0.0,
+    1.8,
+    2.36
+   ]
+  },
+  {
+   "name": "Tail3",
+   "parent": "Tail2",
+   "head": [
+    0.0,
+    1.8,
+    2.36
+   ],
+   "tail": [
+    0.0,
+    1.38,
+    2.55
+   ]
+  },
+  {
+   "name": "Tail4",
+   "parent": "Tail3",
+   "head": [
+    0.0,
+    1.38,
+    2.55
+   ],
+   "tail": [
+    0.0,
+    1.0,
+    2.62
+   ]
+  },
+  {
+   "name": "LegFL_Upper",
+   "parent": "Chest",
+   "head": [
+    -0.26,
+    2.12,
+    -0.66
+   ],
+   "tail": [
+    -0.25,
+    1.42,
+    -0.56
+   ]
+  },
+  {
+   "name": "LegFL_Lower",
+   "parent": "LegFL_Upper",
+   "head": [
+    -0.25,
+    1.42,
+    -0.56
+   ],
+   "tail": [
+    -0.22,
+    0.55,
+    -0.66
+   ]
+  },
+  {
+   "name": "LegFL_Cannon",
+   "parent": "LegFL_Lower",
+   "head": [
+    -0.22,
+    0.55,
+    -0.66
+   ],
+   "tail": [
+    -0.22,
+    0.1,
+    -0.76
+   ]
+  },
+  {
+   "name": "LegFL_Paw",
+   "parent": "LegFL_Cannon",
+   "head": [
+    -0.22,
+    0.1,
+    -0.76
+   ],
+   "tail": [
+    -0.22,
+    0.02,
+    -0.98
+   ]
+  },
+  {
+   "name": "LegBL_Upper",
+   "parent": "Hips",
+   "head": [
+    -0.28,
+    2.25,
+    1.15
+   ],
+   "tail": [
+    -0.3,
+    1.5,
+    0.8
+   ]
+  },
+  {
+   "name": "LegBL_Lower",
+   "parent": "LegBL_Upper",
+   "head": [
+    -0.3,
+    1.5,
+    0.8
+   ],
+   "tail": [
+    -0.25,
+    0.86,
+    1.36
+   ]
+  },
+  {
+   "name": "LegBL_Cannon",
+   "parent": "LegBL_Lower",
+   "head": [
+    -0.25,
+    0.86,
+    1.36
+   ],
+   "tail": [
+    -0.23,
+    0.1,
+    1.26
+   ]
+  },
+  {
+   "name": "LegBL_Paw",
+   "parent": "LegBL_Cannon",
+   "head": [
+    -0.23,
+    0.1,
+    1.26
+   ],
+   "tail": [
+    -0.23,
+    0.02,
+    1.05
+   ]
+  },
+  {
+   "name": "LegFR_Upper",
+   "parent": "Chest",
+   "head": [
+    0.26,
+    2.12,
+    -0.66
+   ],
+   "tail": [
+    0.25,
+    1.42,
+    -0.56
+   ]
+  },
+  {
+   "name": "LegFR_Lower",
+   "parent": "LegFR_Upper",
+   "head": [
+    0.25,
+    1.42,
+    -0.56
+   ],
+   "tail": [
+    0.22,
+    0.55,
+    -0.66
+   ]
+  },
+  {
+   "name": "LegFR_Cannon",
+   "parent": "LegFR_Lower",
+   "head": [
+    0.22,
+    0.55,
+    -0.66
+   ],
+   "tail": [
+    0.22,
+    0.1,
+    -0.76
+   ]
+  },
+  {
+   "name": "LegFR_Paw",
+   "parent": "LegFR_Cannon",
+   "head": [
+    0.22,
+    0.1,
+    -0.76
+   ],
+   "tail": [
+    0.22,
+    0.02,
+    -0.98
+   ]
+  },
+  {
+   "name": "LegBR_Upper",
+   "parent": "Hips",
+   "head": [
+    0.28,
+    2.25,
+    1.15
+   ],
+   "tail": [
+    0.3,
+    1.5,
+    0.8
+   ]
+  },
+  {
+   "name": "LegBR_Lower",
+   "parent": "LegBR_Upper",
+   "head": [
+    0.3,
+    1.5,
+    0.8
+   ],
+   "tail": [
+    0.25,
+    0.86,
+    1.36
+   ]
+  },
+  {
+   "name": "LegBR_Cannon",
+   "parent": "LegBR_Lower",
+   "head": [
+    0.25,
+    0.86,
+    1.36
+   ],
+   "tail": [
+    0.23,
+    0.1,
+    1.26
+   ]
+  },
+  {
+   "name": "LegBR_Paw",
+   "parent": "LegBR_Cannon",
+   "head": [
+    0.23,
+    0.1,
+    1.26
+   ],
+   "tail": [
+    0.23,
+    0.02,
+    1.05
+   ]
+  }
+ ],
+ "eyes": [
+  [
+   -0.16948954814382544,
+   2.9495370387007833,
+   -2.0589954971574893
+  ],
+  [
+   0.16948954814382544,
+   2.9495370387007833,
+   -2.0589954971574893
+  ]
+ ],
+ "bounds": {
+  "min": [
+   -0.548,
+   -0.061,
+   -2.634
+  ],
+  "max": [
+   0.553,
+   3.487,
+   2.773
+  ]
+ }
+}

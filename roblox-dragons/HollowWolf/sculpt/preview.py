@@ -1,0 +1,153 @@
+"""Malla esculpida → Blender, material de vista previa y renders de estudio como la referencia.
+
+Coordenadas: el modelo se esculpe en espacio Roblox (Y arriba, mira a -Z) y se pasa a Blender
+como (x, -z, y): Z arriba y el hocico hacia +Y.
+"""
+import numpy as np
+import bpy
+from mathutils import Vector
+from sdf import MATERIALS
+
+
+def to_blender(v):
+    return np.stack([v[:, 0], -v[:, 2], v[:, 1]], 1)
+
+
+def make_mesh(name, verts, faces, mat=None, part=None, smooth=True):
+    vb = to_blender(verts).astype(np.float32)
+    me = bpy.data.meshes.new(name)
+    me.vertices.add(len(vb)); me.vertices.foreach_set('co', vb.ravel())
+    f = faces[:, ::-1] if True else faces   # el cambio de ejes invierte la orientación
+    me.loops.add(f.size); me.loops.foreach_set('vertex_index', f.ravel())
+    me.polygons.add(len(f)); me.polygons.foreach_set('loop_start', np.arange(0, f.size, 3, dtype=np.int32))
+    me.update(calc_edges=True); me.validate(clean_customdata=False)
+    if smooth: me.shade_smooth()
+    if mat is not None:
+        col = np.zeros((len(vb), 4), np.float32); rough = np.zeros(len(vb), np.float32); scaly = np.zeros(len(vb), np.float32)
+        for k, (_, c, r, sc) in MATERIALS.items():
+            m = mat == k; col[m, :3] = [x ** 2.2 for x in c]; col[m, 3] = 1; rough[m] = r; scaly[m] = sc
+        a = me.color_attributes.new('mat', 'FLOAT_COLOR', 'POINT'); a.data.foreach_set('color', col.ravel())
+        me.attributes.new('rough', 'FLOAT', 'POINT').data.foreach_set('value', rough)
+        me.attributes.new('scaly', 'FLOAT', 'POINT').data.foreach_set('value', scaly)
+    if part is not None:
+        me.attributes.new('part', 'INT', 'POINT').data.foreach_set('value', part.astype(np.int32))
+    if mat is not None:
+        me.attributes.new('matid', 'INT', 'POINT').data.foreach_set('value', mat.astype(np.int32))
+    ob = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def creature_material(name='Creature'):
+    """Color por material + escamas procedurales (Voronoi) y vetas, controladas por los atributos."""
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; N = nt.nodes; L = nt.links
+    bsdf = N['Principled BSDF']
+    col = N.new('ShaderNodeAttribute'); col.attribute_name = 'mat'
+    rough = N.new('ShaderNodeAttribute'); rough.attribute_name = 'rough'
+    scaly = N.new('ShaderNodeAttribute'); scaly.attribute_name = 'scaly'
+    tc = N.new('ShaderNodeTexCoord')
+    vor = N.new('ShaderNodeTexVoronoi'); vor.feature = 'DISTANCE_TO_EDGE'; vor.inputs['Scale'].default_value = 9.0
+    L.new(tc.outputs['Object'], vor.inputs['Vector'])
+    vor2 = N.new('ShaderNodeTexVoronoi'); vor2.feature = 'DISTANCE_TO_EDGE'; vor2.inputs['Scale'].default_value = 24.0
+    L.new(tc.outputs['Object'], vor2.inputs['Vector'])
+    noise = N.new('ShaderNodeTexNoise'); noise.inputs['Scale'].default_value = 3.0; noise.inputs['Detail'].default_value = 8
+    L.new(tc.outputs['Object'], noise.inputs['Vector'])
+    # escamas: bordes oscuros entre placas (mezcla de dos tamaños)
+    e1 = N.new('ShaderNodeMapRange'); e1.inputs['From Max'].default_value = 0.12
+    L.new(vor.outputs['Distance'], e1.inputs['Value'])
+    e2 = N.new('ShaderNodeMapRange'); e2.inputs['From Max'].default_value = 0.1
+    L.new(vor2.outputs['Distance'], e2.inputs['Value'])
+    mul0 = N.new('ShaderNodeMath'); mul0.operation = 'MULTIPLY'; L.new(e1.outputs[0], mul0.inputs[0]); L.new(e2.outputs[0], mul0.inputs[1])
+    # v2: grietas finas de piel seca y arrugas alargadas encima de las escamas
+    vor3 = N.new('ShaderNodeTexVoronoi'); vor3.feature = 'DISTANCE_TO_EDGE'; vor3.inputs['Scale'].default_value = 60.0; vor3.inputs['Randomness'].default_value = 0.9
+    L.new(tc.outputs['Object'], vor3.inputs['Vector'])
+    e3 = N.new('ShaderNodeMapRange'); e3.inputs['From Max'].default_value = 0.05; e3.inputs['To Min'].default_value = 0.55
+    L.new(vor3.outputs['Distance'], e3.inputs['Value'])
+    wr = N.new('ShaderNodeMapping'); wr.inputs['Scale'].default_value = (1.0, 1.0, 9.0); L.new(tc.outputs['Object'], wr.inputs['Vector'])
+    wn = N.new('ShaderNodeTexNoise'); wn.inputs['Scale'].default_value = 7.0; wn.inputs['Detail'].default_value = 4; L.new(wr.outputs['Vector'], wn.inputs['Vector'])
+    e4 = N.new('ShaderNodeMapRange'); e4.inputs['To Min'].default_value = 0.8; L.new(wn.outputs['Fac'], e4.inputs['Value'])
+    mul1 = N.new('ShaderNodeMath'); mul1.operation = 'MULTIPLY'; L.new(mul0.outputs[0], mul1.inputs[0]); L.new(e3.outputs[0], mul1.inputs[1])
+    mul = N.new('ShaderNodeMath'); mul.operation = 'MULTIPLY'; L.new(mul1.outputs[0], mul.inputs[0]); L.new(e4.outputs[0], mul.inputs[1])
+    scale_mask = N.new('ShaderNodeMath'); scale_mask.operation = 'MULTIPLY'; L.new(mul.outputs[0], scale_mask.inputs[0]); L.new(scaly.outputs['Fac'], scale_mask.inputs[1])
+    inv = N.new('ShaderNodeMath'); inv.operation = 'SUBTRACT'; inv.inputs[0].default_value = 1.0; L.new(scaly.outputs['Fac'], inv.inputs[1])
+    height = N.new('ShaderNodeMath'); height.operation = 'ADD'; L.new(scale_mask.outputs[0], height.inputs[0]); L.new(inv.outputs[0], height.inputs[1])
+    # color: oscurecer las juntas de escama y variar con ruido rojizo
+    dark = N.new('ShaderNodeMix'); dark.data_type = 'RGBA'; dark.blend_type = 'MULTIPLY'
+    L.new(col.outputs['Color'], dark.inputs[6])
+    ramp = N.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].color = (0.35, 0.33, 0.33, 1); ramp.color_ramp.elements[1].color = (1.15, 1.1, 1.1, 1)
+    L.new(height.outputs[0], ramp.inputs['Fac']); L.new(ramp.outputs['Color'], dark.inputs[7]); dark.inputs['Factor'].default_value = 1.0
+    tint = N.new('ShaderNodeMix'); tint.data_type = 'RGBA'; tint.blend_type = 'MIX'
+    L.new(dark.outputs[2], tint.inputs[6]); tint.inputs[7].default_value = (0.075, 0.03, 0.065, 1)   # v2: moratón morado
+    nr = N.new('ShaderNodeMapRange'); nr.inputs['From Min'].default_value = 0.55; nr.inputs['From Max'].default_value = 0.8; nr.inputs['To Max'].default_value = 0.6
+    L.new(noise.outputs['Fac'], nr.inputs['Value'])
+    nmask = N.new('ShaderNodeMath'); nmask.operation = 'MULTIPLY'; L.new(nr.outputs[0], nmask.inputs[0]); L.new(scaly.outputs['Fac'], nmask.inputs[1])
+    L.new(nmask.outputs[0], tint.inputs['Factor'])
+    L.new(tint.outputs[2], bsdf.inputs['Base Color'])
+    rr = N.new('ShaderNodeMath'); rr.operation = 'MULTIPLY_ADD'; rr.inputs[1].default_value = 0.25
+    L.new(height.outputs[0], rr.inputs[0]); L.new(rough.outputs['Fac'], rr.inputs[2])
+    L.new(rr.outputs[0], bsdf.inputs['Roughness'])
+    bump = N.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.55; bump.inputs['Distance'].default_value = 0.02
+    L.new(height.outputs[0], bump.inputs['Height']); L.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
+    bsdf.inputs['Specular IOR Level'].default_value = 0.45
+    return m
+
+
+def studio(bg=0.045, floor_z=0.0):
+    sc = bpy.context.scene
+    w = bpy.data.worlds.new('Studio'); sc.world = w; w.use_nodes = True
+    w.node_tree.nodes['Background'].inputs['Color'].default_value = (bg, bg, bg, 1)
+    w.node_tree.nodes['Background'].inputs['Strength'].default_value = 1.0
+    sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.use_denoising = True; sc.cycles.max_bounces = 6
+    try: sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'
+    except Exception: pass
+    sc.render.image_settings.file_format = 'JPEG'; sc.render.image_settings.quality = 90
+    bpy.ops.mesh.primitive_plane_add(size=500, location=(0, 0, floor_z)); fl = bpy.context.active_object
+    fm = bpy.data.materials.new('Floor'); fm.use_nodes = True; b = fm.node_tree.nodes['Principled BSDF']
+    b.inputs['Base Color'].default_value = (0.05, 0.05, 0.05, 1); b.inputs['Roughness'].default_value = 0.85
+    fl.data.materials.append(fm)
+    return fl
+
+
+def light(name, loc, energy, color=(1, 1, 1), size=8, target=(0, 0, 0)):
+    d = bpy.data.lights.new(name, 'AREA'); d.energy = energy; d.color = color; d.size = size
+    o = bpy.data.objects.new(name, d); bpy.context.scene.collection.objects.link(o); o.location = loc
+    o.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
+    return o
+
+
+def camera():
+    cd = bpy.data.cameras.new('Cam'); cam = bpy.data.objects.new('Cam', cd); bpy.context.scene.collection.objects.link(cam)
+    bpy.context.scene.camera = cam
+    return cam
+
+
+def shoot(cam, path, loc, at, res, lens=50, ortho=None, samples=48):
+    sc = bpy.context.scene; sc.cycles.samples = samples
+    cam.location = loc; cam.rotation_euler = (Vector(at) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
+    if ortho: cam.data.type = 'ORTHO'; cam.data.ortho_scale = ortho
+    else: cam.data.type = 'PERSP'; cam.data.lens = lens
+    sc.render.resolution_x, sc.render.resolution_y = res
+    sc.render.filepath = path; bpy.ops.render.render(write_still=True); print('render', path)
+
+
+def fur_material(name='Fur'):
+    """Pelaje: color por material con variación suave y relieve de pelo (ruido muy estirado)."""
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; N = nt.nodes; L = nt.links; bsdf = N['Principled BSDF']
+    col = N.new('ShaderNodeAttribute'); col.attribute_name = 'mat'
+    rough = N.new('ShaderNodeAttribute'); rough.attribute_name = 'rough'
+    tc = N.new('ShaderNodeTexCoord')
+    mp = N.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.0, 1.0, 14.0); L.new(tc.outputs['Object'], mp.inputs['Vector'])
+    hair = N.new('ShaderNodeTexNoise'); hair.inputs['Scale'].default_value = 90.0; hair.inputs['Detail'].default_value = 9; hair.inputs['Roughness'].default_value = 0.7; L.new(mp.outputs['Vector'], hair.inputs['Vector'])
+    big = N.new('ShaderNodeTexNoise'); big.inputs['Scale'].default_value = 2.5; big.inputs['Detail'].default_value = 4; L.new(tc.outputs['Object'], big.inputs['Vector'])
+    var = N.new('ShaderNodeMapRange'); var.inputs['To Min'].default_value = 0.78; var.inputs['To Max'].default_value = 1.18; L.new(big.outputs['Fac'], var.inputs['Value'])
+    hv = N.new('ShaderNodeMapRange'); hv.inputs['To Min'].default_value = 0.72; hv.inputs['To Max'].default_value = 1.12;   # puntas de pelo más oscuras L.new(hair.outputs['Fac'], hv.inputs['Value'])
+    m1 = N.new('ShaderNodeMix'); m1.data_type = 'RGBA'; m1.blend_type = 'MULTIPLY'; m1.inputs['Factor'].default_value = 1.0
+    L.new(col.outputs['Color'], m1.inputs[6]); L.new(var.outputs[0], m1.inputs[7])
+    m2 = N.new('ShaderNodeMix'); m2.data_type = 'RGBA'; m2.blend_type = 'MULTIPLY'; m2.inputs['Factor'].default_value = 1.0
+    L.new(m1.outputs[2], m2.inputs[6]); L.new(hv.outputs[0], m2.inputs[7]); L.new(m2.outputs[2], bsdf.inputs['Base Color'])
+    L.new(rough.outputs['Fac'], bsdf.inputs['Roughness'])
+    bump = N.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.6; bump.inputs['Distance'].default_value = 0.008
+    L.new(hair.outputs['Fac'], bump.inputs['Height']); L.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
+    bsdf.inputs['Specular IOR Level'].default_value = 0.3
+    return m
