@@ -5,14 +5,14 @@
 	Pasos:
 	  1. Studio > Avatar (o Home) > Import 3D > HollowWolf.fbx.
 	     En el importador: Rig General > Rig Type = "Custom". No combines las mallas. Pulsa Import.
-	     Aparece un modelo con la malla WolfBody y sus Bones.
+	     Aparece un modelo con las mallas WolfNormal, WolfAlpha, WolfMangy y WolfPale y sus Bones.
 	  2. Selecciona ese modelo en el Explorer.
 	  3. View > Command Bar. Pega TODO este archivo y pulsa Enter.
 	  4. (Opcional) Partes con la etiqueta "WolfSpawn" (o en Workspace.WolfSpawns): por dónde salen las manadas.
 	     Partes con la etiqueta "SafeLight" (atributo Radius): zonas de luz donde los lobos no entran (la hoguera).
 
 	Resultado:
-	  ReplicatedStorage.Creatures.HollowWolf            (modelo, Settings, Animations, WolfBrain, DamageWolf)
+	  ReplicatedStorage.Creatures.HollowWolf            (Variants: Normal, Alpha, Mangy, Pale · Settings, Animations, WolfBrain, DamageWolf)
 	  ReplicatedStorage.Dragons.DragonAnimator          (motor de animación, compartido con los dragones)
 	  ServerScriptService.WolfPack                      (manadas: salen de noche, cazan en grupo, se van al amanecer)
 	  StarterPlayer.StarterPlayerScripts.WolfClient     (animación, ojos y movimiento suave)
@@ -22,16 +22,24 @@
 -- Ajustes principales (también se pueden cambiar luego en ReplicatedStorage.Creatures.HollowWolf.Settings)
 local PACKS = 2               -- manadas a la vez
 local PACK_SIZE = 4           -- lobos por manada (1 alfa + 3)
-local DAMAGE = 8              -- daño de cada mordisco (el alfa hace ALPHA_DAMAGE)
-local ALPHA_DAMAGE = 15
-local HEALTH = 60             -- vida de cada lobo (el alfa tiene ALPHA_HEALTH)
-local ALPHA_HEALTH = 150
+-- tipos: el alfa (uno por manada) y el resto al azar con estas probabilidades
+local NORMAL_CHANCE, MANGY_CHANCE, PALE_CHANCE = 0.6, 0.25, 0.15
+-- vida y daño por tipo (lo demás, en WolfPack: velocidad, tamaño, huida, color de ojos)
+local STATS = {
+	Normal = { Health = 60, Damage = 8 },
+	Alpha = { Health = 150, Damage = 15 },
+	Mangy = { Health = 35, Damage = 5 },
+	Pale = { Health = 70, Damage = 10 },
+}
 local NIGHT_ONLY = true       -- salen al anochecer y se van al amanecer
 local SPAWN_CENTER = Vector3.new(0, 0, 0)
 local SPAWN_RADIUS = 250
 -- Opcional: tras subir los PNG (Asset Manager), pega aquí sus ids para crear SurfaceAppearance PBR.
 local MAPS = {
-	WolfBody = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WolfNormal = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WolfAlpha = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WolfMangy = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
+	WolfPale = { ColorMap = "", NormalMap = "", RoughnessMap = "" },
 }
 -- Sonidos: sube los .ogg de sounds/ y pega aquí sus ids (rbxassetid://...).
 local SOUND_IDS = { Howl = "", Growl = "", Snarl = "", Bite = "", Yelp = "" }
@@ -62,7 +70,7 @@ end
 
 -- 1. Localizar el modelo importado
 local function looksLikeWolf(inst)
-	return inst:FindFirstChild("WolfBody", true) and inst:FindFirstChild("Neck2", true) and inst:FindFirstChild("Tail4", true)
+	return inst:FindFirstChild("WolfNormal", true) and inst:FindFirstChild("Neck2", true) and inst:FindFirstChild("Tail4", true)
 end
 local source
 for _, s in ipairs(Selection:Get()) do
@@ -93,7 +101,8 @@ for _, b in ipairs(RIG) do
 		table.insert(missing, b.name)
 	end
 end
-for _, name in ipairs({ "WolfBody" }) do
+local VARIANT_MESHES = { Normal = "WolfNormal", Alpha = "WolfAlpha", Mangy = "WolfMangy", Pale = "WolfPale" }
+for _, name in ipairs({ "WolfNormal", "WolfAlpha", "WolfMangy", "WolfPale" }) do
 	local m = source:FindFirstChild(name, true)
 	if m and m:IsA("MeshPart") then
 		meshes[name] = m
@@ -138,7 +147,7 @@ local function W(t)
 	return origin + R:VectorToWorldSpace(v3(t) * scale)
 end
 
--- 3. Modelo: WolfBody anclado (lo mueven los scripts, sin física)
+-- 3. Modelo: WolfNormal anclado y las demás mallas soldadas (todas comparten el esqueleto)
 local model = Instance.new("Model")
 model.Name = "HollowWolf"
 for _, child in ipairs(source:GetChildren()) do
@@ -149,12 +158,12 @@ for name, m in pairs(meshes) do
 	m.CanCollide = false
 	m.CanTouch = false
 	m.CastShadow = true
-	m.Anchored = name == "WolfBody"
-	m.Massless = name ~= "WolfBody"
+	m.Anchored = name == "WolfNormal"
+	m.Massless = name ~= "WolfNormal"
 	m.CanQuery = true   -- para que las armas puedan acertarle
-	if name ~= "WolfBody" then
+	if name ~= "WolfNormal" then
 		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = meshes.WolfBody
+		weld.Part0 = meshes.WolfNormal
 		weld.Part1 = m
 		weld.Parent = m
 	end
@@ -167,7 +176,7 @@ for name, m in pairs(meshes) do
 		sa.Parent = m
 	end
 end
-model.PrimaryPart = meshes.WolfBody
+model.PrimaryPart = meshes.WolfNormal
 model.WorldPivot = CFrame.new(W({ byName.Hips.head[1], 0, byName.Hips.head[3] })) * R
 for name, id in pairs(SOUND_IDS) do
 	local s = Instance.new("Sound")
@@ -177,7 +186,7 @@ for name, id in pairs(SOUND_IDS) do
 	s.RollOffMode = Enum.RollOffMode.InverseTapered
 	s.RollOffMinDistance = 8
 	s.RollOffMaxDistance = name == "Howl" and 400 or 90
-	s.Parent = meshes.WolfBody
+	s.Parent = meshes.WolfNormal
 end
 -- ojos: puntos Neon amarillos con una luz diminuta; WolfClient los pega al hueso Head
 for i, p in ipairs(EYES) do
@@ -230,15 +239,39 @@ end
 
 local creatures = ensure(ReplicatedStorage, "Creatures")
 local folder = ensure(creatures, "HollowWolf")
-local prev = folder:FindFirstChild("HollowWolf")
-if prev then
-	prev:Destroy()
+local old = folder:FindFirstChild("Variants")
+if old then
+	old:Destroy()
 end
-model.Parent = folder
+local variants = ensure(folder, "Variants")
+-- un modelo por tipo: deja visible su malla; las demás se quitan (o se ocultan si guardan los huesos)
+for variant, meshName in pairs(VARIANT_MESHES) do
+	local v = model:Clone()
+	v.Name = variant
+	for _, other in pairs(VARIANT_MESHES) do
+		if other ~= meshName then
+			local m = v:FindFirstChild(other, true)
+			if m then
+				local hasBones = m:FindFirstChildWhichIsA("Bone", true) ~= nil
+				if hasBones or m == v.PrimaryPart then
+					m.Transparency = 1
+					m.CanQuery = false
+					m.CastShadow = false
+				else
+					m:Destroy()
+				end
+			end
+		end
+	end
+	v:SetAttribute("Variant", variant)
+	v.Parent = variants
+end
 local settings = ensure(folder, "Settings", "Configuration")
 for k, v in pairs({
-	DisplayName = "Lobo hueco", Packs = PACKS, PackSize = PACK_SIZE, Damage = DAMAGE, AlphaDamage = ALPHA_DAMAGE,
-	Health = HEALTH, AlphaHealth = ALPHA_HEALTH, AlphaScale = 1.35, NightOnly = NIGHT_ONLY, MaxBiters = 2,
+	DisplayName = "Lobo hueco", Packs = PACKS, PackSize = PACK_SIZE, NightOnly = NIGHT_ONLY, MaxBiters = 2,
+	NormalChance = NORMAL_CHANCE, MangyChance = MANGY_CHANCE, PaleChance = PALE_CHANCE,
+	NormalHealth = STATS.Normal.Health, NormalDamage = STATS.Normal.Damage, AlphaHealth = STATS.Alpha.Health, AlphaDamage = STATS.Alpha.Damage,
+	MangyHealth = STATS.Mangy.Health, MangyDamage = STATS.Mangy.Damage, PaleHealth = STATS.Pale.Health, PaleDamage = STATS.Pale.Damage,
 	SpawnCenter = SPAWN_CENTER, SpawnRadius = SPAWN_RADIUS, Debug = false,
 	-- ajustes del comportamiento (ver WolfBrain.Defaults)
 	DetectDistance = 70, LoseDistance = 130, CircleMin = 9, CircleMax = 14, TrotSpeed = 13, RunSpeed = 28,
@@ -256,7 +289,7 @@ local bak = assets:FindFirstChild("HollowWolf_Rig")
 if bak then
 	bak:Destroy()
 end
-local backup = model:Clone()
+local backup = model
 backup.Name = "HollowWolf_Rig"
 backup.Parent = assets
 
@@ -267,4 +300,4 @@ Selection:Set({ folder })
 pcall(function()
 	ChangeHistoryService:SetWaypoint("Lobos instalados")
 end)
-print(("[Wolf] Listo: %d huesos. Al anochecer salen %d manadas de %d lobos (un alfa cada una). Partes con la etiqueta SafeLight: zonas donde no entran."):format(#RIG, PACKS, PACK_SIZE))
+print(("[Wolf] Listo: %d huesos, 4 tipos (Normal, Alpha, Mangy, Pale). Al anochecer salen %d manadas de %d lobos con un alfa cada una. Partes con la etiqueta SafeLight: zonas donde no entran."):format(#RIG, PACKS, PACK_SIZE))

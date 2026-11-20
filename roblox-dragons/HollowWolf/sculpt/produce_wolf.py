@@ -115,11 +115,12 @@ def zone_group(o, part_ids, name='zone'):
 
 
 # ---------------- 1-2. retopología + horneado ----------------
-highs = {n: D.objects[n] for n in ('WolfBody',)}
+NAMES = ['Wolf' + v for v in DEER.VARIANTS]          # WolfNormal, WolfAlpha, WolfMangy, WolfPale
+highs = {n: D.objects[n] for n in NAMES}
 for n, o in highs.items(): o.name = n + '_high'
 lows = {}
 P = DEER.PART
-for name, target, zone_ids, zone_share in (('WolfBody', 19500, [P['Head'], P['Jaw'], P['EarL'], P['EarR']], 0.36),):
+for name, target, zone_ids, zone_share in [(n, 19500, [P['Head'], P['Jaw'], P['EarL'], P['EarR']], 0.36) for n in NAMES]:
     lo = duplicate(highs[name], name + '_low'); frac = zone_group(lo, zone_ids)
     zone_high = int(ntris(lo) * frac)
     decimate(lo, int(target * (1 - zone_share)) + zone_high, 'zone', invert=True)   # primero el resto
@@ -227,7 +228,7 @@ log('pesos aplicados')
 
 # ---------------- 4. exportación ----------------
 for o in highs.values(): o.hide_render = True; o.hide_set(True)
-game = [rig, lows['WolfBody']]
+game = [rig] + [lows[n] for n in NAMES]
 select_only(game, rig)
 bpy.ops.export_scene.fbx(filepath=os.path.join(OUT, 'HollowWolf.fbx'), use_selection=True, object_types={'ARMATURE', 'MESH'},
                          axis_forward='-Z', axis_up='Y', apply_unit_scale=True, apply_scale_options='FBX_SCALE_NONE', add_leaf_bones=False,
@@ -236,7 +237,7 @@ bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'HollowWolf.glb'), export_f
                           export_animations=False, export_yup=True, export_apply=False)
 log('FBX y GLB exportados')
 tris = {o.name: ntris(o) for o in game[1:]}
-rigjson = {'name': 'HollowWolf', 'units': 'studs', 'forward': '-Z', 'meshes': tris,
+rigjson = {'name': 'HollowWolf', 'units': 'studs', 'forward': '-Z', 'meshes': tris, 'variants': NAMES,
            'bones': [{'name': n, 'parent': p, 'head': [round(float(x), 4) for x in h], 'tail': [round(float(x), 4) for x in t]} for n, p, h, t in bones],
            'eyes': PTS['eyes']}
 lo_ = np.min([np.array(R(o.matrix_world @ Vector(c))) for o in game[1:] for c in o.bound_box], 0)
@@ -254,8 +255,14 @@ PV.light('Key', c + Vector((-8, 6, 8)), 1800, (1, 0.96, 0.9), 5, c)
 PV.light('Rim', c + Vector((7, -8, 5)), 1100, (0.85, 0.9, 1), 4, c)
 PV.light('Fill', c + Vector((-3, 8, 1)), 250, (1, 0.95, 0.9), 5, c)
 cam = PV.camera(); headc = Vector((0, 2.1, 2.85))
-for name, loc, at, res, lens in (('wolf_side', c + Vector((-12, 0.3, 0.4)), c + Vector((0, 0.2, 0)), (1400, 1000), 50),
-                                 ('wolf_34', c + Vector((-8, 8, 1.6)), c + Vector((0, 0.4, 0.1)), (1400, 1000), 50),
-                                 ('wolf_head', headc + Vector((-1.6, 2.0, 0.3)), headc, (1000, 1000), 55)):
-    PV.shoot(cam, os.path.join(REND, name + '.jpg'), loc, at, res, lens=lens, samples=SAMPLES)
+for n in NAMES:   # cada tipo por separado
+    for m in NAMES: lows[m].hide_render = m != n
+    PV.shoot(cam, os.path.join(REND, n + '_34.jpg'), c + Vector((-8, 8, 1.6)), c + Vector((0, 0.4, 0.1)), (1200, 860), lens=50, samples=SAMPLES)
+    PV.shoot(cam, os.path.join(REND, n + '_head.jpg'), headc + Vector((-1.6, 2.0, 0.3)), headc, (900, 900), lens=55, samples=SAMPLES)
+for i, n in enumerate(NAMES):   # los cuatro en fila (el objeto se mueve solo para la foto)
+    lows[n].hide_render = False; lows[n].location.x = (i - (len(NAMES) - 1) / 2) * 2.6; lows[n].location.y = 0
+rig.location.x = 0
+for i, n in enumerate(NAMES):
+    lows[n].parent = None
+PV.shoot(cam, os.path.join(REND, 'lineup.jpg'), c + Vector((-6, 14, 1.5)), c + Vector((0, 0, 0.0)), (1800, 800), lens=45, samples=SAMPLES)
 log('listo')

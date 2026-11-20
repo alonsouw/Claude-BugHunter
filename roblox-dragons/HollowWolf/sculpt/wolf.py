@@ -58,22 +58,44 @@ def spine_at(z):
     return np.array([0, np.interp(z, pts[k, 2], pts[k, 1]), z])
 
 
-def build_wolf(g, rng):
+# Tipos de lobo: mismo esqueleto y animaciones, distinta complexión, pelo, heridas y colores.
+VARIANTS = {
+    'Normal': dict(width=1.0, neck=1.0, ruff=(70, 0.2), hackles=(45, 0.14), cheeks=24, tail=60, mange=(9, 1.0), ribs=0.016,
+                   spikes=False, torn=1, scars=4,
+                   colors=dict(base=(0.22, 0.205, 0.19), dark=(0.08, 0.075, 0.072), light=(0.5, 0.47, 0.42), eye=(0.95, 0.78, 0.3))),
+    # el alfa: corpulento, casi negro, crin enorme, púas de hueso en el lomo, muchas cicatrices, ojos rojo anaranjado
+    'Alpha': dict(width=1.14, neck=1.18, ruff=(120, 0.3), hackles=(70, 0.2), cheeks=36, tail=70, mange=(4, 0.8), ribs=0.012,
+                  spikes=True, torn=2, scars=9,
+                  colors=dict(base=(0.1, 0.095, 0.095), dark=(0.035, 0.032, 0.032), light=(0.33, 0.31, 0.3), eye=(1.0, 0.35, 0.12))),
+    # el sarnoso: esquelético y casi calvo, la piel rosácea al aire, cola pelada
+    'Mangy': dict(width=0.86, neck=0.9, ruff=(25, 0.12), hackles=(15, 0.1), cheeks=8, tail=18, mange=(26, 1.5), ribs=0.022,
+                  spikes=False, torn=1, scars=6,
+                  colors=dict(base=(0.3, 0.26, 0.23), dark=(0.13, 0.11, 0.1), light=(0.45, 0.38, 0.34), eye=(0.98, 0.92, 0.55))),
+    # el pálido: blanco ceniza, pelo largo, sin sarna, ojos azul hielo
+    'Pale': dict(width=0.98, neck=1.05, ruff=(95, 0.26), hackles=(55, 0.18), cheeks=30, tail=80, mange=(0, 1.0), ribs=0.012,
+                 spikes=False, torn=0, scars=2,
+                 colors=dict(base=(0.62, 0.62, 0.62), dark=(0.36, 0.37, 0.4), light=(0.78, 0.78, 0.77), eye=(0.55, 0.85, 1.0))),
+}
+
+
+def build_wolf(g, rng, variant='Normal'):
+    V = VARIANTS[variant]; wd = V['width']
     B, F = PART['Body'], 'wolffur'
     A = lambda prim, **kw: g.apply(prim, **{'mat': F, **kw})
     # tronco: pecho hondo, cintura de galgo, grupa estrecha
     A(Chain([TAIL_BASE, HIPS, SPINE_MID, CHEST], [0.2, 0.24, 0.24, 0.24]), k=0.25, part=B)
-    A(Ellipsoid((0, 2.08, -0.42), (0.33, 0.56, 0.52)), k=0.35, part=B)
-    A(Ellipsoid((0, 2.15, 0.3), (0.28, 0.36, 0.85)), k=0.35, part=B)
-    A(Ellipsoid((0, 2.24, 1.15), (0.3, 0.36, 0.45)), k=0.3, part=B)
+    A(Ellipsoid((0, 2.08, -0.42), (0.33 * wd, 0.56 * min(wd, 1.08), 0.52)), k=0.35, part=B)
+    A(Ellipsoid((0, 2.15, 0.3), (0.28 * wd, 0.36 * wd, 0.85)), k=0.35, part=B)
+    A(Ellipsoid((0, 2.24, 1.15), (0.3 * wd, 0.36 * wd, 0.45)), k=0.3, part=B)
     g.apply(Ellipsoid((0, 1.48, 0.75), (0.6, 0.32, 0.7)), op='sub', k=0.35)
     for s in (-1, 1):
         A(Ellipsoid((s * 0.21, 2.28, -0.6), (0.15, 0.4, 0.26)), k=0.22, part=B)     # escápula
         A(Ellipsoid((s * 0.24, 2.25, 1.12), (0.17, 0.42, 0.36)), k=0.22, part=B)    # muslo alto
         g.apply(Ellipsoid((s * 0.4, 2.05, 0.55), (0.12, 0.3, 0.4)), op='sub', k=0.25)   # ijar hundido
     # cuello y cabeza
-    A(Chain([N1, N2, ATLAS], [0.34, 0.27, 0.22], squash=(0.85, 1.0)), k=0.3, part=PART['Neck'])
-    pts = build_head(g, rng)
+    nk = V['neck']
+    A(Chain([N1, N2, ATLAS], [0.34 * nk, 0.27 * nk, 0.22 * min(nk, 1.08)], squash=(0.85, 1.0)), k=0.3, part=PART['Neck'])
+    pts = build_head(g, rng, V['torn'])
     # cola
     A(Chain(TAIL_PTS, [0.11, 0.1, 0.085, 0.065, 0.04]), k=0.12, part=PART['Tail'])
     # patas: digitígradas, finas, con codo y corvejón marcados y pies de cuatro dedos con uñas
@@ -90,13 +112,23 @@ def build_wolf(g, rng):
             toe = paw + np.array([dx * 1.2, -0.01, -0.1 - (0.025 if k_ in (1, 2) else 0)])
             A(Ellipsoid(toe, (0.03, 0.035, 0.045)), k=0.02, part=part)
             g.apply(horn(toe + np.array([0, 0.0, -0.03]), toe + np.array([0, -0.02, -0.07]), toe + np.array([0, -0.045, -0.09]), 0.014, n=3, r_tip=0.003), k=0.006, mat='claw', part=part)
-    gaunt(g, rng)
-    fur(g, rng)
-    mange(g, rng)
+    gaunt(g, rng, V['ribs'])
+    if V['spikes']:   # púas de hueso que rompen la piel del lomo y la nuca
+        for z in np.linspace(-0.9, 1.1, 11):
+            p = spine_at(z); hit = surface(g, p + np.array([0, 0.9, 0]), p)
+            if hit is None: continue
+            L = 0.16 + 0.14 * np.exp(-((z + 0.4) / 0.6) ** 2) + 0.04 * rng.random()
+            g.apply(horn(hit - np.array([0, 0.03, 0]), hit + np.array([0, L * 0.6, L * 0.15]), hit + np.array([0, L, L * 0.45]), 0.04, n=4, r_tip=0.006), k=0.02, mat='bone', part=B)
+        for k_ in range(3):
+            c = np.array(N2) * (1 - k_ / 3) + np.array(ATLAS) * (k_ / 3); hit = surface(g, c + np.array([0, 0.8, 0.3]), c)
+            if hit is not None:
+                g.apply(horn(hit, hit + np.array([0, 0.1, 0.05]), hit + np.array([0, 0.16, 0.14]), 0.03, n=4, r_tip=0.005), k=0.015, mat='bone', part=PART['Neck'])
+    fur(g, rng, V)
+    mange(g, rng, V)
     return pts
 
 
-def build_head(g, rng):
+def build_head(g, rng, torn=1):
     Hh, J = PART['Head'], PART['Jaw']
     A = lambda prim, **kw: g.apply(prim, **{'xf': HEAD_XF, 'mat': 'wolffur', **kw})
     A(Ellipsoid((0, 0.05, -0.18), (0.22, 0.2, 0.24)), k=0, part=Hh)
@@ -130,8 +162,8 @@ def build_head(g, rng):
         A(Chain([b0, b0 + (t0 - b0) * 0.5, t0], [0.1, 0.07, 0.012], squash=(0.35, 1.0)), k=0.05, part=part)
         A(Chain([b0 + np.array([0, 0.03, -0.035]), b0 + (t0 - b0) * 0.5 + np.array([0, 0, -0.035]), t0 + np.array([0, -0.04, -0.02])], [0.06, 0.045, 0.006], squash=(0.25, 1.0)),
           op='sub', k=0.02, carve_mat='wolfdark')
-        if s < 0:
-            A(Ellipsoid(b0 + (t0 - b0) * 0.7 + np.array([-0.04, 0, 0]), (0.04, 0.03, 0.06)), op='sub', k=0.01, carve_mat='mange')
+        if (s < 0 and torn >= 1) or (s > 0 and torn >= 2):   # oreja mordida
+            A(Ellipsoid(b0 + (t0 - b0) * (0.7 if s < 0 else 0.45) + np.array([s * 0.04, 0, 0]), (0.04, 0.03, 0.06)), op='sub', k=0.01, carve_mat='mange')
     # ojos amarillos hundidos bajo el ceño
     eyes = []
     for (x, y, z) in EYE_L:
@@ -144,7 +176,7 @@ def build_head(g, rng):
     return {'eyes': eyes}
 
 
-def gaunt(g, rng):
+def gaunt(g, rng, rib_r=0.016):
     """Hambre: costillas, vértebras y caderas que se marcan bajo el pelo."""
     B = PART['Body']
     for z in np.arange(-0.75, 0.5, 0.16) + rng.uniform(-0.03, 0.03, 8):
@@ -155,7 +187,7 @@ def gaunt(g, rng):
                 d = np.array([s * np.cos(a), np.sin(a), 0]); hit = surface(g, c + d * 1.5, c)
                 if hit is None or np.linalg.norm(hit - c) > 0.8: arc = []; continue
                 arc.append(hit + d * 0.008)
-            if len(arc) >= 3: g.apply(Chain(arc, [0.016] * len(arc)), k=0.035, mat='wolffur', part=B)
+            if len(arc) >= 3: g.apply(Chain(arc, [rib_r] * len(arc)), k=0.035, mat='wolffur', part=B)
     for z in np.linspace(-0.6, 1.5, 15):
         p = spine_at(z); hit = surface(g, p + np.array([0, 0.8, 0]), p)
         if hit is not None: g.apply(Ellipsoid(hit, (0.045, 0.035, 0.05)), k=0.03, mat='wolffur', part=B)
@@ -163,7 +195,8 @@ def gaunt(g, rng):
         g.apply(Ellipsoid((s * 0.22, 2.48, 1.32), (0.07, 0.06, 0.08)), k=0.05, mat='wolffur', part=B)   # punta de la cadera
 
 
-def fur(g, rng):
+def fur(g, rng, V=None):
+    V = V or VARIANTS['Normal']
     """Mechones: gorguera del cuello, crin del lomo, mejillas y cola (ralos, desordenados)."""
     def tufts(n, sampler, length, radius, part):
         for _ in range(n):
@@ -179,35 +212,36 @@ def fur(g, rng):
         a = rng.uniform(0, 2 * np.pi); d = np.array([np.cos(a) * 0.85, np.sin(a), 0.2])
         hit = surface(g, c + d * 1.2, c)
         return None if hit is None else (hit, np.array([d[0] * 0.6, -0.3 + d[1] * 0.3, 0.8]))
-    tufts(70, ruff, 0.2, 0.03, PART['Neck'])
+    tufts(V['ruff'][0], ruff, V['ruff'][1], 0.03 * (1.2 if V['ruff'][1] > 0.25 else 1), PART['Neck'])
     def hackles():
         z = rng.uniform(-0.7, 1.2); p = spine_at(z); hit = surface(g, p + np.array([rng.uniform(-0.15, 0.15), 0.8, 0]), p)
         return None if hit is None else (hit, np.array([0, 0.6, 0.8]))
-    tufts(45, hackles, 0.14, 0.022, PART['Body'])
+    tufts(V['hackles'][0], hackles, V['hackles'][1], 0.022, PART['Body'])
     def cheeks():
         s = rng.choice([-1, 1]); l = np.array([s * 0.18, rng.uniform(-0.12, 0.02), rng.uniform(-0.35, -0.15)])
         hit = surface(g, H(l * np.array([3, 1, 1])), H(l * np.array([0, 1, 1])))
         return None if hit is None else (hit, HEAD_XF.R @ np.array([s * 0.7, -0.2, 0.7]))
-    tufts(24, cheeks, 0.12, 0.022, PART['Head'])
+    tufts(V['cheeks'], cheeks, 0.12, 0.022, PART['Head'])
     tail = [np.array(p) for p in TAIL_PTS]
     def tailtuft():
         t = rng.uniform(0.1, 1.0) * (len(tail) - 1); i = min(int(t), len(tail) - 2); f = t - i; c = tail[i] * (1 - f) + tail[i + 1] * f
         ax = tail[i + 1] - tail[i]; ax /= np.linalg.norm(ax); a = rng.uniform(0, 2 * np.pi)
         side = np.cross([1, 0, 0], ax); side /= np.linalg.norm(side); d = np.array([1, 0, 0]) * np.cos(a) + side * np.sin(a)
         return c + d * 0.06, d * 0.6 + ax
-    tufts(60, tailtuft, 0.18, 0.03, PART['Tail'])
+    tufts(V['tail'], tailtuft, 0.18 * (1.3 if V['tail'] >= 80 else 1), 0.03, PART['Tail'])
 
 
-def mange(g, rng):
+def mange(g, rng, V=None):
+    V = V or VARIANTS['Normal']
     """Calvas de sarna (piel rosácea, un poco hundida) y cicatrices."""
-    for _ in range(9):
+    for _ in range(V['mange'][0]):
         z = rng.uniform(-0.6, 1.3); a = rng.uniform(-30, 210); c = spine_at(z) - np.array([0, 0.3, 0])
         d = np.array([np.cos(np.radians(a)), np.sin(np.radians(a)), 0]); hit = surface(g, c + d * 1.5, c)
         if hit is None: continue
-        r = rng.uniform(0.07, 0.15)
+        r = rng.uniform(0.07, 0.15) * V['mange'][1]
         g.apply(Ellipsoid(hit + d * r * 0.75, (r, r * 0.8, r * 1.2)), op='sub', k=0.02, carve_mat='mange')   # calva poco honda
         g.apply(Ellipsoid(hit, (r * 0.85, r * 0.7, r * 1.05)), op='paint', mat='mange')
-    for _ in range(4):
+    for _ in range(V['scars']):
         z = rng.uniform(-0.5, 1.0); c = spine_at(z) - np.array([0, 0.3, 0]); s = rng.choice([-1, 1])
         p0 = surface(g, c + np.array([s * 1.5, 0.2, 0]), c); p1 = surface(g, c + np.array([s * 1.5, -0.3, 0.25]), c + np.array([0, 0, 0.25]))
         if p0 is not None and p1 is not None:
@@ -218,9 +252,10 @@ def _ss(e0, e1, x):
     t = np.clip((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t)
 
 
-def wolf_colors(v, mat, MAT, MATERIALS):
+def wolf_colors(v, mat, MAT, MATERIALS, variant='Normal'):
     """Pelaje con degradados: montura oscura en el lomo y la cola, vientre, patas, mejillas y garganta claros."""
-    base = np.array(MATERIALS[MAT['wolffur']][1]); dark = np.array(MATERIALS[MAT['wolfdark']][1]); light = np.array([0.5, 0.47, 0.42])
+    C = VARIANTS[variant]['colors']
+    base = np.array(C['base']); dark = np.array(C['dark']); light = np.array(C['light'])
     x, y, z = v[:, 0], v[:, 1], v[:, 2]
     col = np.tile(base, (len(v), 1))
     col += (dark * 1.6 - col) * (_ss(2.35, 2.7, y) * _ss(-1.0, -0.6, z))[:, None] * 0.75            # montura
@@ -233,5 +268,6 @@ def wolf_colors(v, mat, MAT, MATERIALS):
     tail_tip = _ss(1.6, 1.1, y) * _ss(2.3, 2.5, z); col += (dark - col) * tail_tip[:, None] * 0.9
     noise = (np.sin(x * 17 + z * 5) * np.sin(y * 13 - z * 11)) * 0.06
     col *= (1 + noise)[:, None]
-    keep = mat == MAT['wolffur']
+    col[mat == MAT['wolfeye']] = C['eye']
+    keep = (mat == MAT['wolffur']) | (mat == MAT['wolfeye'])
     return np.clip(col, 0, 1), keep

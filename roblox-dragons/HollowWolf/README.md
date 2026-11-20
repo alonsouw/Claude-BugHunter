@@ -2,20 +2,24 @@
 
 Manadas de lobos famélicos que salen al anochecer, cazan en grupo y no cruzan la luz. Son originales, para un juego de supervivencia nocturna en el bosque.
 
-## El modelo
-`WolfBody`: una malla de 19,5 mil triángulos (máximo de Roblox: 20 mil) y 30 huesos, con texturas de color, normal y rugosidad de 1024 px.
-- **Cuerpo**:
-  - Pelaje gris pardo con la montura oscura en el lomo; vientre, patas y belfos más claros.
-  - Hambre: cintura de galgo, costillas, vértebras y caderas marcadas.
-  - Calvas de sarna con la piel rosácea al aire, cicatrices y una oreja mordida.
-  - Gorguera de mechones, crin erizada en el lomo y cola rala.
-- **Cabeza**:
-  - Hocico largo siempre gruñendo, con encías, colmillos y carniceras al aire.
-  - Ojos amarillos hundidos bajo el ceño. En el juego son puntos Neon con una luz diminuta, así que de noche se ven los ojos antes que el cuerpo.
-- **El alfa**:
-  - Es el mismo modelo escalado ×1,35.
-  - Tiene más vida y muerde más fuerte.
-  - Sus ojos brillan más y su voz es más grave.
+## Cuatro tipos (mismo esqueleto de 30 huesos y mismas animaciones)
+Cada tipo tiene su propia malla (unos 19,5 mil triángulos cada una; el máximo de Roblox es 20 mil) con texturas de color, normal y rugosidad de 1024 px.
+
+| Tipo | Aspecto | Vida / mordisco | Cómo caza |
+|---|---|---|---|
+| **Normal** (`WolfNormal`) | Gris pardo con la montura oscura; costillas marcadas, algunas calvas de sarna, oreja mordida. Ojos amarillos. | 60 / 8 | Equilibrado. |
+| **Alfa** (`WolfAlpha`, uno por manada) | Un 35 % más grande y corpulento, casi negro, crin enorme, púas de hueso que rompen la piel del lomo y la nuca, muchas cicatrices, las dos orejas mordidas. Ojos rojo anaranjado. | 150 / 15 | Lidera; aúlla al verte y la manada entera caza. Casi nunca huye. Voz más grave. |
+| **Sarnoso** (`WolfMangy`) | Esquelético y casi calvo, con la piel rosácea al aire y la cola pelada. Ojos amarillo pálido. | 35 / 5 | Más rápido (×1,2) y muerde más a menudo, pero huye a mitad de vida. |
+| **Pálido** (`WolfPale`) | Blanco ceniza, de pelo largo, sin sarna. Ojos azul hielo. | 70 / 10 | Silencioso: no gruñe ni ruge. Sus ojos solo se encienden cuando está a menos de 25 studs. |
+
+- **Composición de cada manada:** un alfa, y el resto al azar con estas probabilidades (se cambian al principio del instalador):
+  - normal: 60 %;
+  - sarnoso: 25 %;
+  - pálido: 15 %.
+- **Rasgos comunes:**
+  - hocico largo siempre gruñendo, con los colmillos al aire;
+  - gorguera, crin y cola de mechones;
+  - ojos que en el juego son puntos Neon con una luz diminuta del color de su tipo.
 
 ## Animaciones (`src/wolf_anims.js` → `roblox/WolfAnimations.lua`)
 | Nombre | Qué hace |
@@ -44,10 +48,7 @@ La cabeza sigue al jugador mientras caza.
   2. Cuando un jugador se acerca a 70 studs, el alfa aúlla y toda la manada caza.
   3. Lo rodean gruñendo a 9-14 studs, cada uno por un flanco.
   4. Se lanzan a morder por turnos, como mucho 2 a la vez, y vuelven al cerco.
-- **Daño y vida**:
-  - Mordisco de 8 (15 el alfa).
-  - Vida de 60 (150 el alfa).
-  - Con menos del 25 % de vida huyen.
+- **Daño y vida**: dependen del tipo (ver la tabla). Con poca vida huyen; el sarnoso, a mitad de vida.
 - **Herirlos con tus armas**, desde el servidor:
   `ReplicatedStorage.Creatures.HollowWolf.DamageWolf:Invoke(lobo, cantidad)`.
   También se puede bajar su atributo `Health`. La malla tiene `CanQuery = true` para que los rayos de las armas le acierten.
@@ -69,7 +70,7 @@ La cabeza sigue al jugador mientras caza.
 Hay que subirlos y pegar sus ids en `SOUND_IDS`.
 
 ## Instalación
-1. **Avatar › Import 3D** → `model/HollowWolf.fbx`, con **Rig Type = Custom**.
+1. **Avatar › Import 3D** → `model/HollowWolf.fbx`, con **Rig Type = Custom** y **sin combinar las mallas**.
 2. Opcional: sube las texturas y los sonidos y pega sus ids en `MAPS` y `SOUND_IDS`, al principio de `roblox/InstallWolves.lua`.
 3. Selecciona el modelo importado y pega todo `roblox/InstallWolves.lua` en **View › Command Bar**.
 4. Opcional: coloca partes con la etiqueta `WolfSpawn` y partes con la etiqueta `SafeLight` (con `Radius`).
@@ -85,7 +86,8 @@ Hay que subirlos y pegar sus ids en `SOUND_IDS`.
   - que rodean y muerden, como mucho 2 a la vez;
   - que nunca muerden dentro de la luz y huyen si la luz los alcanza;
   - que de día desaparecen;
-  - que reaccionan al daño, huyen con poca vida y mueren una sola vez.
+  - que reaccionan al daño, huyen con poca vida y mueren una sola vez;
+  - que el pálido no gruñe ni ruge y que el sarnoso huye antes que el normal.
 - ⚠️ **No se ha ejecutado dentro de Roblox Studio.** Falta confirmar el skinning, el instalador y el combate con varios jugadores.
 - Límites:
   - No tienen pathfinding: se mueven en línea recta sobre el terreno.

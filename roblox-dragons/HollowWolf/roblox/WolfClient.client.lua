@@ -34,12 +34,19 @@ local function setup(model: Model)
 			table.insert(e.eyes, { d, head, head.TransformedWorldCFrame:ToObjectSpace(d.CFrame) })
 		end
 	end
-	if model:GetAttribute("Alpha") then   -- el alfa: ojos más brillantes
-		for _, ey in ipairs(e.eyes) do
-			local l = ey[1]:FindFirstChildOfClass("PointLight")
+	-- color de ojos según el tipo; el alfa brilla más; el pálido solo enciende los ojos de cerca (EyesNear)
+	local eyeColor = model:GetAttribute("EyeColor")
+	e.eyesNear = model:GetAttribute("EyesNear") or 0
+	for _, ey in ipairs(e.eyes) do
+		local l = ey[1]:FindFirstChildOfClass("PointLight")
+		if eyeColor then
+			ey[1].Color = eyeColor
 			if l then
-				l.Brightness *= 1.6
+				l.Color = eyeColor
 			end
+		end
+		if l and model:GetAttribute("Alpha") then
+			l.Brightness *= 1.6
 		end
 	end
 	model:GetAttributeChangedSignal("AnimStamp"):Connect(function()
@@ -84,8 +91,16 @@ RunService.RenderStepped:Connect(function(dt)
 		local visible = d < 500 and e.vis > 0.001
 		if visible then
 			model:PivotTo(e.current)
+			local eyeOn = e.eyesNear <= 0 or d < e.eyesNear
 			for _, ey in ipairs(e.eyes) do
 				ey[1].CFrame = ey[2].TransformedWorldCFrame * ey[3]
+				if e.eyesNear > 0 then
+					ey[1].LocalTransparencyModifier = eyeOn and (1 - e.vis) or 1
+					local l = ey[1]:FindFirstChildOfClass("PointLight")
+					if l then
+						l.Enabled = eyeOn
+					end
+				end
 			end
 		end
 		e.animator.Paused = not visible

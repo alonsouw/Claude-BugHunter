@@ -2,7 +2,11 @@
 	WolfPack (Script) · ServerScriptService.WolfPack
 
 	Manadas de lobos huecos, las mismas para todos los jugadores. Salen al anochecer y se van al amanecer
-	(NightOnly; por defecto true). Cada manada tiene un alfa (más grande, más vida, aúlla) y varios lobos.
+	(NightOnly; por defecto true). Cada manada tiene un alfa y varios lobos de estos tipos:
+	  Normal  gris pardo, el equilibrado
+	  Alpha   corpulento y casi negro, con púas de hueso; lidera, aúlla, más vida y mordisco fuerte (uno por manada)
+	  Mangy   sarnoso y esquelético: rápido, débil, muerde a menudo y huye enseguida
+	  Pale    blanco ceniza: silencioso, y sus ojos azules solo se encienden cuando ya está cerca
 	El servidor decide (WolfBrain), mueve los modelos 10 veces por segundo (para que las armas acierten en el
 	servidor) y publica atributos; los clientes (WolfClient) animan los huesos y suavizan el movimiento.
 
@@ -25,7 +29,24 @@ local Lighting = game:GetService("Lighting")
 local folder = ReplicatedStorage:WaitForChild("Creatures"):WaitForChild("HollowWolf")
 local Brain = require(folder:WaitForChild("WolfBrain"))
 local settings = folder:WaitForChild("Settings")
-local template = folder:WaitForChild("HollowWolf") :: Model
+local variantsFolder = folder:WaitForChild("Variants")
+local rng = Random.new()
+
+-- estadísticas por tipo (se pueden cambiar con atributos en Settings, p. ej. "AlphaHealth" o "MangyDamage")
+local STATS = {
+	Normal = { Health = 60, Damage = 8, Scale = 1.0, Speed = 1.0, FleeHealth = 0.25, Cooldown = { 3.5, 6.5 }, Eye = Color3.fromRGB(255, 205, 80) },
+	Alpha = { Health = 150, Damage = 15, Scale = 1.35, Speed = 1.05, FleeHealth = 0.1, Cooldown = { 3.0, 5.0 }, Eye = Color3.fromRGB(255, 90, 30) },
+	Mangy = { Health = 35, Damage = 5, Scale = 0.92, Speed = 1.2, FleeHealth = 0.5, Cooldown = { 1.8, 3.5 }, Eye = Color3.fromRGB(250, 235, 140) },
+	Pale = { Health = 70, Damage = 10, Scale = 1.05, Speed = 1.0, FleeHealth = 0.3, Cooldown = { 3.0, 6.0 }, Eye = Color3.fromRGB(140, 215, 255), Silent = true, EyesNear = 25 },
+}
+for name, st in pairs(STATS) do
+	for _, k in ipairs({ "Health", "Damage", "Scale", "Speed", "FleeHealth" }) do
+		local v = settings:GetAttribute(name .. k)
+		if type(v) == "number" then
+			st[k] = v
+		end
+	end
+end
 
 local function S(k, d)
 	local v = settings:GetAttribute(k)
@@ -35,9 +56,22 @@ local function S(k, d)
 	return v
 end
 local PACKS, PACK_SIZE = S("Packs", 2), S("PackSize", 4)
-local DAMAGE, ALPHA_DAMAGE = S("Damage", 8), S("AlphaDamage", 15)
-local HEALTH, ALPHA_HEALTH = S("Health", 60), S("AlphaHealth", 150)
-local ALPHA_SCALE = S("AlphaScale", 1.35)
+-- composición de la manada (además del alfa): probabilidad de cada tipo
+local MIX = { { "Normal", S("NormalChance", 0.6) }, { "Mangy", S("MangyChance", 0.25) }, { "Pale", S("PaleChance", 0.15) } }
+local function pickVariant()
+	local total = 0
+	for _, m in ipairs(MIX) do
+		total += m[2]
+	end
+	local x = rng:NextNumber() * total
+	for _, m in ipairs(MIX) do
+		x -= m[2]
+		if x <= 0 then
+			return m[1]
+		end
+	end
+	return "Normal"
+end
 local NIGHT_ONLY = S("NightOnly", true)
 local SPAWN_CENTER, SPAWN_RADIUS = S("SpawnCenter", Vector3.zero), S("SpawnRadius", 250)
 local MAX_BITERS = S("MaxBiters", 2)
@@ -52,7 +86,6 @@ end
 local container = workspace:FindFirstChild("Wolves") or Instance.new("Folder")
 container.Name = "Wolves"
 container.Parent = workspace
-local rng = Random.new()
 
 local damageFn = folder:FindFirstChild("DamageWolf") or Instance.new("BindableFunction")
 damageFn.Name = "DamageWolf"
@@ -147,24 +180,31 @@ local function spawnPoint()
 	return nil
 end
 
-local function makeWolf(pack, isAlpha, pos)
-	local m = template:Clone()
-	m.Name = isAlpha and "WolfAlpha" or "Wolf"
-	if isAlpha then
-		m:ScaleTo(ALPHA_SCALE)
-		m:SetAttribute("RigScale", ALPHA_SCALE)
+local function makeWolf(pack, variant, pos)
+	local st = STATS[variant]
+	local isAlpha = variant == "Alpha"
+	local m = variantsFolder[variant]:Clone()
+	m.Name = "Wolf" .. variant
+	if math.abs(st.Scale - 1) > 1e-3 then
+		m:ScaleTo(st.Scale)
+		m:SetAttribute("RigScale", st.Scale)
 	end
 	local s = m:GetAttribute("RigScale") or 1
 	local root = CFrame.new(pos + Vector3.new(rng:NextNumber() * 6 - 3, 0, rng:NextNumber() * 6 - 3)) * CFrame.Angles(0, rng:NextNumber() * math.pi * 2, 0)
-	local hp = isAlpha and ALPHA_HEALTH or HEALTH
-	for k, v in pairs({ Root = root, Anim = "Idle", AnimFade = 0, AnimStamp = 0, Alpha = isAlpha, Health = hp, MaxHealth = hp, Visible = true }) do
+	local hp = st.Health
+	for k, v in pairs({ Root = root, Anim = "Idle", AnimFade = 0, AnimStamp = 0, Alpha = isAlpha, Variant = variant, Health = hp, MaxHealth = hp,
+		Visible = true, EyeColor = st.Eye, EyesNear = st.EyesNear or 0 }) do
 		m:SetAttribute(k, v)
 	end
 	m:PivotTo(root)
 	m.Parent = container
+	local cfg = table.clone(config)
+	cfg.FleeHealth = st.FleeHealth
+	cfg.AttackCooldown = st.Cooldown
+	cfg.Silent = st.Silent == true
 	local w = {
-		model = m, pack = pack, alpha = isAlpha, scale = s, root = root, speed = 0, mode = "stop", slot = 0, lastHp = hp,
-		brain = Brain.new(table.clone(config), Random.new(rng:NextInteger(1, 1e9)), isAlpha), ground = 0, wander = pos,
+		model = m, pack = pack, alpha = isAlpha, variant = variant, stats = st, scale = s, root = root, speed = 0, mode = "stop", slot = 0, lastHp = hp,
+		brain = Brain.new(cfg, Random.new(rng:NextInteger(1, 1e9)), isAlpha), ground = 0, wander = pos,
 	}
 	table.insert(pack.wolves, w)
 	return w
@@ -176,9 +216,9 @@ local function spawnPack()
 		return
 	end
 	local pack = { wolves = {}, alerted = false, target = nil, home = pos }
-	makeWolf(pack, true, pos)
+	makeWolf(pack, "Alpha", pos)
 	for _ = 2, PACK_SIZE do
-		makeWolf(pack, false, pos)
+		makeWolf(pack, pickVariant(), pos)
 	end
 	for i, w in ipairs(pack.wolves) do
 		w.slot = (i - 1) / #pack.wolves * math.pi * 2   -- cada lobo rodea por un flanco distinto
@@ -190,10 +230,9 @@ local function spawnPack()
 end
 
 local function playSound(w, name)
-	local body = w.model:FindFirstChild("WolfBody", true)
-	local s = body and body:FindFirstChild(name)
+	local s = w.model:FindFirstChild(name, true)
 	if s and s.SoundId ~= "" then
-		s.PlaybackSpeed = (w.alpha and 0.85 or 1) * (0.92 + rng:NextNumber() * 0.16)
+		s.PlaybackSpeed = (w.alpha and 0.82 or (w.variant == "Mangy" and 1.15 or 1)) * (0.92 + rng:NextNumber() * 0.16)
 		s:Play()
 	end
 end
@@ -207,7 +246,7 @@ local function apply(w, cmds)
 			w.model:SetAttribute("AnimFade", c[3] or 0.3)
 			w.model:SetAttribute("AnimStamp", stamp)
 		elseif k == "move" then
-			w.speed, w.mode = c[2] * w.scale, c[3]
+			w.speed, w.mode = c[2] * w.scale * w.stats.Speed, c[3]
 		elseif k == "alert" then
 			w.pack.alerted = true
 		elseif k == "sound" then
@@ -218,7 +257,7 @@ local function apply(w, cmds)
 				h, hum = alive(w.pack.target)
 			end
 			if h and hum and (h.Position - w.root.Position).Magnitude <= (w.brain.cfg.AttackReach + 1.5) * w.scale then
-				hum:TakeDamage(w.alpha and ALPHA_DAMAGE or DAMAGE)
+				hum:TakeDamage(w.stats.Damage)
 				playSound(w, "Bite")
 			end
 		elseif k == "despawn" then

@@ -67,6 +67,29 @@ local w2 = r6.wolves[2]
 check((w2.anims.Hurt or 0) >= 1, "no reaccionó al daño")
 check((w2.anims.Run or 0) >= 1, "con poca vida no huyó")
 check(r6.deaths == 1 and w2.b.state == "Dead", "no murió exactamente una vez")
+-- 7) tipos: el pálido es silencioso (no gruñe ni ruge) y el sarnoso huye antes que el normal
+do
+	local function sounds(cfg)
+		local b = Brain.new(cfg, Random.new(77), false); local n = 0
+		for i = 1, 600 do
+			for _, c in ipairs(b:Update(0.1, { dist = i < 30 and 50 or 6, hasTarget = true, canAttack = true, inLight = false, targetInLight = false, day = false, alerted = true, health = 1, hurt = false, dead = false })) do
+				if c[1] == "sound" and (c[2] == "Growl" or c[2] == "Snarl") then n += 1 end
+			end
+		end
+		return n
+	end
+	check(sounds({ Silent = true }) == 0 and sounds({}) > 0, "el pálido hizo ruido (o el normal no)")
+	local function fleesAt(cfg)
+		local b = Brain.new(cfg, Random.new(5), false)
+		b:Update(0.1, { dist = 6, hasTarget = true, canAttack = false, inLight = false, targetInLight = false, day = false, alerted = true, health = 1, hurt = false, dead = false })
+		local fled = false
+		for _, c in ipairs(b:Update(0.1, { dist = 6, hasTarget = true, canAttack = false, inLight = false, targetInLight = false, day = false, alerted = true, health = 0.4, hurt = true, dead = false })) do
+			if c[1] == "anim" and c[2] == "Run" then fled = true end
+		end
+		return fled
+	end
+	check(fleesAt({ FleeHealth = 0.5 }) and not fleesAt({ FleeHealth = 0.25 }), "con 40 % de vida el sarnoso no huye o el normal sí")
+end
 print(("cerco: %d mordiscos, máx. %d a la vez; luz: %d mordiscos; día: %d desaparecen; muertes: %d"):format(totalBites, r2.maxAttacking, r3.bitesInLight, r5.despawned, r6.deaths))
 print(fails == 0 and "OK: la manada cumple las reglas" or ("FALLOS: " .. fails))
 if fails > 0 then error("fallos") end

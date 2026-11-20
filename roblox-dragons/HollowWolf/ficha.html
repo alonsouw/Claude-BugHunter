@@ -114,13 +114,24 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
       <div class="latin">Canis inanis · salen al anochecer, cazan en grupo y no cruzan la luz</div>
     </div>
     <div class="stages" aria-label="Etapas">
-      <span class="done">Lobo</span><span class="done">Alfa</span><span class="done">Huesos</span><span class="done">Animaciones</span><span class="done">Manada</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
+      <span class="done">4 tipos</span><span class="done">Alfa</span><span class="done">Huesos</span><span class="done">Animaciones</span><span class="done">Manada</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
     </div>
   </header>
 
+  <section>
+    <h2>Cuatro tipos de lobo</h2>
+    <figure><img src="design/renders/lineup.jpg" alt="Los cuatro tipos en fila: normal gris pardo, alfa negro con crin y púas, sarnoso calvo y pálido blanco"><figcaption>De izquierda a derecha: pálido · sarnoso · alfa (sin escalar) · normal</figcaption></figure>
+    <div class="states" style="margin-top:12px">
+      <div><b>Normal</b><span>Gris pardo, el equilibrado. Vida 60, mordisco 8. Ojos amarillos.</span></div>
+      <div><b>Alfa</b><span>Uno por manada. Un 35 % más grande y corpulento, casi negro, con crin enorme, púas de hueso en el lomo, cicatrices y las dos orejas mordidas. Lidera y aúlla. Vida 150, mordisco 15. Ojos rojo anaranjado.</span></div>
+      <div><b>Sarnoso</b><span>Esquelético y casi calvo, con la piel rosácea al aire. Más rápido y muerde más a menudo, pero es débil y huye a mitad de vida. Vida 35, mordisco 5.</span></div>
+      <div><b>Pálido</b><span>Blanco ceniza y de pelo largo. No gruñe ni ruge, y sus ojos azul hielo solo se encienden cuando ya está a 25 studs. Vida 70, mordisco 10.</span></div>
+    </div>
+  </section>
+
   <section class="pair">
     <figure><img src="design/renders/pack_night.jpg" alt="La manada de noche: solo se ven los ojos amarillos y las siluetas"><figcaption>De noche, con los ojos encendidos</figcaption></figure>
-    <figure><img src="design/renders/wolf_head.jpg" alt="Cabeza del lobo: hocico largo gruñendo con colmillos, ojos amarillos hundidos y gorguera de mechones" loading="lazy"><figcaption>La cabeza</figcaption></figure>
+    <figure><img src="design/renders/WolfAlpha_head.jpg" alt="Cabeza del alfa: casi negra, crin enorme, hocico gruñendo y ojos rojo anaranjado" loading="lazy"><figcaption>La cabeza del alfa</figcaption></figure>
   </section>
 
   <section>
@@ -135,10 +146,10 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
         <div><h3>Animación</h3><div class="anims" id="anims"></div></div>
         <div><h3>Ver</h3><div class="toggles">
           <button type="button" id="tDark" aria-pressed="false">Noche</button>
-          <button type="button" id="tAlpha" aria-pressed="false">Alfa</button>
+          <button type="button" id="tVar" aria-pressed="false">Tipo: Normal</button>
           <button type="button" id="tLook" aria-pressed="true">Te mira</button>
           <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
-        <p class="note">Es el archivo exportado para Roblox: una malla de 19,5 mil triángulos con skinning y 30 huesos. Las animaciones son los mismos datos que usa el script de Studio.</p>
+        <p class="note">Es el archivo exportado para Roblox: cuatro mallas (una por tipo, 19,5 mil triángulos cada una) sobre el mismo esqueleto de 30 huesos. Las animaciones son los mismos datos que usa el script de Studio.</p>
       </div>
     </div>
     <div class="dims" id="dims" style="margin-top:14px"></div>
@@ -153,21 +164,21 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
         <li><b>Pelaje</b>: gris pardo con la montura oscura en el lomo; gorguera de mechones, crin erizada y cola rala.</li>
         <li><b>Hocico</b>: largo y siempre gruñendo, con los labios recogidos, encías al aire, colmillos y carniceras.</li>
         <li><b>Ojos</b>: amarillos y hundidos bajo el ceño; en el juego son puntos Neon con una luz diminuta, así que de noche la manada se ve por los ojos antes que por el cuerpo.</li>
-        <li><b>El alfa</b>: el mismo lobo un 35 % más grande, con más vida y mordisco más fuerte, ojos más brillantes y voz más grave.</li>
+        <li><b>Cuatro tipos</b> con malla y texturas propias sobre el mismo esqueleto: comparten todas las animaciones.</li>
       </ul>
     </div>
-    <figure><img src="design/renders/wolf_34.jpg" alt="Lobo hueco en tres cuartos" loading="lazy"><figcaption>Lobo hueco</figcaption></figure>
+    <figure><img src="design/renders/WolfNormal_34.jpg" alt="Lobo hueco normal en tres cuartos" loading="lazy"><figcaption>Lobo normal</figcaption></figure>
   </section>
 
   <section class="cols">
     <div>
       <h2>La manada en el juego</h2>
       <ul class="list">
-        <li><b>Para todos</b>: el servidor crea las manadas (2 de 4 lobos por defecto, un alfa en cada una) y todos los jugadores las ven igual.</li>
+        <li><b>Para todos</b>: el servidor crea las manadas (2 de 4 lobos por defecto) y todos los jugadores las ven igual. Cada manada tiene un alfa y el resto sale al azar: normal 60 %, sarnoso 25 %, pálido 15 %.</li>
         <li><b>De noche</b>: salen al anochecer, lejos de los jugadores, y al amanecer se retiran corriendo y desaparecen.</li>
         <li><b>Caza</b>: deambulan siguiendo al alfa. Cuando un jugador se acerca a 70 studs, el alfa aúlla y toda la manada se pone a cazar.</li>
         <li><b>Cerco</b>: lo rodean gruñendo, cada lobo por un flanco, girando a su alrededor. Se lanzan a morder por turnos (como mucho 2 a la vez) y vuelven al cerco.</li>
-        <li><b>Daño</b>: 8 por mordisco (15 el alfa). Vida: 60 (150 el alfa). Con poca vida huyen. Tus armas pueden herirlos con <code>DamageWolf</code> o bajando su atributo <code>Health</code>.</li>
+        <li><b>Daño y vida</b>: según el tipo (ver arriba). Con poca vida huyen; el sarnoso, a mitad de vida. Tus armas pueden herirlos con <code>DamageWolf</code> o bajando su atributo <code>Health</code>.</li>
         <li><b>La luz</b>: ningún lobo entra en una zona <code>SafeLight</code> y no muerden a quien está dentro: rodean el borde de la luz. Si la luz los alcanza, huyen. Es el gancho para la hoguera.</li>
       </ul>
     </div>
@@ -187,7 +198,7 @@ code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; backgrou
     <div>
       <h2>Paquete para Roblox Studio</h2>
       <ol class="steps">
-        <li><code>Import 3D</code> → <code>model/HollowWolf.fbx</code> → <code>Rig Type: Custom</code>.</li>
+        <li><code>Import 3D</code> → <code>model/HollowWolf.fbx</code> → <code>Rig Type: Custom</code>, sin combinar las mallas.</li>
         <li>Opcional: sube <code>sounds/*.ogg</code> y las texturas y pega sus ids en <code>SOUND_IDS</code> y <code>MAPS</code> del instalador.</li>
         <li>Selecciona el modelo importado y pega <code>roblox/InstallWolves.lua</code> en la Command Bar.</li>
         <li>Opcional: partes con la etiqueta <code>WolfSpawn</code> (por dónde salen) y <code>SafeLight</code> con un atributo <code>Radius</code> (zonas seguras).</li>
@@ -231,7 +242,9 @@ const LIGHTS = [[hemi, 1.0, 0.06], [key, 1.8, 0.05], [rim, 1.0, 0.18]];
 const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), new THREE.MeshStandardMaterial({ color: '#23251e', roughness: 0.95 }));
 ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
 
-let model = null, bones = {}, rest = {}, dots = [], rig = null;
+let model = null, bones = {}, rest = {}, dots = [], dotMats = [], rig = null, meshesByVar = {};
+const VARS = [['Normal', 'Normal', 1, '#ffcf5a'], ['Alpha', 'Alfa', 1.35, '#ff5a1e'], ['Mangy', 'Sarnoso', 0.92, '#faeb8c'], ['Pale', 'Pálido', 1.05, '#8cd7ff']];
+let varIdx = 0;
 const A = { cur: 'Idle', t: 0, fade: 0, fadeT: 0.25, from: {}, values: {}, yaw: 0, pitch: 0 };
 
 /* Carga del modelo sin URLs data: ni blob: (la página publicada las bloquea):
@@ -278,7 +291,10 @@ async function loadModel(url) {
 const glOK = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
 (glOK ? Promise.all([fetch('model/rig.json').then(r => r.json()), loadModel('model/HollowWolf.gltf.json')]) : Promise.reject(new Error('este navegador no tiene WebGL'))).then(([rj, gltf]) => {
   rig = rj; model = gltf.scene; scene.add(model);
-  model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } if (o.isBone) bones[o.name] = o; });
+  model.traverse(o => {
+    if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; const n = (o.parent && !o.parent.isBone ? o.parent.name : '') + ' ' + o.name; for (const [v] of VARS) if (n.includes('Wolf' + v)) (meshesByVar[v] = meshesByVar[v] || []).push(o); }
+    if (o.isBone) bones[o.name] = o;
+  });
   model.updateMatrixWorld(true);
   for (const [n, b] of Object.entries(bones)) { const w = b.getWorldQuaternion(new THREE.Quaternion()); rest[n] = { q0: b.quaternion.clone(), p0: b.position.clone(), w, wInv: w.clone().invert() }; }
   // ojos: puntos que brillan, pegados al hueso de la cabeza (como en Roblox)
@@ -286,13 +302,14 @@ const glOK = (() => { try { const c = document.createElement('canvas'); return !
   const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,215,110,1)'); r.addColorStop(0.3, 'rgba(255,190,70,.35)'); r.addColorStop(1, 'rgba(255,170,40,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
   for (const e of rig.eyes) {
     const p = new THREE.Vector3(...e).applyMatrix4(inv);
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffcf5a' }));
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffcf5a' })); dotMats.push(dot.material);
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
     glow.scale.setScalar(0.45); dot.position.copy(p); glow.position.copy(p); head.add(dot); head.add(glow); dots.push(glow);
   }
   const b = rig.bounds, f = n => n.toFixed(1).replace('.', ',');
   document.getElementById('dims').innerHTML = [['Longitud', b.max[2] - b.min[2]], ['Altura', b.max[1] - b.min[1]]].map(([k, v]) => `<div><div class="v">${f(v)}</div><div class="k">${k} (studs, lobo normal)</div></div>`).join('') +
     `<div><div class="v">${Object.values(rig.meshes).reduce((a, x) => a + x, 0).toLocaleString('es')}</div><div class="k">Triángulos</div></div><div><div class="v">${rig.bones.length}</div><div class="k">Huesos</div></div><div><div class="v">×1,35</div><div class="k">Tamaño del alfa</div></div>`;
+  setVariant(0);
   document.getElementById('loading').hidden = true; updateUI(); requestAnimationFrame(frame); window.__wolfReady = true;
 }).catch(e => { const l = document.getElementById('loading'); l.innerHTML = '<div>No se pudo cargar el visor 3D (' + e.message + ').</div>'; l.style.background = '#060608 url(design/renders/wolf_34.jpg) center/cover'; });
 
@@ -334,12 +351,19 @@ const animBox = document.getElementById('anims');
 animBox.innerHTML = ORDER.map(n => `<button type="button" data-a="${n}" aria-pressed="false">${LABEL[n]}</button>`).join('');
 animBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b && model) play(b.dataset.a); });
 function updateUI() { animBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === A.cur)); document.getElementById('status').innerHTML = `<b>●</b> ${A.cur} · ${LABEL[A.cur]}`; }
-let spin = !reduce, lookOn = true, alpha = false;
+let spin = !reduce, lookOn = true;
 const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
 const tSpin = tg('tSpin', () => spin, v => spin = v);
 tg('tLook', () => lookOn, v => lookOn = v);
 tg('tDark', () => dark, v => setDark(v));
-tg('tAlpha', () => alpha, v => { alpha = v; if (model) model.scale.setScalar(v ? 1.35 : 1); });
+function setVariant(i) {
+  varIdx = i; const [v, label, sc, eye] = VARS[i];
+  for (const [k] of VARS) (meshesByVar[k] || []).forEach(m => m.visible = k === v);
+  if (model) model.scale.setScalar(sc);
+  dotMats.forEach(m => m.color.set(eye)); dots.forEach(g => g.material.color.set(eye));
+  document.getElementById('tVar').textContent = 'Tipo: ' + label;
+}
+document.getElementById('tVar').onclick = () => { if (model) setVariant((varIdx + 1) % VARS.length); };
 let yaw = -2.3, pitch = 0.12, dist = 11, drag = null;
 const target = new THREE.Vector3(0, 1.7, 0);
 canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
@@ -348,11 +372,11 @@ canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener
 canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(3, Math.min(30, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
 function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(box); resize();
-window.__wolf = { play, step, setDark, setCam: (y, p, d, ty) => { yaw = y; pitch = p; dist = d; target.y = ty; spin = false; }, render: () => renderFrame(0) };
+window.__wolf = { play, step, setDark, setVariant, setCam: (y, p, d, ty) => { yaw = y; pitch = p; dist = d; target.y = ty; spin = false; }, render: () => renderFrame(0) };
 let last = performance.now();
 function renderFrame(dt) {
   if (spin) yaw += dt * 0.15;
-  const s = alpha ? 1.35 : 1, tgt = target.clone().multiplyScalar(s);
+  const s = VARS[varIdx][2], tgt = target.clone().multiplyScalar(s);
   camera.position.set(tgt.x + Math.sin(yaw) * Math.cos(pitch) * dist * s, tgt.y + Math.sin(pitch) * dist * s, tgt.z + Math.cos(yaw) * Math.cos(pitch) * dist * s);
   camera.lookAt(tgt); renderer.render(scene, camera);
 }

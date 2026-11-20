@@ -37,6 +37,7 @@ Brain.Defaults = {
 	LungeSpeed = 34,
 	AttackCooldown = { 3.5, 6.5 },
 	FleeHealth = 0.25,
+	Silent = false,          -- el pálido no gruñe ni ruge: solo se le oye al morder
 }
 
 function Brain.new(config, rng, isAlpha)
@@ -56,7 +57,11 @@ function Brain:range(r)
 end
 
 function Brain:emit(...)
-	table.insert(self.out, { ... })
+	local c = { ... }
+	if self.cfg.Silent and c[1] == "sound" and (c[2] == "Growl" or c[2] == "Snarl") then
+		return
+	end
+	table.insert(self.out, c)
 end
 
 function Brain:enter(state, timer)
