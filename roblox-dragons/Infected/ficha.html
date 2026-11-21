@@ -1,0 +1,307 @@
+<title>Infectados</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de bestiario. Los cinco infectados de bloques abren la página; después la comparación con la referencia, el visor 3D del modelo de juego, el proceso, el rig y el paquete para Studio. Tema oscuro único, elegido a propósito. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #a3262e;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+.strip5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip5 figure img { aspect-ratio: 4 / 5; object-fit: cover; }
+@media (max-width: 760px) { .strip5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.anims h4 { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-data); font-weight: 500; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#bTransform { grid-column: 1 / -1; border-color: var(--blood); color: #fff; background: #2a1215; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Bestiario Umbral · Humanos · Estilo Roblox de bloques</div>
+      <h1>Infectados</h1>
+      <div class="latin">Cinco tipos hechos de Parts, con Humanoid: cualquier arma de tu juego les hace daño</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">5 tipos</span><span class="done">Animaciones</span><span class="done">Persecución</span><span class="done">Habilidades</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Los cinco</h2>
+    <figure><img src="design/renders/lineup.jpg" alt="Los cinco infectados de bloques en fila"><figcaption>De izquierda a derecha: bruto · gritón · hinchado · corredor · común</figcaption></figure>
+    <div class="states" style="margin-top:12px">
+      <div><b>Común</b><span>Arrastra una pierna con los brazos por delante. Vida 100, golpe 15. El más numeroso.</span></div>
+      <div><b>Corredor</b><span>Flaco, pálido y encorvado, con ojos rojos. Corre a 22 studs/s. Vida 60, golpe 10.</span></div>
+      <div><b>Hinchado</b><span>Torso enorme lleno de pústulas que brillan. Lento. Al morir revienta: 35 de daño en 12 studs y una nube verde.</span></div>
+      <div><b>Gritón</b><span>Brazos larguísimos y la cabeza partida con una boca enorme. Al verte grita y todos los infectados en 120 studs van a por ti.</span></div>
+      <div><b>Bruto</b><span>Un 40 % más grande, con el brazo derecho deforme lleno de hueso. Golpea el suelo: 35 de daño en 8 studs. Vida 400.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>En vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D de los infectados"></canvas>
+        <div class="status" id="status"><b>●</b> Idle</div>
+      </div>
+      <div class="controls">
+        <div><h3>Tipo</h3><div class="anims" id="types"></div></div>
+        <div><h3>Animación</h3><div class="anims" id="anims"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tDark" aria-pressed="false">Noche</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
+        <p class="note">Construido con los mismos planos que usa el instalador de Studio: cada bloque es una Part y cada articulación un Motor6D. Las animaciones son los mismos datos.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>En el juego</h2>
+      <ul class="list">
+        <li><b>Para todos</b>: el servidor crea los infectados (hasta 20 a la vez) y todos los jugadores los ven igual. Los muertos reaparecen al rato en otro sitio.</li>
+        <li><b>Humanoid de verdad</b>: tienen vida y reciben el daño de cualquier arma de Roblox. Persiguen con pathfinding (rodean paredes y obstáculos).</li>
+        <li><b>Te detectan</b> si te ven a su distancia de detección (con línea de visión) o si un gritón grita cerca.</li>
+        <li><b>Atacan</b> al llegar a su alcance, con su tiempo de recarga; el bruto golpea el suelo en área y el hinchado revienta al morir.</li>
+        <li>Si los pierdes, vagan por la zona. Se puede limitar a la noche con <code>NIGHT_ONLY</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Sonido</h2>
+      <div class="sounds">
+        <div><b>Groan</b><span class="note">Gemido al deambular.</span><audio controls preload="none" src="sounds/Groan.ogg"></audio></div>
+        <div><b>Scream</b><span class="note">El grito del gritón.</span><audio controls preload="none" src="sounds/Scream.ogg"></audio></div>
+        <div><b>Hit</b><span class="note">Golpe que acierta.</span><audio controls preload="none" src="sounds/Hit.ogg"></audio></div>
+        <div><b>Pop</b><span class="note">El hinchado revienta.</span><audio controls preload="none" src="sounds/Pop.ogg"></audio></div>
+        <div><b>Roar</b><span class="note">El bruto al golpear.</span><audio controls preload="none" src="sounds/Roar.ogg"></audio></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <ol class="steps">
+        <li>No hay que importar nada: pega <code>roblox/InstallInfected.lua</code> en la Command Bar y construye los cinco modelos con Parts.</li>
+        <li>Opcional: sube <code>sounds/*.ogg</code> y pega sus ids en <code>SOUND_IDS</code> al principio del instalador.</li>
+        <li>Opcional: partes con la etiqueta <code>InfectedSpawn</code> (o en <code>Workspace.InfectedSpawns</code>) donde quieras que aparezcan.</li>
+        <li>Play.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Lo que conviene revisar</h2>
+      <ul class="list todo">
+        <li>No se ha probado dentro de Roblox Studio: el instalador, la física de los Humanoid y el pathfinding. La lógica sí, en simulación.</li>
+        <li>Las animaciones se reproducen en cada cliente (Roblox no replica Motor6D.Transform), como en los dragones.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="src/infected_blueprints.js"></script>
+<script src="src/infected_anims.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, BP = INFECTED_BLUEPRINTS, ST = INFECTED_STATS, ANIMS = INFECTED_ANIMS;
+const TYPES = [['Walker', 'Común'], ['Runner', 'Corredor'], ['Bloater', 'Hinchado'], ['Screamer', 'Gritón'], ['Brute', 'Bruto']];
+const ORDER = ['Idle', 'Walk', 'Run', 'Attack', 'Scream', 'Slam', 'Hurt', 'Death'];
+const LABEL = { Idle: 'Reposo', Walk: 'Arrastrarse', Run: 'Correr', Attack: 'Atacar', Scream: 'Gritar', Slam: 'Golpe al suelo', Hurt: 'Herido', Death: 'Morir' };
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); const BG = { day: new THREE.Color('#58605a'), night: new THREE.Color('#05070a') };
+scene.background = BG.day.clone(); scene.fog = new THREE.Fog('#58605a', 40, 120);
+const camera = new THREE.PerspectiveCamera(34, 1.6, 0.1, 300);
+const hemi = new THREE.HemisphereLight('#e6eef2', '#3a3326', 0.65); scene.add(hemi);
+const key = new THREE.DirectionalLight('#fff1e2', 1.15); key.position.set(-8, 14, -9); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -14, right: 14, top: 12, bottom: -4, near: 1, far: 50 }); key.shadow.bias = -0.0008; scene.add(key);
+const rim = new THREE.DirectionalLight('#b4c4ff', 0.7); rim.position.set(7, 6, 9); scene.add(rim);
+const LIGHTS = [[hemi, 0.65, 0.05], [key, 1.15, 0.05], [rim, 0.7, 0.15]];
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#3a3d33', roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const col = c => new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255);
+const mat = (c, material, neon) => neon ? new THREE.MeshBasicMaterial({ color: col(c).multiplyScalar(1.3) }) :
+  new THREE.MeshStandardMaterial({ color: col(c), roughness: material === 'Fabric' ? 1 : 0.65 });
+// construye un infectado igual que el instalador: piezas en grupos por articulación (pivote), detalles soldados
+function build(bp) {
+  const g = new THREE.Group(), groups = {}, pivots = {}, neon = [];
+  pivots.HumanoidRootPart = bp.limbs.HumanoidRootPart.center; groups.HumanoidRootPart = new THREE.Group();
+  groups.HumanoidRootPart.position.set(...pivots.HumanoidRootPart); g.add(groups.HumanoidRootPart);
+  for (const [parent, child, piv] of bp.joints) {
+    const grp = new THREE.Group(); const pp = pivots[parent];
+    grp.position.set(piv[0] - pp[0], piv[1] - pp[1], piv[2] - pp[2]); groups[parent].add(grp); groups[child] = grp; pivots[child] = piv;
+  }
+  for (const [name, L] of Object.entries(bp.limbs)) {
+    if (L.transparent) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...L.size), mat(L.color, L.material)); const pv = pivots[name];
+    m.position.set(L.center[0] - pv[0], L.center[1] - pv[1], L.center[2] - pv[2]); m.castShadow = m.receiveShadow = true; groups[name].add(m);
+  }
+  for (const d of bp.details) {
+    const L = bp.limbs[d.limb], pv = pivots[d.limb];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...d.size), mat(d.color, d.material, d.neon));
+    m.position.set(L.center[0] + d.offset[0] - pv[0], L.center[1] + d.offset[1] - pv[1], L.center[2] + d.offset[2] - pv[2]);
+    m.rotation.set(d.rot[0] * D2R, d.rot[1] * D2R, d.rot[2] * D2R, 'XYZ'); m.castShadow = true; groups[d.limb].add(m);
+    if (d.neon) neon.push(m);
+  }
+  return { root: g, groups, neon };
+}
+let current = null, typeIdx = 0, lineup = [];
+const A = { cur: 'Idle', t: 0, fade: 0, fadeT: 0.25, from: {}, values: {} };
+function setType(i) {
+  typeIdx = i; if (current) scene.remove(current.root);
+  const name = TYPES[i][0]; current = build(BP[name]); current.root.scale.setScalar(ST[name].Scale); scene.add(current.root);
+  document.querySelectorAll('#types button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+  A.values = {}; play(A.cur, 0);
+}
+function play(name, fadeT = 0.25) { A.from = JSON.parse(JSON.stringify(A.values)); A.cur = name; A.t = 0; A.fade = 0; A.fadeT = fadeT; updateUI(); }
+const E = new THREE.Euler();
+function pose(rig, anim, t) {
+  for (const n in rig.groups) {
+    if (n === 'HumanoidRootPart') continue;
+    const j = anim.joints[n]; let v = [0, 0, 0, 0, 0, 0];
+    if (j) { const { r, p } = AnimEval.evalJoint(j, t, anim.dur, anim.loop); v = [...r, ...p]; }
+    if (rig === current) { const f = A.from[n], w = A.fadeT > 0 ? Math.min(A.fade / A.fadeT, 1) : 1, ws = w * w * (3 - 2 * w); if (f && ws < 1) v = v.map((x, i) => f[i] + (x - f[i]) * ws); A.values[n] = v; }
+    const g = rig.groups[n]; if (!g.userData.base) g.userData.base = g.position.clone();
+    g.position.copy(g.userData.base).add(new THREE.Vector3(v[3], v[4], v[5]));
+    g.rotation.copy(E.set(v[0] * D2R, v[1] * D2R, v[2] * D2R, 'XYZ'));
+  }
+}
+function step(dt) {
+  const anim = ANIMS[A.cur]; A.t += dt; A.fade += dt;
+  if (!anim.loop && A.t >= anim.dur) { if (anim.next) { play(anim.next, 0.2); return step(0); } A.t = anim.dur; }
+  if (current) pose(current, anim, anim.loop ? A.t % anim.dur : A.t);
+}
+let dark = false;
+function setDark(on) { dark = on; for (const [l, day, night] of LIGHTS) l.intensity = on ? night : day; scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(on ? BG.night : BG.day); }
+const typesBox = document.getElementById('types');
+typesBox.innerHTML = TYPES.map(([k, l], i) => `<button type="button" data-i="${i}" aria-pressed="false">${l}</button>`).join('');
+typesBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setType(+b.dataset.i); });
+const animBox = document.getElementById('anims');
+animBox.innerHTML = ORDER.map(n => `<button type="button" data-a="${n}" aria-pressed="false">${LABEL[n]}</button>`).join('');
+animBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) play(b.dataset.a); });
+function updateUI() { animBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === A.cur)); document.getElementById('status').innerHTML = `<b>●</b> ${A.cur} · ${LABEL[A.cur]}`; }
+let spin = !reduce;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tDark', () => dark, v => setDark(v));
+let yaw = -2.6, pitch = 0.12, dist = 15, drag = null;
+const target = new THREE.Vector3(0, 2.8, 0);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.05, Math.min(1.25, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(4, Math.min(45, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+function showLineup(on) {   // los cinco en fila (para la imagen de cabecera)
+  lineup.forEach(r => scene.remove(r.root)); lineup = [];
+  if (current) current.root.visible = !on;
+  if (on) TYPES.forEach(([n], i) => { const r = build(BP[n]); r.root.scale.setScalar(ST[n].Scale); r.root.position.x = (i - 2) * 4.2; scene.add(r.root); lineup.push(r); pose(r, ANIMS.Idle, 0.6 + i * 0.4); });
+}
+window.__inf = { play, step, setType, setDark, showLineup, setCam: (y, p, d, ty) => { yaw = y; pitch = p; dist = d; target.y = ty; spin = false; }, render: () => renderFrame(0) };
+function renderFrame(dt) {
+  if (spin) yaw += dt * 0.15;
+  const s = current ? current.root.scale.x : 1, tgt = target.clone().multiplyScalar(s);
+  camera.position.set(tgt.x + Math.sin(yaw) * Math.cos(pitch) * dist * s, tgt.y + Math.sin(pitch) * dist * s, tgt.z + Math.cos(yaw) * Math.cos(pitch) * dist * s);
+  camera.lookAt(tgt); renderer.render(scene, camera);
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min((now - last) / 1000, 0.05); last = now; if (!window.__infPaused) step(reduce && A.cur === 'Idle' ? 0 : dt); renderFrame(dt); requestAnimationFrame(frame); }
+setType(0); requestAnimationFrame(frame); window.__infReady = true;
+})();
+</script>
