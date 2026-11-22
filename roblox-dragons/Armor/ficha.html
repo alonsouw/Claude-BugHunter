@@ -1,0 +1,252 @@
+<title>Armaduras</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de armería. Las tres armaduras en fila abren la página; después la comparación con la referencia, el visor 3D del modelo de juego, el proceso, el rig y el paquete para Studio. Tema oscuro único, elegido a propósito. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #a3262e;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+.strip5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip5 figure img { aspect-ratio: 4 / 5; object-fit: cover; }
+@media (max-width: 760px) { .strip5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.anims h4 { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-data); font-weight: 500; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#bTransform { grid-column: 1 / -1; border-color: var(--blood); color: #fff; background: #2a1215; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Armería · Estilo Roblox de bloques · Para personajes R15 y R6</div>
+      <h1>Armaduras</h1>
+      <div class="latin">Cuero, lobo y dragón: cada pieza se ajusta al cuerpo del jugador y reduce el daño de cualquier fuente</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">Cuero</span><span class="done">Lobo</span><span class="done">Dragón</span><span class="done">Equipar</span><span class="done">Defensa</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section>
+    <figure><img src="design/renders/lineup.jpg" alt="Tres maniquíes de bloques con las armaduras de cuero, lobo y dragón"><figcaption>De izquierda a derecha: dragón · lobo · cuero</figcaption></figure>
+    <div class="states" style="margin-top:12px">
+      <div><b>Cuero</b><span>Capucha, jubón con cordón y correa cruzada, hebillas de latón, cinturón con bolsas, brazales y botas altas. Ligera: −15 % de daño, +1 de velocidad.</span></div>
+      <div><b>Lobo</b><span>Casco con la cabeza de un lobo (hocico, orejas, colmillos y ojos que brillan), manto de piel, collar de colmillos, guanteletes con garras y cola. −25 % de daño, +2 de velocidad.</span></div>
+      <div><b>Dragón</b><span>Yelmo de escamas con visera que brilla, cresta y cuernos; coraza de escamas con la gema-ojo, alas plegadas, hombreras en capas con púas, garras y cola. Pesada: −45 % de daño, −1 de velocidad.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>En vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D de las armaduras"></canvas>
+        <div class="status" id="status"><b>●</b> Cuero</div>
+      </div>
+      <div class="controls">
+        <div><h3>Armadura</h3><div class="anims" id="sets"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tDark" aria-pressed="false">Noche</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button>
+          <button type="button" id="tBody" aria-pressed="true">Cuerpo</button></div></div>
+        <p class="note">Construido con los mismos planos que usa el instalador de Studio: cada pieza es una Part soldada a una parte del cuerpo R15. «Cuerpo» oculta el maniquí para ver solo la armadura.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>En el juego</h2>
+      <ul class="list">
+        <li><b>Maniquíes</b>: el instalador coloca tres maniquíes con las armaduras puestas. Acércate y pulsa <b>E</b> («Equipar») para ponértela; si ya la llevas, la misma tecla te la quita.</li>
+        <li><b>Se ajusta a ti</b>: cada pieza se escala al tamaño real de tus partes del cuerpo. Con avatares R6 se colocan sobre Torso, brazos y piernas equivalentes.</li>
+        <li><b>Defensa</b>: reduce el daño de <i>cualquier</i> fuente (lobos, infectados, caídas, armas de otros jugadores): cuando pierdes vida, se te devuelve el porcentaje de la armadura.</li>
+        <li><b>Velocidad</b>: el cuero y el lobo te hacen algo más rápido; el dragón, algo más lento.</li>
+        <li>Al morir y reaparecer conservas la armadura. Para darla por código: <code>ArmorService:Equip(jugador, "Dragon")</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <ol class="steps">
+        <li>No hay que importar nada: pega <code>roblox/InstallArmor.lua</code> en la Command Bar.</li>
+        <li>Los maniquíes aparecen frente al origen del mapa (muévelos donde quieras: tienda, campamento…).</li>
+        <li>Play, acércate a un maniquí y pulsa E.</li>
+      </ol>
+      <p class="note" style="margin-top:10px">No se ha probado dentro de Roblox Studio; el reparto de piezas, el escalado y la reducción de daño sí, en una simulación.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="src/armor_blueprints.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, SETS = ARMOR_SETS, DUMMY = ARMOR_DUMMY, STATS = ARMOR_STATS;
+const NAMES = [['Leather', 'Cuero'], ['Wolf', 'Lobo'], ['Dragon', 'Dragón']];
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); const BG = { day: new THREE.Color('#5a5f58'), night: new THREE.Color('#05070a') };
+scene.background = BG.day.clone(); scene.fog = new THREE.Fog('#5a5f58', 40, 120);
+const camera = new THREE.PerspectiveCamera(34, 1.6, 0.1, 300);
+const hemi = new THREE.HemisphereLight('#e6eef2', '#3a3326', 0.65); scene.add(hemi);
+const key = new THREE.DirectionalLight('#fff1e2', 1.15); key.position.set(-8, 14, -9); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -10, right: 10, top: 10, bottom: -3, near: 1, far: 50 }); key.shadow.bias = -0.0008; scene.add(key);
+const rim = new THREE.DirectionalLight('#b4c4ff', 0.7); rim.position.set(7, 6, 9); scene.add(rim);
+const LIGHTS = [[hemi, 0.65, 0.05], [key, 1.15, 0.05], [rim, 0.7, 0.15]];
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#3a3d33', roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const col = c => new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255);
+const mat = (c, m, neon) => neon ? new THREE.MeshBasicMaterial({ color: col(c).multiplyScalar(1.2) }) : new THREE.MeshStandardMaterial({ color: col(c), roughness: m === 'Fabric' ? 1 : (m === 'Metal' ? 0.35 : 0.6), metalness: m === 'Metal' ? 0.45 : 0 });
+// maniquí R15 de bloques con una armadura (igual que ArmorService: piezas en el centro de su parte + desplazamiento)
+function mannequin(setName) {
+  const g = new THREE.Group(), body = [];
+  for (const [name, P] of Object.entries(DUMMY.parts)) {
+    const c = /Head|Hand|LowerArm/.test(name) ? DUMMY.skin : (/Torso|UpperArm/.test(name) ? DUMMY.shirt : DUMMY.pants);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...P.size), mat(c, 'SmoothPlastic')); m.position.set(...P.center); m.castShadow = m.receiveShadow = true; g.add(m); body.push(m);
+  }
+  const head = DUMMY.parts.Head;   // cara sencilla del maniquí
+  for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.04), mat([20, 20, 20])); e.position.set(head.center[0] + s * 0.22, head.center[1] + 0.08, -0.61); g.add(e); body.push(e); }
+  if (setName) for (const p of SETS[setName].pieces) {
+    const P = DUMMY.parts[p.part];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...p.size), mat(p.color, p.material, p.neon));
+    m.position.set(P.center[0] + p.offset[0], P.center[1] + p.offset[1], P.center[2] + p.offset[2]);
+    m.rotation.set(p.rot[0] * D2R, p.rot[1] * D2R, p.rot[2] * D2R, 'XYZ'); m.castShadow = true; g.add(m);
+  }
+  return { root: g, body };
+}
+let current = null, idx = 0, lineup = [], showBody = true;
+function setArmor(i) {
+  idx = i; if (current) scene.remove(current.root);
+  current = mannequin(NAMES[i][0]); current.body.forEach(b => b.visible = showBody); scene.add(current.root);
+  document.querySelectorAll('#sets button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+  const st = STATS[NAMES[i][0]];
+  document.getElementById('status').innerHTML = `<b>●</b> ${NAMES[i][1]} · −${Math.round(st.Reduction * 100)} % daño · ${st.Speed > 0 ? '+' : ''}${st.Speed} velocidad`;
+}
+let dark = false;
+function setDark(on) { dark = on; for (const [l, day, night] of LIGHTS) l.intensity = on ? night : day; scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(on ? BG.night : BG.day); }
+const setsBox = document.getElementById('sets');
+setsBox.innerHTML = NAMES.map(([k, l], i) => `<button type="button" data-i="${i}" aria-pressed="false">${l}</button>`).join('');
+setsBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setArmor(+b.dataset.i); });
+let spin = !reduce;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tDark', () => dark, v => setDark(v));
+tg('tBody', () => showBody, v => { showBody = v; if (current) current.body.forEach(b => b.visible = v); });
+let yaw = -2.6, pitch = 0.12, dist = 13, drag = null;
+const target = new THREE.Vector3(0, 3.2, 0);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.05, Math.min(1.25, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(4, Math.min(40, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+function showLineup(on) {
+  lineup.forEach(r => scene.remove(r.root)); lineup = [];
+  if (current) current.root.visible = !on;
+  if (on) NAMES.forEach(([n], i) => { const r = mannequin(n); r.root.position.x = (i - 1) * 4.2; scene.add(r.root); lineup.push(r); });
+}
+window.__arm = { setArmor, setDark, showLineup, setCam: (y, p, d, ty) => { yaw = y; pitch = p; dist = d; target.y = ty; spin = false; }, render: () => renderFrame(0) };
+function renderFrame(dt) {
+  if (spin) yaw += dt * 0.3;
+  camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * dist, target.y + Math.sin(pitch) * dist, target.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+  camera.lookAt(target); renderer.render(scene, camera);
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min((now - last) / 1000, 0.05); last = now; renderFrame(dt); requestAnimationFrame(frame); }
+setArmor(0); requestAnimationFrame(frame); window.__armReady = true;
+})();
+</script>
