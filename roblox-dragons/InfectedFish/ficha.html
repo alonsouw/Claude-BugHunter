@@ -1,0 +1,327 @@
+<title>Pez infectado</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de bestiario. La foto del pez y su gigante abre la página; después el visor 3D bajo el agua, el comportamiento, el sonido y el paquete para Studio. Tema oscuro único, color de acento verde enfermizo para el agua. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #a3262e;
+  --sick: #b9e04a;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+.strip5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip5 figure img { aspect-ratio: 4 / 5; object-fit: cover; }
+@media (max-width: 760px) { .strip5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.anims h4 { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-data); font-weight: 500; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#bTransform { grid-column: 1 / -1; border-color: var(--blood); color: #fff; background: #2a1215; }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Bestiario Umbral · Agua · Estilo Roblox de bloques</div>
+      <h1>Pez infectado</h1>
+      <div class="latin">Nada en bancos, te rodea antes de atacar y salta fuera del agua para morderte en la orilla</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">Normal</span><span class="done">Gigante</span><span class="done">Animaciones</span><span class="done">Nado y salto</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section>
+    <figure><img src="design/renders/school.jpg" alt="Un banco de peces infectados de bloques bajo el agua, con uno gigante detrás"><figcaption>Un banco de tres peces infectados y, detrás, uno gigante (1 de cada 8)</figcaption></figure>
+    <div class="states" style="margin-top:12px">
+      <div><b>Pez infectado</b><span>Unos 5,5 studs. Colmillos como agujas, un ojo que brilla y el otro colgando de la cuenca, costillas al aire en una herida, pústulas verdes que brillan, gusanos saliendo de las agallas y la cola en hueso. Vida 60, mordisco 12.</span></div>
+      <div><b>Gigante</b><span>Unos 12 studs y más oscuro: un señuelo luminoso en la frente, barbas, púas de hueso que le rompen el lomo y percebes. No da vueltas, embiste directo. Vida 320, mordisco 30, salta más lejos.</span></div>
+      <div><b>En el agua</b><span>Si te metes en su zona te ve, chilla, te rodea un par de vueltas y embiste. Muerde al llegar, con su tiempo de recarga.</span></div>
+      <div><b>En la orilla</b><span>Si estás cerca del borde, salta fuera del agua en arco, te muerde en el aire y vuelve a caer al agua.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>En vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D del pez infectado"></canvas>
+        <div class="status" id="status"><b>●</b> Swim</div>
+      </div>
+      <div class="controls">
+        <div><h3>Variante</h3><div class="anims" id="types"></div></div>
+        <div><h3>Animación</h3><div class="anims" id="anims"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tDark" aria-pressed="false">Agua oscura</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
+        <p class="note">Construido con los mismos planos que usa el instalador de Studio: cada bloque es una Part y cada articulación un Motor6D. Las animaciones son los mismos datos que reproduce Roblox.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>En el juego</h2>
+      <ul class="list">
+        <li><b>Zonas de agua</b>: viven dentro de partes invisibles con la etiqueta <code>FishZone</code> (o en <code>Workspace.FishZones</code>). La cara de arriba de la parte es la superficie del agua. El instalador crea un estanque de prueba con agua de Terrain.</li>
+        <li><b>Bancos</b>: aparecen en grupos de 2 a 4 por zona; 1 de cada 8 es gigante. Los muertos reaparecen al rato.</li>
+        <li><b>Te ven</b> si estás dentro de su zona a su distancia de detección. Chillan, te rodean (el gigante no) y embisten.</li>
+        <li><b>Saltan</b> fuera del agua hacia quien esté en la orilla, a menos de 16 studs (24 el gigante), con su tiempo de recarga.</li>
+        <li><b>Humanoid</b>: tienen vida y cualquier arma de Roblox les hace daño. Al morir se ponen panza arriba y flotan hasta la superficie.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Sonido</h2>
+      <div class="sounds">
+        <div><b>Screech</b><span class="note">Chillido húmedo al descubrirte.</span><audio controls preload="none" src="sounds/Screech.ogg"></audio></div>
+        <div><b>Bite</b><span class="note">Mordisco: chasquido y desgarro.</span><audio controls preload="none" src="sounds/Bite.ogg"></audio></div>
+        <div><b>Splash</b><span class="note">Al salir del agua y al volver a caer.</span><audio controls preload="none" src="sounds/Splash.ogg"></audio></div>
+        <div><b>Gurgle</b><span class="note">Burbujeo mientras nada.</span><audio controls preload="none" src="sounds/Gurgle.ogg"></audio></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <ol class="steps">
+        <li>No hay que importar nada: pega <code>roblox/InstallFish.lua</code> en la Command Bar. Construye los dos peces con Parts y un estanque de prueba.</li>
+        <li>Para tu propio lago: pon una parte que cubra el agua (de la superficie al fondo) con la etiqueta <code>FishZone</code>, o déjala en <code>Workspace.FishZones</code>.</li>
+        <li>Opcional: sube <code>sounds/*.ogg</code> y pega sus ids en <code>SOUND_IDS</code>.</li>
+        <li>Play y métete en el agua.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Lo que conviene revisar</h2>
+      <ul class="list todo">
+        <li>No se ha probado dentro de Roblox Studio: el instalador, el movimiento con AlignPosition y los saltos. La lógica de decisiones sí, en simulación.</li>
+        <li>Las animaciones se reproducen en cada cliente (Roblox no replica Motor6D.Transform), como en los infectados.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="src/fish_blueprints.js"></script>
+<script src="src/fish_anims.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, BP = FISH_BLUEPRINTS, ST = FISH_STATS, ANIMS = FISH_ANIMS;
+const TYPES = [['Normal', 'Normal'], ['Giant', 'Gigante']];
+const ORDER = ['Swim', 'Idle', 'Charge', 'Bite', 'Leap', 'Screech', 'Hurt', 'Death'];
+const LABEL = { Idle: 'Flotar', Swim: 'Nadar', Charge: 'Embestir', Bite: 'Morder', Leap: 'Saltar', Screech: 'Chillar', Hurt: 'Herido', Death: 'Morir' };
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); const BG = { day: new THREE.Color('#2f5a58'), night: new THREE.Color('#03100f') };
+scene.background = BG.day.clone(); scene.fog = new THREE.Fog('#2f5a58', 14, 70);
+const camera = new THREE.PerspectiveCamera(34, 1.6, 0.1, 300);
+const hemi = new THREE.HemisphereLight('#bfe8e0', '#24301e', 0.75); scene.add(hemi);
+const key = new THREE.DirectionalLight('#e8fff4', 0.85); key.position.set(-4, 18, -6); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 60 }); key.shadow.bias = -0.0008; scene.add(key);
+const rim = new THREE.DirectionalLight('#7fb8ff', 0.5); rim.position.set(7, 4, 9); scene.add(rim);
+const LIGHTS = [[hemi, 0.75, 0.06], [key, 0.85, 0.04], [rim, 0.5, 0.12]];
+const col = c => new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255);
+const mat = (c, neon) => neon ? new THREE.MeshBasicMaterial({ color: col(c).multiplyScalar(1.3) }) : new THREE.MeshStandardMaterial({ color: col(c), roughness: 0.6 });
+// fondo: arena, rocas y algas de bloques que se mecen
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#4a5240', roughness: 1 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+const kelp = [];
+let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let i = 0; i < 26; i++) {
+  const a = rnd() * Math.PI * 2, r = 7 + rnd() * 16, x = Math.cos(a) * r, z = Math.sin(a) * r;
+  if (rnd() < 0.4) { const s = 0.6 + rnd() * 1.6, m = new THREE.Mesh(new THREE.BoxGeometry(s * 1.4, s, s), mat([70 + rnd() * 20 | 0, 74, 66])); m.position.set(x, s / 2, z); m.rotation.y = rnd() * 3; m.castShadow = m.receiveShadow = true; scene.add(m); continue; }
+  const g = new THREE.Group(); g.position.set(x, 0, z); let parent = g; const n = 4 + (rnd() * 5 | 0);
+  for (let k = 0; k < n; k++) { const seg = new THREE.Group(); seg.position.y = k ? 1 : 0; const m = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1, 0.12), mat([46, 92 + k * 6, 52])); m.position.y = 0.5; m.castShadow = true; seg.add(m); parent.add(seg); parent = seg; kelp.push({ seg, ph: rnd() * 6 + k * 0.5 }); }
+  scene.add(g);
+}
+function build(bp) {
+  const g = new THREE.Group(), groups = {}, pivots = {};
+  pivots.Root = bp.limbs.Root.center; groups.Root = new THREE.Group(); groups.Root.position.set(...pivots.Root); g.add(groups.Root);
+  for (const [parent, child, piv] of bp.joints) {
+    const grp = new THREE.Group(); const pp = pivots[parent];
+    grp.position.set(piv[0] - pp[0], piv[1] - pp[1], piv[2] - pp[2]); groups[parent].add(grp); groups[child] = grp; pivots[child] = piv;
+  }
+  for (const [name, L] of Object.entries(bp.limbs)) {
+    if (L.transparent) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...L.size), mat(L.color)); const pv = pivots[name];
+    m.position.set(L.center[0] - pv[0], L.center[1] - pv[1], L.center[2] - pv[2]); m.castShadow = m.receiveShadow = true; groups[name].add(m);
+  }
+  for (const d of bp.details) {
+    const L = bp.limbs[d.limb], pv = pivots[d.limb];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...d.size), mat(d.color, d.neon));
+    m.position.set(L.center[0] + d.offset[0] - pv[0], L.center[1] + d.offset[1] - pv[1], L.center[2] + d.offset[2] - pv[2]);
+    m.rotation.set(d.rot[0] * D2R, d.rot[1] * D2R, d.rot[2] * D2R, 'XYZ'); m.castShadow = !d.neon; groups[d.limb].add(m);
+  }
+  return { root: g, groups };
+}
+const SWIM_Y = 3.2;
+let current = null, typeIdx = 0, school = [];
+const A = { cur: 'Swim', t: 0, fade: 0, fadeT: 0.25, from: {}, values: {} };
+function scaleOf(name) { return ST[name].Scale; }
+function setType(i) {
+  typeIdx = i; if (current) scene.remove(current.root);
+  const name = TYPES[i][0], s = scaleOf(name); current = build(BP[name]); current.root.scale.setScalar(s); current.root.position.y = SWIM_Y * Math.max(1, s * 0.75); scene.add(current.root);
+  document.querySelectorAll('#types button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+  A.values = {}; play(A.cur, 0);
+}
+function play(name, fadeT = 0.25) { A.from = JSON.parse(JSON.stringify(A.values)); A.cur = name; A.t = 0; A.fade = 0; A.fadeT = fadeT; updateUI(); }
+const E = new THREE.Euler();
+function pose(rig, anim, t, track) {
+  for (const n in rig.groups) {
+    if (n === 'Root') continue;
+    const j = anim.joints[n]; let v = [0, 0, 0, 0, 0, 0];
+    if (j) { const { r, p } = AnimEval.evalJoint(j, t, anim.dur, anim.loop); v = [...r, ...p]; }
+    if (track) { const f = A.from[n], w = A.fadeT > 0 ? Math.min(A.fade / A.fadeT, 1) : 1, ws = w * w * (3 - 2 * w); if (f && ws < 1) v = v.map((x, i) => f[i] + (x - f[i]) * ws); A.values[n] = v; }
+    const g = rig.groups[n]; if (!g.userData.base) g.userData.base = g.position.clone();
+    g.position.copy(g.userData.base).add(new THREE.Vector3(v[3], v[4], v[5]));
+    g.rotation.copy(E.set(v[0] * D2R, v[1] * D2R, v[2] * D2R, 'XYZ'));
+  }
+}
+let clock = 0;
+function step(dt) {
+  clock += dt;
+  for (const k of kelp) k.seg.rotation.z = Math.sin(clock * 0.9 + k.ph) * 0.12;
+  const anim = ANIMS[A.cur]; A.t += dt; A.fade += dt;
+  if (!anim.loop && A.t >= anim.dur) { if (anim.next) { play(anim.next, 0.2); return step(0); } A.t = anim.dur; }
+  if (current) {
+    pose(current, anim, anim.loop ? A.t % anim.dur : A.t, true);
+    const s = current.root.scale.x, base = SWIM_Y * Math.max(1, s * 0.75);
+    // en el visor el salto sube y baja en el sitio; muerto queda panza arriba (en el juego lo hace el servidor)
+    current.root.position.y = base + (A.cur === 'Leap' ? Math.sin(Math.min(A.t / 1.0, 1) * Math.PI) * 2.5 * s : Math.sin(clock * 1.3) * 0.12 * s);
+    current.root.rotation.x = A.cur === 'Leap' ? (0.5 - Math.min(A.t / 1.0, 1)) * 0.9 : 0;
+    current.root.rotation.z = A.cur === 'Death' ? Math.min(A.t / 1.4, 1) * Math.PI : 0;
+  }
+  school.forEach((r, i) => pose(r.rig, ANIMS[r.anim], (clock * (r.speed || 1) + i * 0.37) % ANIMS[r.anim].dur));
+}
+let dark = false;
+function setDark(on) { dark = on; for (const [l, day, night] of LIGHTS) l.intensity = on ? night : day; scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(on ? BG.night : BG.day); }
+const typesBox = document.getElementById('types');
+typesBox.innerHTML = TYPES.map(([k, l], i) => `<button type="button" data-i="${i}" aria-pressed="false">${l}</button>`).join('');
+typesBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setType(+b.dataset.i); });
+const animBox = document.getElementById('anims');
+animBox.innerHTML = ORDER.map(n => `<button type="button" data-a="${n}" aria-pressed="false">${LABEL[n]}</button>`).join('');
+animBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) play(b.dataset.a); });
+function updateUI() { animBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.a === A.cur)); document.getElementById('status').innerHTML = `<b>●</b> ${A.cur} · ${LABEL[A.cur]}`; }
+let spin = !reduce;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tDark', () => dark, v => setDark(v));
+let yaw = -2.2, pitch = 0.18, dist = 12, drag = null;
+const target = new THREE.Vector3(0, 0, 0.4);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(-0.5, Math.min(1.25, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(4, Math.min(45, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+function showSchool(on) {   // un banco de tres y un gigante detrás (imagen de cabecera)
+  school.forEach(r => scene.remove(r.rig.root)); school = [];
+  if (current) current.root.visible = !on;
+  if (!on) return;
+  const spots = [['Giant', 10, 8, 4, 0.25, 'Swim', 0.8], ['Normal', -1, 2.6, -7, -0.15, 'Charge', 1], ['Normal', -2, 4.2, -0.5, 0.1, 'Swim', 1.1], ['Normal', -0.5, 2.8, 5.5, 0.3, 'Swim', 0.9]];
+  for (const [n, x, y, z, ry, anim, speed] of spots) { const rig = build(BP[n]); rig.root.scale.setScalar(scaleOf(n)); rig.root.position.set(x, y, z); rig.root.rotation.y = ry; scene.add(rig.root); school.push({ rig, anim, speed }); }
+  step(0);
+}
+window.__fish = { play, step, setType, setDark, showSchool, setCam: (y, p, d, ty, tz) => { yaw = y; pitch = p; dist = d; target.y = ty || 0; target.z = tz || 0; spin = false; }, render: () => renderFrame(0) };
+function renderFrame(dt) {
+  if (spin) yaw += dt * 0.15;
+  const s = current && !school.length ? current.root.scale.x : 1;
+  const tgt = school.length ? new THREE.Vector3(0, 3.6 + target.y, target.z) : new THREE.Vector3(0, current.root.position.y + target.y * s, target.z * s);
+  camera.position.set(tgt.x + Math.sin(yaw) * Math.cos(pitch) * dist * s, tgt.y + Math.sin(pitch) * dist * s, tgt.z + Math.cos(yaw) * Math.cos(pitch) * dist * s);
+  camera.lookAt(tgt); renderer.render(scene, camera);
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min((now - last) / 1000, 0.05); last = now; if (!window.__fishPaused) step(reduce ? 0 : dt); renderFrame(dt); requestAnimationFrame(frame); }
+setType(0); requestAnimationFrame(frame); window.__fishReady = true;
+})();
+</script>
