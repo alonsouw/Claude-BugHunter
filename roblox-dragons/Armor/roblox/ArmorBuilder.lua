@@ -63,6 +63,19 @@ function ArmorBuilder.Refund(prev: number, new: number, reduction: number): numb
 	return new + (prev - new) * math.clamp(reduction, 0, 0.95)
 end
 
+-- materiales: si una versión de Roblox no tiene alguno (Leather, Carpet…), se usa uno parecido en vez de fallar
+local FALLBACK = { Leather = "Fabric", Carpet = "Fabric", Pebble = "Slate", DiamondPlate = "Metal" }
+local function material(name)
+	local ok, m = pcall(function()
+		return Enum.Material[name]
+	end)
+	if ok and m then
+		return m
+	end
+	local fb = FALLBACK[name]
+	return fb and material(fb) or Enum.Material.SmoothPlastic
+end
+
 function ArmorBuilder.Detach(character)
 	local old = character:FindFirstChild("ArmorPieces")
 	if old then
@@ -106,7 +119,7 @@ function ArmorBuilder.Attach(character, setName: string)
 				* CFrame.new(p.offset[1] * sc.X, p.offset[2] * sc.Y, p.offset[3] * sc.Z)
 				* CFrame.Angles(math.rad(p.rot[1]), math.rad(p.rot[2]), math.rad(p.rot[3]))
 			part.Color = Color3.fromRGB(p.color[1], p.color[2], p.color[3])
-			part.Material = p.neon and Enum.Material.Neon or (Enum.Material[p.material] or Enum.Material.SmoothPlastic)
+			part.Material = p.neon and Enum.Material.Neon or material(p.material)
 			part.TopSurface, part.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 			part.CanCollide, part.CanQuery, part.CanTouch, part.Massless = false, false, false, true
 			part.Anchored = false

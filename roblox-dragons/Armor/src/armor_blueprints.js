@@ -4,7 +4,7 @@
  *
  * Cada pieza va soldada a una parte del cuerpo R15 y se define para el tamaño por defecto de esa parte
  * (DUMMY.parts). Al equiparla, ArmorService la escala por eje al tamaño real de la parte del jugador, así
- * encaja en cuerpos más anchos o más altos. Para R6 hay una tabla de equivalencias (R6_MAP en ArmorService).
+ * encaja en cuerpos más anchos o más altos. Para R6 hay una tabla de equivalencias (R6_MAP en ArmorBuilder).
  *
  * pieza: { part, size, offset (desde el centro de la parte), rot (grados XYZ), color, material, neon }
  * Las piezas del lado derecho se reflejan solas al izquierdo (mirror).
@@ -38,160 +38,269 @@ function set(name) {
   return { name, pieces, add, both };
 }
 
-// ------------------------------------------------------------------ CUERO
+const D2R = Math.PI / 180;
+// ------------------------------------------------------------------ CUERO (jubón de cuero curtido con cordones, hombreras en láminas y cota de malla)
 function leather() {
   const S = set('Leather'), { add, both } = S;
-  const L = [112, 74, 44], D = [74, 48, 30], ST = [190, 160, 108], BR = [200, 164, 74], F = 'Fabric';
-  // capucha de cuero con banda en la frente
-  add('Head', [1.32, 0.42, 1.32], [0, 0.44, 0.04], L, { material: F });
-  add('Head', [1.34, 0.14, 1.34], [0, 0.22, 0], D, { material: F });
-  add('Head', [0.16, 0.7, 1.1], [0.66, -0.05, 0.1], L, { material: F }); add('Head', [0.16, 0.7, 1.1], [-0.66, -0.05, 0.1], L, { material: F });
-  add('Head', [1.32, 0.9, 0.16], [0, 0.0, 0.66], L, { material: F });
-  // jubón
-  add('UpperTorso', [2.12, 1.66, 1.14], [0, 0.02, 0], L, { material: F });
-  add('UpperTorso', [0.14, 1.5, 0.06], [0, 0, -0.6], D);                                        // cordón central
-  for (let i = 0; i < 5; i++) add('UpperTorso', [0.36, 0.05, 0.05], [0, 0.6 - i * 0.3, -0.62], ST, { rot: [0, 0, i % 2 ? 20 : -20] });
-  add('UpperTorso', [0.24, 2.3, 0.08], [0.15, 0.05, -0.62], D, { rot: [0, 0, 40] });             // correa cruzada
-  add('UpperTorso', [0.24, 2.3, 0.08], [-0.15, 0.05, 0.62], D, { rot: [0, 0, -40] });
-  add('UpperTorso', [0.28, 0.22, 0.1], [0.42, 0.42, -0.66], BR);                                  // hebilla
-  add('UpperTorso', [2.18, 0.2, 1.2], [0, 0.82, 0], D, { material: F });                         // cuello
-  // cinturón con bolsas
-  add('LowerTorso', [2.18, 0.32, 1.18], [0, 0, 0], D);
-  add('LowerTorso', [0.34, 0.26, 0.1], [0, 0, -0.62], BR);
-  both('UpperLeg', [0.5, 0.45, 0.35], [0.55, 0.42, -0.25], L, { material: F });                 // bolsa en la cadera
-  both('UpperLeg', [0.5, 0.08, 0.37], [0.55, 0.66, -0.25], D);
-  // hombreras, brazales, guantes sin dedos
-  both('UpperArm', [1.22, 0.36, 1.22], [0.05, 0.42, 0], L, { material: F, rot: [0, 0, -8] });
-  both('UpperArm', [1.24, 0.08, 1.24], [0.05, 0.26, 0], D);
-  both('LowerArm', [1.12, 0.72, 1.12], [0, -0.1, 0], L, { material: F });
-  for (const y of [0.15, -0.3]) both('LowerArm', [1.14, 0.08, 1.14], [0, y, 0], D);
-  both('Hand', [1.06, 0.26, 1.06], [0, 0, 0], D);
-  // musleras y botas altas
-  both('UpperLeg', [1.08, 0.7, 0.2], [0, -0.1, -0.52], L, { material: F });
-  both('LowerLeg', [1.12, 0.95, 1.12], [0, -0.1, 0], D);
-  both('LowerLeg', [1.16, 0.14, 1.16], [0, 0.32, 0], L);
-  both('LowerLeg', [0.2, 0.12, 0.08], [0, 0.0, -0.58], BR);
-  both('Foot', [1.12, 0.36, 1.3], [0, 0.02, -0.12], D);
-  both('Foot', [1.14, 0.08, 1.32], [0, -0.15, -0.12], [40, 28, 20]);
+  S.bare = ['Head'];   // sin casco: la cara queda al aire
+  const LB = [86, 46, 30], LH = [116, 66, 40], LD = [50, 27, 18], BR = [182, 142, 68], CH = [78, 80, 84], SL = [56, 56, 58], GL = [26, 24, 24], PT = [40, 38, 38];
+  const LE = { material: 'Leather' };
+  // jubón con cuello alto
+  add('UpperTorso', [2.12, 1.66, 1.14], [0, 0.02, 0], LB, LE);
+  for (const s of [-1, 1]) {
+    add('UpperTorso', [0.5, 0.34, 0.12], [s * 0.3, 0.94, -0.42], LB, { material: 'Leather', rot: [0, s * 18, 0] });
+    add('UpperTorso', [0.12, 0.34, 0.8], [s * 0.52, 0.94, 0], LB, LE);
+    add('UpperTorso', [0.5, 0.04, 0.13], [s * 0.3, 1.1, -0.42], LH, { rot: [0, s * 18, 0] });                 // ribete del cuello
+  }
+  add('UpperTorso', [1.0, 0.34, 0.12], [0, 0.94, 0.42], LB, LE);
+  add('UpperTorso', [1.9, 0.035, 0.03], [0, 0.52, -0.585], LH);                                                 // costura del canesú
+  for (const s of [-1, 1]) add('UpperTorso', [0.035, 1.25, 0.03], [s * 0.62, -0.12, -0.585], LH, { rot: [0, 0, s * 5] });   // costuras laterales
+  // cordones en X con ojales de latón
+  add('UpperTorso', [0.1, 1.5, 0.04], [0, -0.04, -0.585], LD);
+  for (let i = 0; i < 7; i++) {
+    const y = 0.66 - i * 0.22;
+    for (const s of [-1, 1]) add('UpperTorso', [0.06, 0.06, 0.04], [s * 0.14, y, -0.6], BR);
+    if (i < 6) for (const s of [-1, 1]) add('UpperTorso', [0.34, 0.035, 0.03], [0, y - 0.11, -0.615], LD, { rot: [0, 0, s * 33] });
+  }
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) add('UpperTorso', [0.03, 0.035, 0.3], [s * 1.065, 0.1 - i * 0.2, 0], LD, { rot: [s * 30, 0, 0] });   // cordones de los costados
+  // faldón partido por delante, con ribete
+  for (const s of [-1, 1]) {
+    add('LowerTorso', [0.96, 0.95, 0.1], [s * 0.53, -0.6, -0.56], LB, { material: 'Leather', rot: [-5, 0, 0] });
+    add('LowerTorso', [0.96, 0.05, 0.11], [s * 0.53, -1.04, -0.6], LH, { rot: [-5, 0, 0] });
+    add('LowerTorso', [0.1, 0.95, 1.12], [s * 1.06, -0.6, 0], LB, LE);
+  }
+  add('LowerTorso', [2.1, 0.95, 0.1], [0, -0.6, 0.56], LB, { material: 'Leather', rot: [5, 0, 0] });
+  add('LowerTorso', [2.1, 0.05, 0.11], [0, -1.04, 0.6], LH, { rot: [5, 0, 0] });
+  // cinturón ancho con hebilla de marco y dos bolsas con solapa y hebilla
+  add('LowerTorso', [2.22, 0.3, 1.22], [0, 0.02, 0], LD, LE);
+  for (const y of [0.13, -0.09]) add('LowerTorso', [0.36, 0.05, 0.05], [0, y, -0.63], BR, { material: 'Metal' });
+  for (const s of [-1, 1]) add('LowerTorso', [0.05, 0.27, 0.05], [s * 0.16, 0.02, -0.63], BR, { material: 'Metal' });
+  add('LowerTorso', [0.035, 0.2, 0.04], [0, 0.02, -0.65], BR, { material: 'Metal' });
+  add('LowerTorso', [0.34, 0.18, 0.04], [0.38, 0.02, -0.625], LB, LE);
+  for (const s of [-1, 1]) {
+    const x = s * 0.66;
+    add('LowerTorso', [0.62, 0.62, 0.32], [x, -0.42, -0.76], LB, LE);
+    add('LowerTorso', [0.66, 0.3, 0.36], [x, -0.2, -0.77], LH, { material: 'Leather', rot: [-6, 0, 0] });
+    add('LowerTorso', [0.66, 0.035, 0.37], [x, -0.33, -0.775], LD, { rot: [-6, 0, 0] });                       // costura de la solapa
+    add('LowerTorso', [0.12, 0.5, 0.04], [x, -0.36, -0.95], LD, LE);
+    add('LowerTorso', [0.2, 0.16, 0.04], [x, -0.36, -0.975], BR, { material: 'Metal' });
+    add('LowerTorso', [0.1, 0.08, 0.04], [x, -0.36, -0.99], LD);
+  }
+  // hombreras de tres láminas remachadas
+  for (let k = 0; k < 3; k++) {
+    const w = 1.24 - k * 0.05, y = 0.5 - k * 0.22, x = 0.1 + k * 0.03, rz = -(16 - k * 4), r = rz * D2R;
+    both('UpperArm', [w, 0.3, w], [x, y, 0], k % 2 ? LH : LB, { material: 'Leather', rot: [0, 0, rz] });
+    both('UpperArm', [w + 0.02, 0.045, w + 0.02], [x, y - 0.15, 0], LD, { rot: [0, 0, rz] });
+    for (const dx of [0.15, 0.42]) both('UpperArm', [0.07, 0.07, 0.05], [x + dx * Math.cos(r), y + dx * Math.sin(r), -w / 2 - 0.02], BR, { material: 'Metal', rot: [0, 0, rz] });
+  }
+  // cota de malla bajo la hombrera y manga oscura
+  both('UpperArm', [1.08, 0.78, 1.08], [0, -0.2, 0], CH, { material: 'DiamondPlate' });
+  both('LowerArm', [1.04, 0.3, 1.04], [0, 0.38, 0], SL, { material: 'Fabric' });
+  // brazales largos con correas y hebillas
+  both('LowerArm', [1.14, 0.78, 1.14], [0, -0.08, 0], LB, LE);
+  for (const y of [0.31, -0.47]) both('LowerArm', [1.18, 0.06, 1.18], [0, y, 0], LH);
+  for (const y of [0.12, -0.24]) {
+    both('LowerArm', [1.17, 0.08, 1.17], [0, y, 0], LD, LE);
+    both('LowerArm', [0.05, 0.14, 0.16], [0.6, y, -0.18], BR, { material: 'Metal' });
+  }
+  both('LowerArm', [0.08, 0.32, 0.62], [0.58, 0.33, 0.1], LB, { material: 'Leather', rot: [0, 0, -8] });         // codera
+  // cuchillo en el brazal derecho
+  add('RightLowerArm', [0.08, 0.55, 0.16], [0.64, -0.12, 0.1], LD, LE);
+  add('RightLowerArm', [0.09, 0.05, 0.26], [0.645, 0.17, 0.1], BR, { material: 'Metal' });
+  add('RightLowerArm', [0.08, 0.26, 0.08], [0.645, 0.33, 0.1], GL, LE);
+  add('RightLowerArm', [0.09, 0.07, 0.09], [0.645, 0.48, 0.1], BR, { material: 'Metal' });
+  // guantes negros
+  both('Hand', [1.1, 0.3, 1.1], [0, 0, 0], GL, LE);
+  both('Hand', [1.16, 0.12, 1.16], [0, 0.16, 0], GL, LE);
+  for (let i = 0; i < 4; i++) both('Hand', [0.2, 0.3, 0.24], [-0.36 + i * 0.24, -0.27, -0.12], GL, LE);
+  both('Hand', [0.2, 0.25, 0.3], [-0.5, -0.15, -0.35], GL, { material: 'Leather', rot: [0, -30, 0] });
+  // calzas oscuras y botas con vuelta
+  both('UpperLeg', [1.04, 1.22, 1.04], [0, 0, 0], PT, { material: 'Fabric' });
+  both('LowerLeg', [1.12, 1.0, 1.12], [0, -0.08, 0], LD, LE);
+  both('LowerLeg', [1.2, 0.24, 1.2], [0, 0.44, 0], LB, LE);
+  both('LowerLeg', [1.15, 0.08, 1.15], [0, -0.1, 0], LB);
+  both('LowerLeg', [0.05, 0.13, 0.16], [0.59, -0.1, -0.15], BR, { material: 'Metal' });
+  both('Foot', [1.12, 0.36, 1.32], [0, 0.02, -0.12], LD, LE);
+  both('Foot', [1.14, 0.08, 1.34], [0, -0.15, -0.12], [32, 22, 16]);
   return S;
 }
 
-// ------------------------------------------------------------------ LOBO
+// ------------------------------------------------------------------ LOBO (piel de lobo como capucha, rostro en sombra, capa raída, vendas)
 function wolf() {
   const S = set('Wolf'), { add, both } = S;
-  const FUR = [124, 120, 112], FD = [84, 80, 74], FL = [176, 172, 162], LE = [92, 64, 42], BO = [228, 218, 192], DK = [30, 26, 26];
-  // casco: la cabeza de un lobo encima de la del jugador, hocico sobre la frente, orejas, colmillos
-  add('Head', [1.36, 0.5, 1.36], [0, 0.5, 0.05], FUR, { material: 'Fabric' });
-  add('Head', [0.66, 0.38, 0.75], [0, 0.5, -0.95], FUR, { material: 'Fabric' });                // hocico
-  add('Head', [0.5, 0.18, 0.7], [0, 0.32, -0.95], FL, { material: 'Fabric' });                 // mandíbula clara
-  add('Head', [0.22, 0.16, 0.12], [0, 0.6, -1.33], DK);                                          // trufa
+  const FL = [158, 154, 146], FM = [112, 108, 102], FD = [62, 58, 56], VOID = [12, 11, 12], EYE = [245, 245, 238], BO = [232, 224, 200];
+  const VE = [64, 52, 44], STUD = [150, 146, 140], CL = [132, 126, 116], CLD = [92, 86, 78], BD = [190, 180, 158], BD2 = [160, 150, 130], BEL = [40, 33, 28], RP = [64, 50, 40], BLOOD = [110, 46, 40];
+  const FUR = { material: 'Carpet' }, CLOTH = { material: 'Fabric' };
+  // rostro: sombra negra bajo la piel con dos ojos blancos rasgados
+  add('Head', [1.24, 1.24, 0.06], [0, 0, -0.62], VOID);
+  for (const s of [-1, 1]) add('Head', [0.24, 0.06, 0.03], [s * 0.25, 0.1, -0.66], EYE, { neon: true, rot: [0, 0, s * 10] });
+  // la cabeza del lobo encima: cráneo, frente, hocico, orejas, colmillos
+  add('Head', [1.44, 0.6, 1.5], [0, 0.55, 0.05], FL, FUR);
+  add('Head', [1.44, 0.2, 0.3], [0, 0.32, -0.72], FM, FUR);
+  add('Head', [0.64, 0.4, 0.72], [0, 0.56, -1.0], FL, FUR);
+  add('Head', [0.22, 0.06, 0.74], [0, 0.77, -0.98], FD);
+  add('Head', [0.28, 0.18, 0.14], [0, 0.62, -1.4], VOID);
   for (const s of [-1, 1]) {
-    add('Head', [0.28, 0.42, 0.14], [s * 0.42, 0.88, 0.1], FUR, { material: 'Fabric', rot: [0, 0, s * -10] });   // orejas
-    add('Head', [0.14, 0.26, 0.06], [s * 0.42, 0.86, 0.02], FD, { rot: [0, 0, s * -10] });
-    add('Head', [0.16, 0.08, 0.06], [s * 0.38, 0.62, -0.62], [250, 210, 90], { neon: true });   // ojos del lobo
-    for (let i = 0; i < 3; i++) add('Head', [0.06, 0.12, 0.06], [s * 0.26, 0.24, -0.72 - i * 0.18], BO);   // colmillos
+    add('Head', [0.06, 0.16, 0.06], [s * 0.22, 0.3, -1.26], BO);
+    add('Head', [0.06, 0.1, 0.06], [s * 0.12, 0.32, -1.3], BO);
+    add('Head', [0.36, 0.62, 0.16], [s * 0.48, 1.1, 0.05], FL, { material: 'Carpet', rot: [0, 0, s * -12] });
+    add('Head', [0.2, 0.42, 0.04], [s * 0.47, 1.06, -0.04], FD, { rot: [0, 0, s * -12] });
+    add('Head', [0.16, 0.1, 0.06], [s * 0.36, 0.62, -0.88], VOID);                                             // ojos vacíos de la piel
+    add('Head', [0.2, 1.12, 1.32], [s * 0.72, -0.02, 0.1], FM, FUR);
   }
-  add('Head', [1.4, 1.1, 0.4], [0, 0.0, 0.62], FUR, { material: 'Fabric' });                     // capucha de piel por detrás
-  for (const s of [-1, 1]) add('Head', [0.2, 0.95, 1.2], [s * 0.7, 0.02, 0.15], FD, { material: 'Fabric' });
-  // manto de piel sobre los hombros y chaleco de cuero
-  add('UpperTorso', [2.1, 1.62, 1.12], [0, 0, 0], LE, { material: 'Fabric' });
-  for (let i = 0; i < 9; i++) {
-    const x = -1.25 + i * 0.31;
-    add('UpperTorso', [0.42, 0.42 + (i % 3) * 0.08, 1.4], [x, 0.82, 0.05], i % 2 ? FUR : FD, { material: 'Fabric', rot: [0, 0, (i - 4) * -6] });
+  add('Head', [1.44, 1.2, 0.26], [0, -0.06, 0.74], FM, FUR);
+  for (let i = 0; i < 3; i++) add('Head', [0.12, 0.04, 0.9], [-0.3 + i * 0.3, 0.86, 0.15], FD);                // rayas oscuras
+  add('Head', [0.04, 0.04, 0.62], [0.42, 0.86, -0.12], VOID);                                                  // cicatriz cosida
+  for (let i = 0; i < 4; i++) add('Head', [0.16, 0.03, 0.03], [0.42, 0.87, -0.36 + i * 0.16], VOID);
+  // chaleco acolchado y tachonado
+  add('UpperTorso', [2.1, 1.62, 1.12], [0, 0, 0], VE, { material: 'Leather' });
+  for (let r = 0; r < 4; r++) {
+    add('UpperTorso', [1.8, 0.03, 0.03], [0, 0.42 - r * 0.32 - 0.16, -0.575], [44, 36, 30]);
+    for (let c = 0; c < 4; c++) add('UpperTorso', [0.08, 0.08, 0.05], [-0.6 + c * 0.4, 0.42 - r * 0.32, -0.58], STUD, { material: 'Metal' });
   }
-  add('UpperTorso', [2.3, 1.1, 0.25], [0, 0.25, 0.65], FUR, { material: 'Fabric' });            // la piel cae por la espalda
-  for (let i = 0; i < 7; i++) add('UpperTorso', [0.32, 0.25 + (i % 2) * 0.12, 0.2], [-0.95 + i * 0.32, -0.38 - (i % 2) * 0.06, 0.66], FD, { material: 'Fabric' });
-  // collar de colmillos
-  for (let i = 0; i < 7; i++) { const a = (i - 3) * 0.32; add('UpperTorso', [0.08, 0.2, 0.08], [Math.sin(a) * 0.65, 0.48 - Math.cos(a) * 0.18, -0.6], BO, { rot: [0, 0, -a * 30] }); }
-  add('UpperTorso', [0.2, 0.2, 0.08], [0, 0.22, -0.62], [160, 30, 30]);
-  // hombreras de piel con zarpa
-  both('UpperArm', [1.3, 0.45, 1.3], [0.08, 0.4, 0], FUR, { material: 'Fabric', rot: [0, 0, -12] });
-  both('UpperArm', [1.0, 0.3, 1.0], [0.12, 0.62, 0], FD, { material: 'Fabric', rot: [0, 0, -12] });
-  for (let i = 0; i < 3; i++) both('UpperArm', [0.08, 0.25, 0.08], [0.66, 0.25, -0.3 + i * 0.3], BO, { rot: [0, 0, 30] });
-  // brazales vendados con puño de piel; guanteletes con garras
-  both('LowerArm', [1.1, 0.8, 1.1], [0, -0.05, 0], LE, { material: 'Fabric' });
-  for (const y of [0.25, 0.0, -0.25]) both('LowerArm', [1.13, 0.07, 1.13], [0, y, 0], [60, 42, 28]);
-  both('LowerArm', [1.22, 0.24, 1.22], [0, 0.45, 0], FUR, { material: 'Fabric' });
-  both('Hand', [1.08, 0.3, 1.08], [0, 0, 0], LE);
-  for (let i = 0; i < 3; i++) both('Hand', [0.1, 0.32, 0.1], [-0.3 + i * 0.3, -0.25, -0.42], BO, { rot: [-35, 0, 0] });
-  // cinturón con la cola del lobo
-  add('LowerTorso', [2.16, 0.34, 1.16], [0, 0, 0], LE);
-  for (let i = 0; i < 6; i++) add('LowerTorso', [0.42 - i * 0.05, 0.42 - i * 0.05, 0.4], [0, -0.25 - i * 0.32, 0.65 + i * 0.12], i % 2 ? FUR : FD, { material: 'Fabric', rot: [20 + i * 8, 0, 0] });
-  add('LowerTorso', [0.22, 0.22, 0.22], [0, -2.15, 1.37], FL, { material: 'Fabric' });
-  // perneras vendadas y botas con borde de piel
-  both('UpperLeg', [1.08, 1.1, 1.08], [0, 0, 0], LE, { material: 'Fabric' });
-  for (const y of [0.35, 0.05, -0.25]) both('UpperLeg', [1.11, 0.08, 1.11], [0, y, 0], [60, 42, 28], { rot: [0, 0, 6] });
-  both('LowerLeg', [1.1, 1.0, 1.1], [0, -0.08, 0], FD, { material: 'Fabric' });
-  both('LowerLeg', [1.26, 0.3, 1.26], [0, 0.45, 0], FUR, { material: 'Fabric' });
-  both('Foot', [1.12, 0.36, 1.32], [0, 0.02, -0.14], LE);
+  add('UpperTorso', [2.16, 0.32, 1.18], [0, -0.66, 0], BD, CLOTH);                                             // faja de tela
+  for (let i = 0; i < 3; i++) add('UpperTorso', [0.5, 0.03, 0.03], [-0.6 + i * 0.6, -0.66, -0.6], BD2, { rot: [0, 0, 20] });
+  // manto de pelo alrededor del cuello
+  for (let i = 0; i < 14; i++) {
+    const a = i / 14 * Math.PI * 2;
+    add('UpperTorso', [0.5, 0.42 + (i * 7 % 3) * 0.1, 0.4], [Math.sin(a) * 1.0, 0.84 + (i % 2) * 0.06, Math.cos(a) * 0.62], i % 2 ? FL : FM, { material: 'Carpet', rot: [0, a / D2R, (i % 3 - 1) * 8] });
+  }
+  for (let i = 0; i < 6; i++) add('UpperTorso', [0.3, 0.32 + (i % 2) * 0.12, 0.12], [-0.75 + i * 0.3, 0.52, -0.72], i % 2 ? FM : FL, { material: 'Carpet', rot: [0, 0, (i - 2.5) * 9] });
+  // capa raída: cae por la espalda y cruza el pecho del hombro izquierdo a la cadera derecha
+  add('UpperTorso', [2.3, 1.9, 0.12], [0, -0.2, 0.74], CL, CLOTH);
+  for (let i = 0; i < 7; i++) add('UpperTorso', [0.3, 0.3 + (i * 5 % 4) * 0.14, 0.11], [-0.98 + i * 0.33, -1.25 - (i * 5 % 4) * 0.07, 0.75], i % 2 ? CL : CLD, { material: 'Fabric', rot: [0, 0, (i % 3 - 1) * 6] });
+  add('UpperTorso', [0.62, 2.0, 0.1], [0, -0.02, -0.68], CL, { material: 'Fabric', rot: [0, 0, 40] });
+  add('UpperTorso', [0.64, 0.04, 0.11], [0.62, -0.78, -0.69], CLD, { rot: [0, 0, 40] });
+  for (const [x, y, z] of [[-0.6, 0.2, 0.81], [0.5, -0.5, 0.81], [-0.25, 0.1, -0.74]]) {                    // remiendos cosidos
+    add('UpperTorso', [0.32, 0.3, 0.03], [x, y, z], CLD, CLOTH);
+    for (let i = 0; i < 3; i++) add('UpperTorso', [0.03, 0.1, 0.03], [x - 0.12 + i * 0.12, y + 0.16, z + Math.sign(z) * 0.02], VOID);
+  }
+  // collar de colmillos y un amuleto
+  for (let i = 0; i < 7; i++) { const a = (i - 3) * 0.3; add('UpperTorso', [0.18, 0.035, 0.035], [Math.sin(a) * 0.55, 0.5 - (1 - Math.cos(a)) * -0.5 - 0.1, -0.76], RP, { rot: [0, 0, a / D2R] }); }
+  for (let i = 0; i < 5; i++) { const a = (i - 2) * 0.28; add('UpperTorso', [0.1, 0.3 - Math.abs(i - 2) * 0.05, 0.07], [Math.sin(a) * 0.5, 0.25 - Math.abs(i - 2) * 0.02, -0.78], BO, { rot: [0, 0, -a / D2R * 0.6] }); }
+  add('UpperTorso', [0.14, 0.14, 0.06], [0, 0.42, -0.79], [140, 30, 30], { rot: [0, 0, 45] });
+  add('UpperTorso', [0.1, 0.2, 0.04], [0.3, 0.72, -0.76], STUD, { material: 'Metal' });
+  // cinturón tachonado y cola del lobo
+  add('LowerTorso', [2.2, 0.32, 1.2], [0, 0, 0], BEL, { material: 'Leather' });
+  for (let i = 0; i < 6; i++) add('LowerTorso', [0.08, 0.08, 0.05], [-0.9 + i * 0.36, 0, -0.62], STUD, { material: 'Metal' });
+  add('LowerTorso', [0.36, 0.26, 0.06], [0, 0, -0.63], STUD, { material: 'Metal' });
+  add('LowerTorso', [0.24, 0.14, 0.04], [0, 0, -0.66], BEL);
+  for (let i = 0; i < 6; i++) add('LowerTorso', [0.42 - i * 0.05, 0.42 - i * 0.05, 0.4], [0, -0.25 - i * 0.32, 0.68 + i * 0.12], i % 2 ? FL : FM, { material: 'Carpet', rot: [20 + i * 8, 0, 0] });
+  add('LowerTorso', [0.22, 0.22, 0.22], [0, -2.15, 1.4], FD, FUR);
+  // hombros de piel; mangas oscuras; antebrazos vendados con manchas; garras
+  both('UpperArm', [1.3, 0.45, 1.3], [0.08, 0.4, 0], FL, { material: 'Carpet', rot: [0, 0, -12] });
+  for (let i = 0; i < 3; i++) both('UpperArm', [0.32, 0.3, 0.3], [0.5, 0.18, -0.35 + i * 0.35], FM, { material: 'Carpet', rot: [0, 0, -25] });
+  both('UpperArm', [1.04, 0.7, 1.04], [0, -0.18, 0], FD, CLOTH);
+  both('LowerArm', [1.06, 0.98, 1.06], [0, 0, 0], BD, CLOTH);
+  for (let i = 0; i < 6; i++) both('LowerArm', [1.1, 0.09, 1.1], [0, 0.42 - i * 0.17, 0], i % 2 ? BD2 : BD, { material: 'Fabric', rot: [0, 0, i % 2 ? 7 : -7] });
+  both('LowerArm', [0.04, 0.34, 0.12], [0.58, -0.2, 0.2], BD2, { material: 'Fabric', rot: [0, 0, 8] });       // venda suelta
+  add('RightLowerArm', [0.14, 0.1, 0.03], [0.1, 0.1, -0.57], BLOOD); add('LeftLowerArm', [0.1, 0.16, 0.03], [0.2, -0.25, -0.57], BLOOD);
+  both('Hand', [1.08, 0.3, 1.08], [0, 0, 0], BD, CLOTH);
+  for (let i = 0; i < 3; i++) both('Hand', [0.1, 0.34, 0.1], [-0.3 + i * 0.3, -0.26, -0.44], BO, { rot: [-35, 0, 0] });
+  // calzas oscuras, piel en la rodilla, espinilleras vendadas con cuerda cruzada, botas de piel
+  both('UpperLeg', [1.06, 1.16, 1.06], [0, 0, 0], FD, CLOTH);
+  both('LowerLeg', [1.22, 0.28, 1.22], [0, 0.46, 0], FM, FUR);
+  both('LowerLeg', [1.08, 0.9, 1.08], [0, -0.12, 0], BD, CLOTH);
+  for (const s of [-1, 1]) both('LowerLeg', [0.05, 1.0, 0.04], [0, -0.12, -0.56], RP, { rot: [0, 0, s * 25] });
+  both('Foot', [1.16, 0.38, 1.34], [0, 0.02, -0.14], FM, FUR);
+  both('Foot', [1.18, 0.08, 1.36], [0, -0.15, -0.14], [40, 34, 30]);
   return S;
 }
 
-// ------------------------------------------------------------------ DRAGÓN
+// ------------------------------------------------------------------ DRAGÓN (cuero negro de escamas, ribetes de bronce, paneles rojos, máscara cerrada)
 function dragon() {
   const S = set('Dragon'), { add, both } = S;
-  const SC = [128, 22, 22], SD = [72, 12, 14], MT = [34, 30, 32], GD = [206, 154, 52], GL = [255, 140, 30], HN = [222, 206, 170], M = 'Metal';
-  const scales = (part, w, h, z, rows, cols, y0, x0) => {   // escamas: placas pequeñas superpuestas en filas alternas
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols + (r % 2 ? -1 : 0); c++) {
-      const x = x0 + c * w + (r % 2 ? w / 2 : 0);
-      add(part, [w * 0.95, h, 0.07], [x, y0 - r * h * 0.75, z], r % 2 ? SD : SC, { rot: [-12, 0, 0] });
-    }
+  const BK = [28, 26, 28], BK2 = [44, 40, 40], PI = [84, 58, 42], RED = [158, 28, 28], STR = [46, 40, 38], MET = [92, 86, 82], DARK = [8, 8, 8], GLOW = [255, 70, 40];
+  const P = { material: 'Pebble' }, L = { material: 'Leather' }, ME = { material: 'Metal' };
+  const frame = (part, w, h, x, y, z, c = PI) => {   // ribete: cuatro listones alrededor de un panel frontal
+    add(part, [w, 0.045, 0.04], [x, y + h / 2, z], c); add(part, [w, 0.045, 0.04], [x, y - h / 2, z], c);
+    add(part, [0.045, h, 0.04], [x - w / 2, y, z], c); add(part, [0.045, h, 0.04], [x + w / 2, y, z], c);
   };
-  // yelmo cerrado con visera que brilla, cresta de púas y dos cuernos curvados hacia atrás
-  add('Head', [1.38, 1.38, 1.38], [0, 0.02, 0], SC, { material: M });
-  add('Head', [1.1, 0.16, 0.08], [0, 0.1, -0.7], GL, { neon: true });                           // visera
-  add('Head', [1.4, 0.12, 1.4], [0, -0.3, 0], GD, { material: M });                             // filo dorado
-  add('Head', [0.4, 0.45, 0.2], [0, -0.38, -0.65], MT, { material: M });                        // barbote
-  for (let i = 0; i < 5; i++) add('Head', [0.12, 0.3 - i * 0.03, 0.2], [0, 0.82 - i * 0.03, -0.45 + i * 0.25], SD, { rot: [-25, 0, 0] });   // cresta
+  // yelmo-máscara: ranura de los ojos con brillo, cejas rojas en V, cresta de aleta
+  add('Head', [1.38, 1.38, 1.38], [0, 0.02, 0], BK, P);
+  add('Head', [1.32, 0.6, 0.08], [0, -0.33, -0.71], BK2, P);
+  add('Head', [0.06, 0.58, 0.05], [0, -0.33, -0.76], PI);
+  for (let i = 0; i < 3; i++) for (const s of [-1, 1]) add('Head', [0.04, 0.04, 0.03], [s * 0.2, -0.2 - i * 0.14, -0.76], DARK);   // respiraderos
+  add('Head', [1.06, 0.24, 0.04], [0, 0.1, -0.705], DARK);
   for (const s of [-1, 1]) {
-    for (let i = 0; i < 5; i++) {
-      const t = i / 4;
-      add('Head', [0.24 - i * 0.035, 0.24 - i * 0.035, 0.32], [s * (0.6 + t * 0.35), 0.55 + Math.sin(t * 2.2) * 0.35, 0.05 + t * 0.75], HN, { rot: [-30 - i * 12, 0, s * -15] });
-    }
-    add('Head', [0.18, 0.5, 0.5], [s * 0.72, -0.1, -0.15], SD, { material: M, rot: [0, s * 15, 0] });   // carrilleras
+    add('Head', [0.2, 0.07, 0.03], [s * 0.26, 0.1, -0.72], GLOW, { neon: true });
+    add('Head', [0.52, 0.3, 0.05], [s * 0.33, 0.38, -0.72], RED, { rot: [0, 0, s * 24] });
+    add('Head', [0.56, 0.04, 0.06], [s * 0.36, 0.52, -0.73], PI, { rot: [0, 0, s * 24] });
+    add('Head', [0.3, 0.7, 0.06], [s * 0.6, -0.1, -0.52], BK2, { material: 'Pebble', rot: [0, s * 40, 0] });  // carrilleras
   }
-  // coraza de escamas, gema-ojo de dragón y espinazo de púas
-  add('UpperTorso', [2.18, 1.7, 1.2], [0, 0.02, 0], MT, { material: M });
-  scales('UpperTorso', 0.36, 0.3, -0.63, 6, 6, 0.65, -0.9);
-  add('UpperTorso', [2.22, 0.12, 1.24], [0, 0.84, 0], GD, { material: M });
-  add('UpperTorso', [2.22, 0.1, 1.24], [0, -0.8, 0], GD, { material: M });
-  add('UpperTorso', [0.32, 0.32, 0.1], [0, 0.15, -0.72], GD, { material: M, rot: [0, 0, 45] });
-  add('UpperTorso', [0.2, 0.2, 0.1], [0, 0.15, -0.78], GL, { neon: true, rot: [0, 0, 45] });
-  for (let i = 0; i < 5; i++) add('UpperTorso', [0.14, 0.32, 0.32], [0, 0.65 - i * 0.33, 0.68], HN, { rot: [45, 0, 0] });
-  // alas plegadas a la espalda: dos placas de membrana
+  add('Head', [1.1, 0.045, 0.05], [0, 0.23, -0.73], PI); add('Head', [1.1, 0.045, 0.05], [0, -0.03, -0.73], PI);
+  add('Head', [0.06, 0.32, 0.05], [0, 0.4, -0.73], PI);
+  add('Head', [1.42, 0.06, 1.42], [0, -0.02, 0], PI);
+  add('Head', [0.1, 0.06, 1.44], [0, 0.73, 0], PI);
+  add('Head', [0.06, 0.55, 0.3], [0, 0.98, -0.42], BK2, { rot: [-18, 0, 0] });
+  add('Head', [0.05, 0.42, 0.2], [0, 1.18, -0.62], BK2, { rot: [-28, 0, 0] });
+  add('Head', [0.06, 0.38, 0.4], [0, 0.88, -0.05], BK2, { rot: [-8, 0, 0] });
+  add('Head', [0.06, 0.26, 0.4], [0, 0.82, 0.32], BK2, { rot: [8, 0, 0] });
+  // gola y coraza con paneles ribeteados
+  add('UpperTorso', [1.24, 0.3, 1.04], [0, 0.92, 0], BK2, P);
+  add('UpperTorso', [2.16, 1.68, 1.16], [0, 0.02, 0], BK, P);
+  for (const s of [-1, 1]) { add('UpperTorso', [0.86, 0.72, 0.06], [s * 0.48, 0.38, -0.6], BK2, P); frame('UpperTorso', 0.86, 0.72, s * 0.48, 0.38, -0.635); }
+  for (let i = 0; i < 3; i++) { add('UpperTorso', [1.2, 0.24, 0.06], [0, -0.18 - i * 0.26, -0.6], BK2, P); add('UpperTorso', [1.24, 0.04, 0.04], [0, -0.06 - i * 0.26, -0.635], PI); }
   for (const s of [-1, 1]) {
-    add('UpperTorso', [0.9, 1.3, 0.06], [s * 0.6, 0.35, 0.78], SD, { rot: [0, s * 25, s * 12] });
-    add('UpperTorso', [0.1, 1.4, 0.1], [s * 1.0, 0.45, 0.85], MT, { material: M, rot: [0, s * 25, s * 12] });
+    add('UpperTorso', [0.06, 1.4, 0.7], [s * 1.1, -0.08, 0], RED, { material: 'Fabric' });                        // paneles rojos de los costados
+    for (let i = 0; i < 5; i++) add('UpperTorso', [0.07, 0.03, 0.7], [s * 1.11, 0.5 - i * 0.28, 0], [100, 16, 18], { rot: [s * 20, 0, 0] });
+    add('UpperTorso', [0.18, 1.2, 0.05], [s * 0.93, -0.18, -0.6], RED, { material: 'Fabric' });
+    // correas en V de los hombros a la hebilla, por delante y por detrás
+    for (const z of [-0.67, 0.64]) add('UpperTorso', [0.16, 1.72, 0.05], [s * 0.375, 0.03, z], STR, { material: 'Leather', rot: [0, 0, -s * 25.8] });
+    add('UpperTorso', [0.12, 0.12, 0.06], [s * 0.72, 0.72, -0.68], MET, ME);
   }
-  // hombreras en capas con púas
-  for (let k = 0; k < 3; k++) both('UpperArm', [1.45 - k * 0.12, 0.3, 1.45 - k * 0.12], [0.1 + k * 0.04, 0.52 - k * 0.2, 0], k % 2 ? SD : SC, { material: M, rot: [0, 0, -15] });
-  both('UpperArm', [1.48, 0.07, 1.48], [0.1, 0.38, 0], GD, { material: M, rot: [0, 0, -15] });
-  for (let i = 0; i < 3; i++) both('UpperArm', [0.16, 0.45, 0.16], [0.35 + i * 0.12, 0.85 - i * 0.05, -0.25 + i * 0.25], HN, { rot: [0, 0, -30 - i * 8] });
-  // brazales con cresta y guanteletes con garras
-  both('LowerArm', [1.14, 0.95, 1.14], [0, -0.02, 0], MT, { material: M });
-  scales('RightLowerArm', 0.32, 0.25, -0.58, 3, 3, 0.25, -0.32); scales('LeftLowerArm', 0.32, 0.25, -0.58, 3, 3, 0.25, -0.32);
-  for (let i = 0; i < 3; i++) both('LowerArm', [0.12, 0.28, 0.28], [0.6, 0.3 - i * 0.3, 0], HN, { rot: [45, 0, 0] });
-  both('Hand', [1.12, 0.34, 1.12], [0, 0, 0], SC, { material: M });
-  for (let i = 0; i < 4; i++) both('Hand', [0.09, 0.4, 0.09], [-0.36 + i * 0.24, -0.3, -0.45], HN, { rot: [-40, 0, 0] });
-  // faldar de escamas y cola
-  add('LowerTorso', [2.2, 0.36, 1.2], [0, 0, 0], MT, { material: M });
-  add('LowerTorso', [0.36, 0.3, 0.1], [0, 0, -0.64], GD, { material: M });
-  for (let i = 0; i < 6; i++) add('LowerTorso', [0.36, 0.55, 0.08], [-0.9 + i * 0.36, -0.42, -0.6], i % 2 ? SD : SC, { material: M, rot: [-8, 0, 0] });
-  for (let i = 0; i < 7; i++) add('LowerTorso', [0.5 - i * 0.055, 0.42 - i * 0.045, 0.45], [0, -0.3 - i * 0.28, 0.7 + i * 0.32], i % 2 ? SD : SC, { material: M, rot: [25 + i * 6, 0, 0] });
-  for (let i = 0; i < 6; i++) add('LowerTorso', [0.08, 0.2 - i * 0.02, 0.15], [0, -0.05 - i * 0.28, 0.75 + i * 0.32], HN, { rot: [30, 0, 0] });
-  // grebas con rodillera de púa y botas de garra
-  both('UpperLeg', [1.12, 1.15, 1.12], [0, 0, 0], MT, { material: M });
-  scales('RightUpperLeg', 0.32, 0.28, -0.58, 4, 3, 0.4, -0.32); scales('LeftUpperLeg', 0.32, 0.28, -0.58, 4, 3, 0.4, -0.32);
-  both('LowerLeg', [1.14, 1.15, 1.14], [0, 0, 0], SC, { material: M });
-  both('LowerLeg', [0.5, 0.4, 0.3], [0, 0.45, -0.62], GD, { material: M });
-  both('LowerLeg', [0.14, 0.4, 0.14], [0, 0.6, -0.8], HN, { rot: [-50, 0, 0] });
-  both('Foot', [1.16, 0.38, 1.35], [0, 0.03, -0.15], MT, { material: M });
-  for (let i = 0; i < 3; i++) both('Foot', [0.14, 0.14, 0.4], [-0.3 + i * 0.3, -0.05, -0.95], HN, { rot: [15, 0, 0] });
+  add('UpperTorso', [1.6, 1.3, 0.06], [0, 0, 0.6], BK2, P); frame('UpperTorso', 1.6, 1.3, 0, 0, 0.635);
+  for (let i = 0; i < 4; i++) add('UpperTorso', [0.08, 0.2, 0.2], [0, 0.55 - i * 0.32, 0.72], BK2, { rot: [45, 0, 0] });   // pequeñas púas dorsales
+  // hombreras grandes en capas, con ribete y remaches
+  for (let k = 0; k < 3; k++) {
+    const w = 1.5 - k * 0.08, y = 0.55 - k * 0.24, x = 0.12 + k * 0.03, rz = -(14 - k * 3);
+    both('UpperArm', [w, 0.34, w - 0.05], [x, y, 0], k % 2 ? BK2 : BK, { material: 'Pebble', rot: [0, 0, rz] });
+    both('UpperArm', [w + 0.02, 0.045, w - 0.03], [x, y - 0.17, 0], PI, { rot: [0, 0, rz] });
+    both('UpperArm', [0.08, 0.08, 0.05], [x + 0.35, y - 0.08 - k * 0.0, -(w - 0.05) / 2 - 0.02], MET, { material: 'Metal', rot: [0, 0, rz] });
+  }
+  // insignia propia en la hombrera izquierda: octógono rojo con tres zarpazos negros
+  // (la placa se gira primero en su plano y luego se inclina como la hombrera: ángulos XYZ de Rz·Rx)
+  const tilt = (ax, az) => { const a = ax * D2R, c = az * D2R; return [Math.atan2(Math.cos(c) * Math.sin(a), Math.cos(a)) / D2R, Math.asin(Math.sin(c) * Math.sin(a)) / D2R, Math.atan2(Math.sin(c) * Math.cos(a), Math.cos(c)) / D2R]; };
+  const face = (d, y) => [-0.12 - d * Math.cos(14 * D2R), 0.42 + y - d * Math.sin(14 * D2R)];
+  for (const ax of [0, 45]) { const [x, y] = face(0.78, 0); add('LeftUpperArm', [0.05, 0.56, 0.56], [x, y, 0], RED, { rot: tilt(ax, 14) }); }
+  for (let i = 0; i < 3; i++) { const [x, y] = face(0.81, 0); add('LeftUpperArm', [0.04, 0.46 - Math.abs(i - 1) * 0.1, 0.07], [x, y, -0.14 + i * 0.14], BK, { rot: tilt(28, 14) }); }
+  both('UpperArm', [1.06, 0.6, 1.06], [0, -0.26, 0], BK, P);
+  // brazales con correas, cresta lateral y codera
+  both('LowerArm', [1.14, 0.95, 1.14], [0, -0.03, 0], BK2, P);
+  for (const y of [0.44, -0.5]) both('LowerArm', [1.18, 0.05, 1.18], [0, y, 0], PI);
+  for (const y of [0.22, -0.02, -0.26]) { both('LowerArm', [1.17, 0.08, 1.17], [0, y, 0], STR, L); both('LowerArm', [0.05, 0.12, 0.14], [0.6, y, -0.2], MET, ME); }
+  both('LowerArm', [0.08, 0.8, 0.36], [0.6, 0, 0.18], BK, P);
+  both('LowerArm', [0.6, 0.36, 0.2], [0, 0.42, 0.6], BK, { material: 'Pebble', rot: [-15, 0, 0] });
+  // guanteletes
+  both('Hand', [1.12, 0.32, 1.12], [0, 0, 0], BK, P);
+  both('Hand', [1.2, 0.14, 1.2], [0, 0.17, 0], BK2, P);
+  both('Hand', [1.0, 0.14, 0.22], [0, -0.04, -0.56], BK2, P);
+  for (let i = 0; i < 4; i++) both('Hand', [0.2, 0.3, 0.24], [-0.36 + i * 0.24, -0.27, -0.12], BK, P);
+  // cinturón con hebilla de placa y braguetón ribeteado
+  add('LowerTorso', [2.22, 0.34, 1.22], [0, 0, 0], STR, L);
+  add('LowerTorso', [0.52, 0.32, 0.08], [0, 0, -0.64], MET, ME);
+  add('LowerTorso', [0.32, 0.16, 0.04], [0, 0, -0.68], BK);
+  for (const s of [-1, 1]) add('LowerTorso', [0.08, 0.08, 0.04], [s * 0.7, 0, -0.62], MET, ME);
+  add('LowerTorso', [0.7, 0.36, 0.08], [0, -0.36, -0.58], BK2, P); frame('LowerTorso', 0.7, 0.36, 0, -0.36, -0.625);
+  // muslos con costuras ribeteadas y dos correas; rodilleras; botas altas y pesadas
+  both('UpperLeg', [1.1, 1.22, 1.1], [0, 0, 0], BK, P);
+  both('UpperLeg', [0.045, 1.12, 0.04], [0.565, 0, 0], PI);
+  both('UpperLeg', [0.7, 0.5, 0.06], [0, -0.12, -0.57], BK2, P); frame('RightUpperLeg', 0.7, 0.5, 0, -0.12, -0.605); frame('LeftUpperLeg', 0.7, 0.5, 0, -0.12, -0.605);
+  for (const y of [0.3, -0.48]) { both('UpperLeg', [1.14, 0.1, 1.14], [0, y, 0], STR, L); both('UpperLeg', [0.16, 0.14, 0.05], [0, y, -0.6], MET, ME); }
+  both('LowerLeg', [1.12, 1.2, 1.12], [0, 0, 0], BK, P);
+  both('LowerLeg', [0.84, 0.48, 0.22], [0, 0.46, -0.6], BK2, P);
+  both('LowerLeg', [0.88, 0.05, 0.24], [0, 0.22, -0.6], PI);
+  both('LowerLeg', [1.3, 0.5, 1.3], [0, -0.35, 0], BK2, P);
+  both('LowerLeg', [1.32, 0.05, 1.32], [0, -0.1, 0], PI);
+  for (const y of [-0.24, -0.46]) { both('LowerLeg', [1.34, 0.08, 1.34], [0, y, 0], STR, L); both('LowerLeg', [0.05, 0.12, 0.14], [0.68, y, -0.2], MET, ME); }
+  both('Foot', [1.3, 0.4, 1.46], [0, 0.04, -0.16], BK, P);
+  both('Foot', [1.32, 0.1, 1.48], [0, -0.15, -0.16], [16, 14, 14]);
+  both('Foot', [1.2, 0.26, 0.3], [0, 0.02, -0.82], BK2, P);
   return S;
 }
 
 const SETS = { Leather: leather(), Wolf: wolf(), Dragon: dragon() };
-for (const k in SETS) { delete SETS[k].add; delete SETS[k].both; }
+for (const k in SETS) { delete SETS[k].add; delete SETS[k].both; if (!SETS[k].bare) SETS[k].bare = []; }
 // estadísticas: reducción de daño (todas las fuentes) y cambio de velocidad al caminar
 const STATS = {
   Leather: { DisplayName: 'Armadura de cuero', Reduction: 0.15, Speed: 1, Color: [112, 74, 44] },

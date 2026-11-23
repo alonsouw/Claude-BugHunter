@@ -7,11 +7,13 @@ Tres armaduras al estilo Roblox, **hechas de Parts (bloques)** que se sueldan al
 ## Las tres
 | Armadura | Aspecto | Daño | Velocidad |
 |---|---|---|---|
-| **Cuero** | Capucha, jubón con cordones, correa cruzada con hebillas de latón, cinturón con bolsas, hombreras, brazales, guantes, musleras y botas | −15 % | +1 |
-| **Lobo** | Yelmo de cabeza de lobo (hocico, orejas, colmillos, ojos que brillan), capa de piel, collar de dientes, hombreras de piel con garras, guanteletes con garras, cola y botas | −25 % | +2 |
-| **Dragón** | Yelmo con visera que brilla, cresta y cuernos; peto de escamas con gema; púas en la espalda; alas plegadas; hombreras con púas; faldón de escamas; cola; grebas y botas con garras | −45 % | −1 (es pesada) |
+| **Cuero** | Jubón de cuero curtido con cuello alto, cordones en X y ojales de latón; hombreras de tres láminas remachadas; cota de malla; brazales con correas y un cuchillo; cinturón con dos bolsas de hebilla; faldón; guantes negros y botas | −15 % | +1 |
+| **Lobo** | Piel de lobo como capucha (hocico, orejas, colmillos, cicatriz cosida) con el rostro en sombra y dos ojos blancos; manto de pelo; capa raída con remiendos; chaleco tachonado; collar de colmillos; vendas; garras y cola | −25 % | +2 |
+| **Dragón** | Cuero negro de escamas con ribetes de bronce y paneles rojos; máscara cerrada con ojos que brillan, cejas rojas en V y cresta de aleta; hombreras en capas con una insignia de tres zarpazos; correas en V; rodilleras y botas pesadas | −45 % | −1 (es pesada) |
 
-Piezas: cuero 46, lobo 95, dragón 173.
+Piezas: cuero 147, lobo 176, dragón 191. Usan materiales de Roblox: `Leather`, `Pebble` (las escamas), `DiamondPlate` (la malla) y `Carpet` (el pelo). Si alguno no existe en tu versión, se cambia solo por uno parecido.
+
+Versión 2: rediseñadas a partir de tres imágenes de referencia (un jubón de cuero, un dibujo de un guerrero con piel de lobo y un traje de dragón negro). Se toma el estilo, no los diseños exactos; la insignia del dragón es propia.
 
 ## En el juego
 - **Maniquíes**: el instalador pone tres maniquíes en `Workspace.ArmorStands` con la armadura puesta y un cartel. Acércate y mantén **E** para equiparla; si ya la llevas, te la quita.

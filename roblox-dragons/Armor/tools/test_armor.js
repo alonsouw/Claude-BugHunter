@@ -8,9 +8,8 @@ const parts = Object.keys(ctx.ARMOR_DUMMY.parts);
 for (const [name, set] of Object.entries(ctx.ARMOR_SETS)) {
   const covered = new Set(set.pieces.map(p => p.part));
   for (const p of set.pieces) check(parts.includes(p.part), `${name}: parte desconocida ${p.part}`);
-  for (const p of parts) check(covered.has(p), `${name}: no cubre ${p}`);
-  const left = set.pieces.filter(p => p.part.startsWith('Left')).length, right = set.pieces.filter(p => p.part.startsWith('Right')).length;
-  check(left === right, `${name}: izquierda (${left}) y derecha (${right}) no son simétricas`);
+  for (const p of parts) if (!(set.bare || []).includes(p)) check(covered.has(p), `${name}: no cubre ${p}`);
+  for (const p of parts) if (p.startsWith('Right')) check(covered.has(p) === covered.has(p.replace('Right', 'Left')), `${name}: ${p} sin su pareja izquierda`);
   for (const p of set.pieces) check(p.size.every(v => v > 0), `${name}: pieza con tamaño no positivo`);
 }
 const src = fs.readFileSync(path.join(ROOT, 'roblox/ArmorBuilder.lua'), 'utf8').replace(/: (string|boolean|number)/g, '').replace(/\): number/g, ')');
