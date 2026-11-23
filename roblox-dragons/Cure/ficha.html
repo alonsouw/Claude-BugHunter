@@ -1,0 +1,296 @@
+<title>La cura</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de alquimia. El caldero con los siete ingredientes en sus peanas abre la página; después el recetario (qué es, dónde se encuentra), el visor 3D, cómo se prepara y el paquete para Studio. Tema oscuro único; acento dorado del remedio. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #e0a93a;
+  --sick: #b9e04a;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+.strip5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip5 figure img { aspect-ratio: 4 / 5; object-fit: cover; }
+@media (max-width: 760px) { .strip5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.anims h4 { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-data); font-weight: 500; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#bTransform { grid-column: 1 / -1; border-color: var(--blood); color: #fff; background: #2a1215; }
+
+.reel { border: 1px solid var(--line); background: #0b1114; padding: 16px; display: grid; gap: 10px; max-width: 420px; }
+.reel .msg { font-family: var(--font-data); font-size: .9rem; color: #f2e6c8; text-align: center; letter-spacing: .06em; }
+.reel .bar { height: 18px; border: 1px solid #3a4448; background: #121a1e; position: relative; overflow: hidden; }
+.reel .fill { position: absolute; inset: 0 auto 0 0; width: 64%; background: linear-gradient(90deg, #4a8c5a, #9ad46a); }
+.reel .hint { font-size: .82rem; color: var(--muted); text-align: center; }
+.steps4 b { color: var(--ink); }
+.food { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.food th, .food td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; }
+.food th { font-family: var(--font-data); font-weight: 500; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.food td.n { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
+
+.recipe { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.recipe div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; grid-template-columns: 14px 1fr auto; gap: 4px 10px; align-items: baseline; min-width: 0; }
+.recipe i { width: 14px; height: 14px; display: block; align-self: center; }
+.recipe b { font-family: var(--font-body); font-weight: 600; font-size: 1rem; color: var(--ink); }
+.recipe em { font-style: normal; font-family: var(--font-data); font-size: .8rem; color: var(--blood); }
+.recipe span { grid-column: 2 / -1; font-size: .88rem; color: #c7bfb6; }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Objetivo del juego · Alquimia · Estilo Roblox de bloques</div>
+      <h1>El Remedio del Alba</h1>
+      <div class="latin">No es una vacuna: es un brebaje. Siete ingredientes arrancados a las criaturas y al bosque, cocidos en un caldero</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">Ingredientes</span><span class="done">Jefe dragón</span><span class="done">Plantas</span><span class="done">Caldero</span><span class="done">Final</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section>
+    <figure><img src="design/renders/altar.jpg" alt="El caldero de la cura de noche, con los siete ingredientes en sus peanas y el frasco dorado del remedio flotando encima"><figcaption>El caldero con los siete ingredientes en sus peanas y el Remedio del Alba encima</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>El recetario</h2>
+    <div class="recipe" id="recipe"></div>
+    <p class="note" style="margin-top:10px">En el juego se ve con el botón «Cura» (o la tecla R). El progreso es de todo el servidor: cualquiera puede echar ingredientes al caldero.</p>
+  </section>
+
+  <section>
+    <h2>En vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D de los ingredientes"></canvas>
+        <div class="status" id="status"><b>●</b></div>
+      </div>
+      <div class="controls">
+        <div><h3>Modelo</h3><div class="anims" id="models"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tNight" aria-pressed="true">Noche</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
+        <p class="note">Construido con los mismos planos que usa el instalador. La flor de luna se abre solo de noche: prueba a quitar «Noche».</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo se hace la cura</h2>
+    <div class="steps4">
+      <div><b>1 · Caza</b><span>Mata al dragón de la guarida, al lobo alfa, al pez gigante y a un bruto. El ciervo maldito suelta su asta al transformarse. Lo que sueltan brilla y lleva su nombre encima.</span></div>
+      <div><b>2 · Recolecta</b><span>Las flores de luna solo se pueden coger de noche. La raíz de sangre se desentierra (mantén E).</span></div>
+      <div><b>3 · Prepara</b><span>Echa todo al caldero (E). Con los siete, mantén E para prepararla: tarda 90 s. Aguantad: es el momento de una horda.</span></div>
+      <div><b>4 · Úsala</b><span>Coge el frasco del caldero y haz clic. Los infectados se deshacen en luz, dejan de aparecer y amanece.</span></div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Sonido</h2>
+      <div class="sounds">
+        <div><b>Pickup</b><span class="note">Aparece un ingrediente.</span><audio controls preload="none" src="sounds/Pickup.ogg"></audio></div>
+        <div><b>Harvest</b><span class="note">Coger una flor o desenterrar.</span><audio controls preload="none" src="sounds/Harvest.ogg"></audio></div>
+        <div><b>Add</b><span class="note">Un ingrediente cae al caldero.</span><audio controls preload="none" src="sounds/Add.ogg"></audio></div>
+        <div><b>Brew</b><span class="note">Burbujeo mientras se prepara.</span><audio controls preload="none" src="sounds/Brew.ogg"></audio></div>
+        <div><b>Ready</b><span class="note">El remedio está listo.</span><audio controls preload="none" src="sounds/Ready.ogg"></audio></div>
+        <div><b>Dawn</b><span class="note">El final: amanece.</span><audio controls preload="none" src="sounds/Dawn.ogg"></audio></div>
+      </div>
+    </div>
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <ol class="steps">
+        <li>Instala antes las criaturas que quieras usar (dragón Depredador o Aberrante, lobos, ciervos, infectados y peces infectados).</li>
+        <li>Pega <code>roblox/InstallCure.lua</code> en la Command Bar: pone el caldero en <code>CAULDRON_POS</code> y la guarida del dragón en <code>LAIR_POS</code>.</li>
+        <li>Tus propias criaturas pueden soltar un ingrediente: dales el atributo <code>CureDrop</code> (por ejemplo <code>"BloodRoot"</code>).</li>
+        <li>Para tu juego: <code>Cure.CureBrewingStarted</code> (lanza una horda) y <code>Cure.CureCompleted</code> (el final).</li>
+      </ol>
+      <p class="note" style="margin-top:10px">No se ha probado dentro de Roblox Studio. La lógica de la receta, el botín, la preparación y el jefe sí, en simulación.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="src/cure_blueprints.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, IT = CURE_ITEMS, WO = CURE_WORLD, RE = CURE_RECIPE;
+document.getElementById('recipe').innerHTML = RE.map(r => `<div><i style="background:rgb(${r.color.join(',')})"></i><b>${r.name}</b><em>×${r.need}</em><span>${r.hint}</span></div>`).join('');
+const LIST = RE.map(r => [r.id, r.name, 'item']).concat([['Remedy', 'Remedio del Alba', 'item'], ['Cauldron', 'Caldero', 'world'], ['MoonflowerPlant', 'Flor de luna (planta)', 'world'], ['BloodRootMound', 'Raíz de sangre (montículo)', 'world']]);
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const lin = h => new THREE.Color(h).convertSRGBToLinear();
+const scene = new THREE.Scene(); const BG = { day: lin('#55606a'), night: lin('#0b0d14') };
+scene.background = BG.night.clone(); scene.fog = new THREE.Fog(BG.night.getHex(), 25, 80);
+const camera = new THREE.PerspectiveCamera(32, 1.6, 0.05, 300);
+const hemi = new THREE.HemisphereLight('#e8ecf4', '#2a2420', 0.7); scene.add(hemi);
+const key = new THREE.DirectionalLight('#fff0dc', 1.0); key.position.set(-6, 12, -7); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 }); key.shadow.bias = -0.0006; scene.add(key);
+const fireLight = new THREE.PointLight('#ff9a4a', 0, 14, 2); fireLight.position.set(0, 1.2, 0); scene.add(fireLight);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: lin('#2e2a26'), roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const col = c => new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255).convertSRGBToLinear();
+const mat = (c, m) => m === 'Neon' ? new THREE.MeshBasicMaterial({ color: col(c).multiplyScalar(1.3) }) :
+  new THREE.MeshStandardMaterial({ color: col(c), roughness: m === 'Metal' ? 0.35 : (m === 'Glass' ? 0.1 : 0.7), metalness: m === 'Metal' ? 0.6 : 0, transparent: m === 'Glass', opacity: m === 'Glass' ? 0.5 : 1 });
+let night = true;
+function build(list) {
+  const g = new THREE.Group(), base = new THREE.Group(); g.add(base);
+  list.forEach((p, i) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(...p.size), mat(p.color, p.material)); m.position.set(...p.offset); m.rotation.set(p.rot[0] * D2R, p.rot[1] * D2R, p.rot[2] * D2R, 'XYZ');
+    m.castShadow = p.material !== 'Neon' && p.material !== 'Glass'; m.receiveShadow = true; m.userData.name = p.name; base.add(m);
+  });
+  return g;
+}
+const lowest = list => Math.min(...list.map(p => p.offset[1] - p.size[1] / 2));
+function bloom(g) { g.traverse(o => { if (o.userData.name === 'Petal') o.visible = night; if (o.userData.name === 'Bud') o.visible = !night; }); }
+let current = null, idx = 0, altar = null;
+function show(i) {
+  idx = i; if (current) scene.remove(current);
+  const [id, label, kind] = LIST[i], list = kind === 'item' ? IT[id] : WO[id];
+  current = build(list); current.position.y = -lowest(list) + 0.01; bloom(current); scene.add(current);
+  document.querySelectorAll('#models button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+  const r = RE.find(x => x.id === id);
+  document.getElementById('status').innerHTML = `<b>●</b> ${label}${r ? ' · ×' + r.need : ''}`;
+  dist = id === 'Cauldron' ? 16 : (kind === 'world' ? 6 : 4); target.set(0, id === 'Cauldron' ? 1.6 : (kind === 'world' ? 0.8 : 0.6), 0);
+  fireLight.intensity = night && id === 'Cauldron' ? 2.2 : 0;
+}
+const modelsBox = document.getElementById('models');
+modelsBox.innerHTML = LIST.map(([k, l], i) => `<button type="button" data-i="${i}" aria-pressed="false">${l}</button>`).join('');
+modelsBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(+b.dataset.i); });
+function setNight(on) { night = on; scene.background.copy(on ? BG.night : BG.day); scene.fog.color.copy(scene.background); hemi.intensity = on ? 0.35 : 0.7; key.intensity = on ? 0.35 : 1.0; show(idx); if (altar) showAltar(true); }
+let spin = !reduce;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tNight', () => night, v => setNight(v));
+let yaw = -2.4, pitch = 0.35, dist = 4, drag = null;
+const target = new THREE.Vector3(0, 0.6, 0);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(0.02, Math.min(1.3, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(2, Math.min(40, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+// el caldero con cada ingrediente sobre su peana (Slot1..7) y el remedio flotando encima: imagen de cabecera
+function showAltar(on) {
+  if (altar) { scene.remove(altar); altar = null; }
+  if (current) current.visible = !on;
+  if (!on) { fireLight.intensity = 0; return; }
+  altar = new THREE.Group();
+  const c = build(WO.Cauldron); altar.add(c);
+  const slots = WO.Cauldron.filter(p => /^Slot/.test(p.name));
+  RE.forEach((r, i) => {
+    const s = slots[i], it = build(IT[r.id]); it.scale.setScalar(1.25);
+    it.position.set(s.offset[0], s.offset[1] + 0.1 - lowest(IT[r.id]) * 1.25, s.offset[2]); it.rotation.y = Math.atan2(s.offset[0], s.offset[2]) + Math.PI;
+    altar.add(it);
+    c.traverse(o => { if (o.userData.name === s.name) o.material = mat(r.color, 'Neon'); });
+  });
+  c.traverse(o => { if (o.userData.name === 'Liquid') o.material = mat([255, 214, 110], 'Neon'); });
+  const rem = build(IT.Remedy); rem.scale.setScalar(1.8); rem.position.set(0, 4.4, 0); altar.add(rem);
+  const glow = new THREE.PointLight('#ffd56e', 2.5, 12, 2); glow.position.set(0, 4.2, 0); altar.add(glow);
+  scene.add(altar); fireLight.intensity = 2.2;
+}
+window.__cure = { show, showAltar, setNight, setCam: (y, p, d, tx, ty, tz) => { yaw = y; pitch = p; dist = d; target.set(tx || 0, ty || 0, tz || 0); spin = false; }, render: () => renderFrame(0) };
+let clock = 0;
+function renderFrame(dt) {
+  clock += dt; if (spin) yaw += dt * 0.25;
+  fireLight.intensity = fireLight.intensity > 0 ? 2.0 + Math.sin(clock * 13) * 0.25 + Math.sin(clock * 7.3) * 0.2 : 0;
+  camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * dist, target.y + Math.sin(pitch) * dist, target.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+  camera.lookAt(target); renderer.render(scene, camera);
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min((now - last) / 1000, 0.05); last = now; renderFrame(window.__curePaused ? 0 : dt); requestAnimationFrame(frame); }
+setNight(true); show(0); requestAnimationFrame(frame); window.__cureReady = true;
+})();
+</script>
