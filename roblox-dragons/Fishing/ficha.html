@@ -1,0 +1,303 @@
+<title>Pesca</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lámina de pesca. La foto de las tres especies (crudas y cocinadas) con la caña abre la página; después el visor, cómo se pesca con una maqueta de la barra de recoger, comer y cocinar, y el paquete para Studio. Tema oscuro único; acento dorado del salmón. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0909;
+  --panel: #131112;
+  --panel-2: #1b1617;
+  --ink: #e8e2d8;
+  --muted: #9b928b;
+  --line: #2b2526;
+  --blood: #c98a2b;
+  --sick: #b9e04a;
+  --font-display: "Grenze Gotisch", "Palatino Linotype", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+.kicker { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.8rem, 7vw, 5rem); line-height: .88; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 3.6vw, 2.4rem); line-height: 1; margin: 0 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-data); font-weight: 500; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 70ch; }
+header.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 32px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.latin { font-style: italic; color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--font-data); font-size: .74rem; }
+.stages span { border: 1px solid var(--line); padding: 3px 8px; color: var(--muted); }
+.stages span.done { border-color: #5a2328; color: var(--ink); }
+.stages span.done::before { content: "✓ "; color: var(--blood); }
+.stages span.wait { border-style: dashed; }
+
+.gaze { position: relative; border: 1px solid var(--line); background: #000; overflow: hidden; }
+.gaze img { display: block; width: 100%; height: auto; max-height: 70vh; object-fit: cover; }
+.gaze .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px; display: grid; gap: 4px; }
+.gaze .cap p { color: #bdb6ad; font-size: .95rem; }
+.gaze .cap strong { font-family: var(--font-display); font-weight: 500; font-size: 1.6rem; color: #f2f2f2; line-height: 1; }
+
+figure { margin: 0; border: 1px solid var(--line); background: #0d0e11; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { font-family: var(--font-data); font-size: .7rem; color: var(--muted); padding: 8px 10px; border-top: 1px solid var(--line); }
+.compare { display: grid; gap: 14px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pair .tag { font-family: var(--font-data); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.pair .tag.ref { color: #c9a35a; }
+.pair .tag.ours { color: var(--blood); }
+
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+.stagebox { position: relative; border: 1px solid var(--line); background: #060608; min-width: 0; aspect-ratio: 16 / 10; max-width: 100%; }
+.stagebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.stagebox .status { position: absolute; left: 12px; top: 10px; font-family: var(--font-data); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: #b8b0a6; pointer-events: none; }
+.stagebox .status b { color: var(--blood); font-weight: 500; }
+.stagebox .loading[hidden] { display: none; }
+.stagebox .loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-data); font-size: .8rem; color: var(--muted); pointer-events: none; text-align: center; padding: 16px; }
+.controls { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.anims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.anims button, .toggles button { font: inherit; font-family: var(--font-data); font-size: .76rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 9px 6px; cursor: pointer; min-width: 0; }
+.anims button:hover, .toggles button:hover { border-color: #4d3c3f; }
+.anims button[aria-pressed="true"], .toggles button[aria-pressed="true"] { border-color: var(--blood); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--blood); }
+.anims button:focus-visible, .toggles button:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.stagebox.nv canvas { filter: grayscale(1) sepia(1) hue-rotate(62deg) saturate(2.6) brightness(1.5) contrast(1.15); }
+.stagebox.nv::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.states div { border: 1px solid var(--line); background: var(--panel); padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.states b { font-family: var(--font-data); font-weight: 500; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--blood); }
+.states span { font-size: .9rem; color: #c7bfb6; }
+.sounds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.sounds div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.sounds audio { width: 100%; height: 32px; }
+.note { font-size: .88rem; color: #bdb5ab; }
+
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.views img { aspect-ratio: 1 / 1; object-fit: cover; }
+.views figure.wide { grid-column: span 2; }
+.views figure.wide img { aspect-ratio: auto; height: 100%; }
+.steps4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.steps4 > div { border: 1px solid var(--line); background: var(--panel); padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.steps4 b { font-family: var(--font-display); font-weight: 500; font-size: 1.3rem; line-height: 1.05; }
+.steps4 span { font-size: .9rem; color: #c7bfb6; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+ul.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 70ch; }
+ul.list li::marker { color: var(--blood); }
+ul.list.todo li::marker { content: "◇  "; color: var(--muted); }
+pre { font-family: var(--font-data); font-size: .76rem; color: #cfc7bd; background: var(--panel); border: 1px solid var(--line); padding: 14px; margin: 0; overflow-x: auto; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+code { font-family: var(--font-data); font-size: .84em; color: #ece5d6; background: var(--panel-2); padding: 1px 5px; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.files div { border: 1px solid var(--line); background: var(--panel); padding: 10px 12px; min-width: 0; }
+.files b { font-family: var(--font-data); font-weight: 500; font-size: .8rem; display: block; overflow-wrap: anywhere; }
+.files span { font-size: .84rem; color: var(--muted); }
+.dims { display: flex; flex-wrap: wrap; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.dims div { background: var(--panel); padding: 8px 14px; flex: 1 1 120px; }
+.dims .v { font-family: var(--font-data); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.dims .k { font-size: .76rem; color: var(--muted); }
+@media (max-width: 960px) { .viewer, .cols { grid-template-columns: 1fr; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .pair { grid-template-columns: 1fr; } .anims { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps4 { grid-template-columns: 1fr; } }
+.strip5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.strip5 figure img { aspect-ratio: 4 / 5; object-fit: cover; }
+@media (max-width: 760px) { .strip5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.anims h4 { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-data); font-weight: 500; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#bTransform { grid-column: 1 / -1; border-color: var(--blood); color: #fff; background: #2a1215; }
+
+.reel { border: 1px solid var(--line); background: #0b1114; padding: 16px; display: grid; gap: 10px; max-width: 420px; }
+.reel .msg { font-family: var(--font-data); font-size: .9rem; color: #f2e6c8; text-align: center; letter-spacing: .06em; }
+.reel .bar { height: 18px; border: 1px solid #3a4448; background: #121a1e; position: relative; overflow: hidden; }
+.reel .fill { position: absolute; inset: 0 auto 0 0; width: 64%; background: linear-gradient(90deg, #4a8c5a, #9ad46a); }
+.reel .hint { font-size: .82rem; color: var(--muted); text-align: center; }
+.steps4 b { color: var(--ink); }
+.food { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.food th, .food td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; }
+.food th { font-family: var(--font-data); font-weight: 500; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.food td.n { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Supervivencia · Comida · Estilo Roblox de bloques</div>
+      <h1>Pesca</h1>
+      <div class="latin">Lanza la caña, espera a que pique, recoge rápido y cómete lo que saques; mejor cocinado en la hoguera</div>
+    </div>
+    <div class="stages" aria-label="Etapas">
+      <span class="done">Caña</span><span class="done">3 peces</span><span class="done">Comer</span><span class="done">Cocinar</span><span class="done">Sonido</span><span class="wait">Prueba en Studio</span>
+    </div>
+  </header>
+
+  <section>
+    <figure><img src="design/renders/lineup.jpg" alt="Trucha, perca y salmón dorado de bloques, crudos arriba y cocinados abajo, con la caña de pescar"><figcaption>Arriba crudos, abajo cocinados: salmón dorado · perca · trucha</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>En vivo</h2>
+    <div class="viewer">
+      <div class="stagebox" id="stagebox">
+        <canvas id="view" aria-label="Visor 3D de los peces y la caña"></canvas>
+        <div class="status" id="status"><b>●</b> Trucha</div>
+      </div>
+      <div class="controls">
+        <div><h3>Modelo</h3><div class="anims" id="models"></div></div>
+        <div><h3>Ver</h3><div class="toggles">
+          <button type="button" id="tCook" aria-pressed="false">Cocinado</button>
+          <button type="button" id="tSpin" aria-pressed="true">Giro auto</button></div></div>
+        <p class="note">Construido con los mismos planos que usa el instalador de Studio: cada bloque es una Part soldada al Handle de su herramienta.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cómo se pesca</h2>
+    <div class="steps4">
+      <div><b>1 · Lanza</b><span>Con la caña en la mano, haz clic sobre el agua (hasta 45 studs). La boya vuela y se queda flotando, atada con el sedal.</span></div>
+      <div><b>2 · Espera</b><span>Entre 4 y 12 segundos. Si haces clic antes de tiempo, espantas al pez y hay que volver a lanzar.</span></div>
+      <div><b>3 · ¡Pica!</b><span>La boya se hunde, salpica y suena. Tienes algo más de un segundo para hacer clic y clavar el anzuelo.</span></div>
+      <div><b>4 · Recoge</b><span>Haz clic rápido para llenar la barra antes de que el pez la vacíe. El salmón dorado tira mucho más fuerte.</span></div>
+    </div>
+    <div class="reel" style="margin-top:14px" aria-label="Maqueta de la barra para recoger">
+      <div class="msg">¡RECOGE! · CLIC RÁPIDO</div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="hint">Así se ve la barra en el juego mientras recoges</div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Comer y cocinar</h2>
+      <div class="tablewrap"><table class="food">
+        <thead><tr><th>Pez</th><th>Sale</th><th>Crudo</th><th>Cocinado</th></tr></thead>
+        <tbody>
+          <tr><td>Trucha</td><td class="n">60 %</td><td class="n">+8 vida · +15 comida</td><td class="n">+25 vida · +35 comida</td></tr>
+          <tr><td>Perca</td><td class="n">30 %</td><td class="n">+6 vida · +12 comida</td><td class="n">+20 vida · +30 comida</td></tr>
+          <tr><td>Salmón dorado</td><td class="n">10 %</td><td class="n">+15 vida · +25 comida</td><td class="n">+50 vida · +60 comida</td></tr>
+        </tbody>
+      </table></div>
+      <ul class="list" style="margin-top:12px">
+        <li><b>Comer</b>: con el pez en la mano, clic. Crudo, hay un 25 % de que te siente mal (pierdes 10 de vida poco a poco).</li>
+        <li><b>Cocinar</b>: acércate a una hoguera con el pez crudo en la mano y mantén <b>E</b>. Sale cocinado: tostado, con los ojos blancos y marcas de parrilla.</li>
+        <li><b>Comida</b>: si tu juego usa un atributo <code>Hunger</code> en el jugador, lo sube. Y avisa con el evento <code>FishEaten</code> para lo que quieras.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Sonido</h2>
+      <div class="sounds">
+        <div><b>Cast</b><span class="note">Silbido al lanzar.</span><audio controls preload="none" src="sounds/Cast.ogg"></audio></div>
+        <div><b>Plop</b><span class="note">La boya cae al agua y cuando pica.</span><audio controls preload="none" src="sounds/Plop.ogg"></audio></div>
+        <div><b>Reel</b><span class="note">Carraca del carrete al recoger.</span><audio controls preload="none" src="sounds/Reel.ogg"></audio></div>
+        <div><b>Catch</b><span class="note">Lo sacas del agua.</span><audio controls preload="none" src="sounds/Catch.ogg"></audio></div>
+        <div><b>Eat</b><span class="note">Bocados.</span><audio controls preload="none" src="sounds/Eat.ogg"></audio></div>
+        <div><b>Sizzle</b><span class="note">Chisporroteo al cocinar.</span><audio controls preload="none" src="sounds/Sizzle.ogg"></audio></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div>
+      <h2>Paquete para Roblox Studio</h2>
+      <ol class="steps">
+        <li>No hay que importar nada: pega <code>roblox/InstallFishing.lua</code> en la Command Bar. Pone la caña en el StarterPack y una hoguera de prueba.</li>
+        <li>Se pesca en cualquier agua de Terrain y en las zonas <code>FishZone</code> (las del pez infectado también: cuidado, que saltan a la orilla).</li>
+        <li>Más hogueras: cualquier parte o modelo con la etiqueta <code>Campfire</code>.</li>
+        <li>Opcional: sube <code>sounds/*.ogg</code> y pega sus ids en <code>SOUND_IDS</code>.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Lo que conviene revisar</h2>
+      <ul class="list todo">
+        <li>No se ha probado dentro de Roblox Studio: el instalador, cómo se ven la caña y el pez en la mano (la orientación del agarre) y el sedal.</li>
+        <li>La lógica de la pesca (esperar, picar, clavar, recoger, escaparse) sí está probada en simulación.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="src/fishing_blueprints.js"></script>
+<script>
+(() => {
+const D2R = Math.PI / 180, M = FISHING_MODELS, SP = FISHING_SPECIES;
+const LABELS = { Trout: ['Trucha cruda', 'Trucha cocinada'], Perch: ['Perca cruda', 'Perca cocinada'], GoldenSalmon: ['Salmón dorado crudo', 'Salmón dorado cocinado'] };
+const LIST = [['Trout', 'Trucha'], ['Perch', 'Perca'], ['GoldenSalmon', 'Salmón dorado'], ['FishingRod', 'Caña'], ['Campfire', 'Hoguera']];
+const canvas = document.getElementById('view'), box = document.getElementById('stagebox');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); scene.background = new THREE.Color('#33414a').convertSRGBToLinear(); scene.fog = new THREE.Fog(scene.background.getHex(), 30, 90);
+const camera = new THREE.PerspectiveCamera(32, 1.6, 0.05, 300);
+scene.add(new THREE.HemisphereLight('#f4ecdc', '#3a3026', 0.7));
+const key = new THREE.DirectionalLight('#fff0dc', 1.1); key.position.set(-6, 12, -7); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 40 }); key.shadow.bias = -0.0006; scene.add(key);
+const rim = new THREE.DirectionalLight('#9ec4ff', 0.6); rim.position.set(6, 5, 8); scene.add(rim);
+// mesa de tablones de madera
+const table = new THREE.Group();
+for (let i = 0; i < 7; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(14, 0.3, 1.18), new THREE.MeshStandardMaterial({ color: new THREE.Color(i % 2 ? '#6b4e34' : '#5e432c').convertSRGBToLinear(), roughness: 0.9 })); m.position.set(0, -0.15, (i - 3) * 1.2); m.receiveShadow = true; table.add(m); }
+scene.add(table);
+const col = c => new THREE.Color(c[0] / 255, c[1] / 255, c[2] / 255).convertSRGBToLinear();   // los colores de Roblox son sRGB
+const mat = (c, material) => material === 'Neon' ? new THREE.MeshBasicMaterial({ color: col(c).multiplyScalar(1.2) }) :
+  new THREE.MeshStandardMaterial({ color: col(c), roughness: material === 'Foil' || material === 'Metal' ? 0.25 : (material === 'Wood' ? 0.85 : 0.55), metalness: material === 'Foil' ? 0.7 : (material === 'Metal' ? 0.5 : 0) });
+function build(list) {
+  const g = new THREE.Group();
+  for (const p of list) { const m = new THREE.Mesh(new THREE.BoxGeometry(...p.size), mat(p.color, p.material)); m.position.set(...p.offset); m.rotation.set(p.rot[0] * D2R, p.rot[1] * D2R, p.rot[2] * D2R, 'XYZ'); m.castShadow = m.receiveShadow = true; g.add(m); }
+  return g;
+}
+const lowest = list => Math.min(...list.map(p => p.offset[1] - p.size[1] / 2));
+let current = null, idx = 0, cookedOn = false, lineup = [];
+function place(name, g) {   // apoyado sobre la mesa; los peces tumbados de lado, como recién pescados
+  const list = M[name], fish = !!SP[name.replace('_Cooked', '')];
+  const holder = new THREE.Group(); holder.add(g);
+  if (fish) { g.rotation.z = Math.PI / 2; holder.position.y = list[0].size[0] / 2 + 0.03; }
+  else holder.position.y = -lowest(list) + 0.01;
+  return holder;
+}
+function show(i) {
+  idx = i; if (current) scene.remove(current);
+  const base = LIST[i][0], name = SP[base] && cookedOn ? base + '_Cooked' : base;
+  current = place(name, build(M[name])); scene.add(current);
+  document.querySelectorAll('#models button').forEach((b, k) => b.setAttribute('aria-pressed', k === i));
+  const sp = SP[base];
+  document.getElementById('status').innerHTML = sp ? `<b>●</b> ${LABELS[base][cookedOn ? 1 : 0]} · +${(cookedOn ? sp.Cooked : sp.Raw).Heal} vida · +${(cookedOn ? sp.Cooked : sp.Raw).Food} comida` : `<b>●</b> ${LIST[i][1]}`;
+  dist = base === 'FishingRod' ? 11 : (base === 'Campfire' ? 9 : 5.5); target.set(0, base === 'FishingRod' ? 0.6 : (base === 'Campfire' ? 0.8 : 0.3), base === 'FishingRod' ? -3 : 0);
+}
+const modelsBox = document.getElementById('models');
+modelsBox.innerHTML = LIST.map(([k, l], i) => `<button type="button" data-i="${i}" aria-pressed="false">${l}</button>`).join('');
+modelsBox.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(+b.dataset.i); });
+let spin = !reduce;
+const tg = (id, get, set) => { const b = document.getElementById(id); b.setAttribute('aria-pressed', get()); b.onclick = () => { set(!get()); b.setAttribute('aria-pressed', get()); }; return b; };
+const tSpin = tg('tSpin', () => spin, v => spin = v);
+tg('tCook', () => cookedOn, v => { cookedOn = v; show(idx); });
+let yaw = -2.4, pitch = 0.42, dist = 5.5, drag = null;
+const target = new THREE.Vector3(0, 0.3, 0);
+canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); spin = false; tSpin.setAttribute('aria-pressed', false); });
+canvas.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.008; if (e.pointerType === 'mouse') pitch = Math.max(0.05, Math.min(1.3, pitch + (e.clientY - drag.y) * 0.005)); drag = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drag = null); canvas.addEventListener('pointercancel', () => drag = null);
+canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(2, Math.min(30, dist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+function resize() { const w = box.clientWidth, h = box.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(box); resize();
+function showLineup(on) {   // los tres crudos y cocinados con la caña (imagen de cabecera)
+  lineup.forEach(r => scene.remove(r)); lineup = [];
+  if (current) current.visible = !on;
+  if (!on) return;
+  ['Trout', 'Perch', 'GoldenSalmon'].forEach((n, i) => {
+    for (const [cook, z] of [[false, 1.6], [true, -1.4]]) { const name = cook ? n + '_Cooked' : n; const h = place(name, build(M[name])); h.position.x = (i - 1) * 3.4; h.position.z = z; h.rotation.y = Math.PI / 2; scene.add(h); lineup.push(h); }
+  });
+  const r = place('FishingRod', build(M.FishingRod)); r.position.set(-1.5, 0, 0.1); r.rotation.y = -Math.PI / 2 - 0.08; r.children[0].rotation.x = -8 * D2R; scene.add(r); lineup.push(r);
+}
+window.__fishing = { show, showLineup, setCooked: v => { cookedOn = v; show(idx); }, setCam: (y, p, d, tx, ty, tz) => { yaw = y; pitch = p; dist = d; target.set(tx || 0, ty || 0, tz || 0); spin = false; }, render: () => renderFrame(0) };
+let clock = 0;
+function renderFrame(dt) {
+  clock += dt; if (spin) yaw += dt * 0.25;
+  if (current && SP[LIST[idx][0]] && !cookedOn && !reduce) current.children[0].rotation.y = Math.sin(clock * 9) * 0.08 * Math.max(0, Math.sin(clock * 1.3));   // crudo: aún coletea
+  camera.position.set(target.x + Math.sin(yaw) * Math.cos(pitch) * dist, target.y + Math.sin(pitch) * dist, target.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+  camera.lookAt(target); renderer.render(scene, camera);
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min((now - last) / 1000, 0.05); last = now; renderFrame(window.__fishingPaused ? 0 : dt); requestAnimationFrame(frame); }
+show(0); requestAnimationFrame(frame); window.__fishingReady = true;
+})();
+</script>
